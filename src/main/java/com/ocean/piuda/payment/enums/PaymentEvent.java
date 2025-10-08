@@ -1,0 +1,14 @@
+package com.ocean.piuda.payment.enums;
+
+public enum PaymentEvent {
+    CREATED,
+    RESERVE_REQUESTED,
+    RESERVE_SUCCEEDED,
+    APPROVE_BY_OWNER,
+    TRANSFER_REQUESTED,
+    TRANSFER_SUCCEEDED,
+    TRANSFER_FAILED,
+    REFUND_REQUESTED,
+    REFUND_SUCCEEDED,
+    FAILED
+}

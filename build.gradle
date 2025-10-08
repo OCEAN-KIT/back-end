@@ -1,0 +1,81 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.6'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ocean'
+version = '0.0.1-SNAPSHOT'
+description = 'piuda2025'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+//	implementation 'org.springframework:spring-aspects'
+//	implementation 'org.springframework.retry:spring-retry'
+	implementation 'io.portone:server-sdk:0.19.2'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'com.h2database:h2'
+
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// cashBill (barobill)
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.apache.commons:commons-text:1.10.0'
+	implementation 'org.jsoup:jsoup:1.17.2'
+
+	// AWS SDK
+	implementation platform("software.amazon.awssdk:bom:2.29.43")
+	implementation "software.amazon.awssdk:s3"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
+	//open ai
+	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2' // for Deserializatio
+
+	// Google GenAI SDK
+	implementation 'com.google.genai:google-genai:1.17.0'
+	constraints {
+		implementation('com.google.protobuf:protobuf-java:3.25.5') {
+			because 'Fixes CVE-2024-7254' // google-genai:1.17.0 Vulnerabilities 반영
+		}
+
+	}
+
+	// fcm
+	implementation 'com.google.firebase:firebase-admin:9.7.0'
+
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
