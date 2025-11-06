@@ -4,7 +4,11 @@ import com.ocean.piuda.admin.common.enums.AuditAction;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
 import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
+import com.ocean.piuda.admin.submission.entity.Activity;
+import com.ocean.piuda.admin.submission.entity.Attachment;
 import com.ocean.piuda.admin.submission.entity.AuditLog;
+import com.ocean.piuda.admin.submission.entity.BasicEnv;
+import com.ocean.piuda.admin.submission.entity.Participants;
 import com.ocean.piuda.admin.submission.entity.RejectReason;
 import com.ocean.piuda.admin.submission.entity.Submission;
 import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
@@ -29,6 +33,97 @@ public class SubmissionCommandService {
     private final SubmissionRepository submissionRepository;
     private final AuditLogRepository auditLogRepository;
     private final SubmissionQueryService submissionQueryService;
+
+    /**
+     * 제출 데이터 생성
+     */
+    public SubmissionDetailResponse createSubmission(CreateSubmissionRequest request) {
+        // 기본값 설정
+        LocalDateTime submittedAt = request.getSubmittedAt() != null 
+                ? request.getSubmittedAt() 
+                : LocalDateTime.now();
+
+        // Submission 생성
+        Submission submission = Submission.builder()
+                .siteName(request.getSiteName())
+                .activityType(request.getActivityType())
+                .submittedAt(submittedAt)
+                .status(SubmissionStatus.PENDING)
+                .authorName(request.getAuthorName())
+                .authorEmail(request.getAuthorEmail())
+                .feedbackText(request.getFeedbackText())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .attachmentCount(0)
+                .build();
+
+        // BasicEnv 생성
+        if (request.getBasicEnv() != null) {
+            CreateSubmissionRequest.BasicEnvDto envDto = request.getBasicEnv();
+            BasicEnv basicEnv = BasicEnv.builder()
+                    .recordDate(envDto.getRecordDate())
+                    .startTime(envDto.getStartTime())
+                    .endTime(envDto.getEndTime())
+                    .waterTempC(envDto.getWaterTempC())
+                    .visibilityM(envDto.getVisibilityM())
+                    .depthM(envDto.getDepthM())
+                    .currentState(envDto.getCurrentState())
+                    .weather(envDto.getWeather())
+                    .build();
+            submission.setBasicEnv(basicEnv);
+        }
+
+        // Participants 생성
+        if (request.getParticipants() != null) {
+            CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
+            Participants participants = Participants.builder()
+                    .leaderName(participantsDto.getLeaderName())
+                    .participantCount(participantsDto.getParticipantCount() != null 
+                            ? participantsDto.getParticipantCount() 
+                            : 1)
+                    .role(participantsDto.getRole() != null 
+                            ? participantsDto.getRole() 
+                            : com.ocean.piuda.admin.common.enums.ParticipantRole.CITIZEN_DIVER)
+                    .build();
+            submission.setParticipants(participants);
+        }
+
+        // Activity 생성
+        CreateSubmissionRequest.ActivityDto activityDto = request.getActivity();
+        Activity activity = Activity.builder()
+                .type(activityDto.getType())
+                .details(activityDto.getDetails())
+                .collectionAmount(activityDto.getCollectionAmount() != null 
+                        ? activityDto.getCollectionAmount() 
+                        : 0f)
+                .durationHours(activityDto.getDurationHours() != null 
+                        ? activityDto.getDurationHours() 
+                        : 0f)
+                .build();
+        submission.setActivity(activity);
+
+        // Attachments 생성
+        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
+            for (CreateSubmissionRequest.AttachmentDto attachmentDto : request.getAttachments()) {
+                Attachment attachment = Attachment.builder()
+                        .fileName(attachmentDto.getFileName())
+                        .fileUrl(attachmentDto.getFileUrl())
+                        .mimeType(attachmentDto.getMimeType())
+                        .fileSize(attachmentDto.getFileSize())
+                        .uploadedAt(submittedAt)
+                        .build();
+                submission.addAttachment(attachment);
+            }
+        }
+
+        // 저장
+        Submission saved = submissionRepository.save(submission);
+
+        // AuditLog 생성 (제출됨)
+        createAuditLog(saved, AuditAction.SUBMITTED, null);
+
+        return SubmissionDetailResponse.from(saved);
+    }
 
     /**
      * 단건 승인
