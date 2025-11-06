@@ -5,6 +5,10 @@ import com.ocean.piuda.admin.export.dto.response.ExportJobResponse;
 import com.ocean.piuda.admin.export.service.ExportService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import com.ocean.piuda.security.jwt.service.TokenUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +25,23 @@ import java.util.List;
 @RequestMapping("/api/admin/exports")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(
+        name = "Admin Export",
+        description = "제출 데이터 내보내기 API입니다. 승인된 데이터를 CSV 형식으로 내보내고 이력을 조회할 수 있습니다."
+)
 public class ExportController {
 
     private final ExportService exportService;
     private final TokenUserService tokenUserService;
 
     @PostMapping("/download")
+    @Operation(summary = "데이터 내보내기 (CSV 다운로드)", description = "승인된 제출 데이터를 CSV 파일로 내보냅니다. 파일이 바로 다운로드됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "CSV 파일 다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류 (format 누락 등)"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
     public ResponseEntity<byte[]> downloadExport(
             @Valid @RequestBody ExportRequest request
     ) {
@@ -66,6 +81,12 @@ public class ExportController {
     }
 
     @GetMapping
+    @Operation(summary = "내보내기 이력 조회", description = "내보내기 작업 이력을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
     public ApiData<List<ExportJobResponse>> getExportHistory() {
         List<ExportJobResponse> history = exportService.getExportHistory();
         return ApiData.ok(history);
