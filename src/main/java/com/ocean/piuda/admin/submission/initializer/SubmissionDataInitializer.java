@@ -43,7 +43,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         submissions.add(createSubmission(
                 1L,
                 "포항 해안가",
-                ActivityType.URCHIN_REMOVAL,
+                ActivityType.TRANSPLANT,
                 SubmissionStatus.PENDING,
                 "홍길동",
                 "hong@example.com",
@@ -62,7 +62,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 "홍길동",
                 5,
                 ParticipantRole.CITIZEN_DIVER,
-                "성게 제거 작업을 수행했습니다. 총 50개를 수거했습니다.",
+                "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
                 50.0f,
                 3.5f,
                 "public/user_objects/2025-01-15/photo1.jpg"
@@ -139,7 +139,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         submissions.add(createSubmission(
                 4L,
                 "강원도 속초 해변",
-                ActivityType.URCHIN_REMOVAL,
+                ActivityType.TRANSPLANT,
                 SubmissionStatus.PENDING,
                 "박민수",
                 "park@example.com",
@@ -158,7 +158,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 "박민수",
                 4,
                 ParticipantRole.LOCAL_MANAGER,
-                "성게 80개 제거 완료",
+                "이식 80개 완료",
                 80.0f,
                 4.0f,
                 "public/user_objects/2025-01-16/photo4.jpg"
