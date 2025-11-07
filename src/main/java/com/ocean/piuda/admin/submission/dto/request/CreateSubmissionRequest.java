@@ -52,6 +52,7 @@ public class CreateSubmissionRequest {
     @NotNull(message = "활동 정보는 필수입니다")
     private ActivityDto activity;
 
+    @Valid
     private List<AttachmentDto> attachments;
 
     @Getter

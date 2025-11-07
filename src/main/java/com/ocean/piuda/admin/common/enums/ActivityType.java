@@ -1,7 +1,9 @@
 package com.ocean.piuda.admin.common.enums;
 
 public enum ActivityType {
-    URCHIN_REMOVAL,      // 성게 제거
-    TRASH_COLLECTION,    // 쓰레기 수거
+    TRANSPLANT,          // 이식
+    TRASH_COLLECTION,    // 폐기물수거
+    RESEARCH,            // 연구
+    MONITORING,          // 모니터링
     OTHER                // 기타
 }

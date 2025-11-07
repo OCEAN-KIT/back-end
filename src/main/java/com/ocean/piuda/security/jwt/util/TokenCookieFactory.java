@@ -39,4 +39,17 @@ public class TokenCookieFactory {
         }
     }
 
+    /**
+     * 로그아웃용 쿠키 삭제 (maxAge=0)
+     */
+    public ResponseCookie buildLogoutCookie() {
+        return ResponseCookie.from(ACCESS_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .sameSite("None")
+                .secure(true)
+                .path("/")
+                .maxAge(0)  // 즉시 삭제
+                .build();
+    }
+
 }

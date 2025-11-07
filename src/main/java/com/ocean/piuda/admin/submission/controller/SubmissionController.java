@@ -70,7 +70,7 @@ public class SubmissionController {
     public ApiData<PageResponse<SubmissionListResponse>> getSubmissions(
             @Parameter(description = "검색 키워드 (현장명, 작성자)") @RequestParam(required = false) String keyword,
             @Parameter(description = "상태 필터 (PENDING, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
-            @Parameter(description = "활동 유형 필터 (URCHIN_REMOVAL, TRASH_COLLECTION, OTHER)") @RequestParam(required = false) ActivityType activityType,
+            @Parameter(description = "활동 유형 필터 (TRANSPLANT, TRASH_COLLECTION, RESEARCH, MONITORING, OTHER)") @RequestParam(required = false) ActivityType activityType,
             @Parameter(description = "시작 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @Parameter(description = "종료 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @Parameter(description = "페이지 번호 (기본값: 0)") @RequestParam(defaultValue = "0") int page,

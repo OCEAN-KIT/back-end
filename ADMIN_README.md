@@ -108,7 +108,7 @@ Content-Type: application/json
 
 {
   "siteName": "포항 해안가",
-  "activityType": "URCHIN_REMOVAL",
+  "activityType": "TRANSPLANT",
   "submittedAt": "2025-01-15T09:00:00",
   "authorName": "홍길동",
   "authorEmail": "hong@example.com",
@@ -131,8 +131,8 @@ Content-Type: application/json
     "role": "CITIZEN_DIVER"
   },
   "activity": {
-    "type": "URCHIN_REMOVAL",
-    "details": "성게 제거 작업을 수행했습니다. 총 50개를 수거했습니다.",
+    "type": "TRANSPLANT",
+    "details": "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
     "collectionAmount": 50.0,
     "durationHours": 3.5
   },
@@ -149,7 +149,7 @@ Content-Type: application/json
 
 **Request Body 필드:**
 - `siteName` (필수): 현장명
-- `activityType` (필수): 활동유형 (`URCHIN_REMOVAL`, `TRASH_COLLECTION`, `OTHER`)
+- `activityType` (필수): 활동유형 (`TRANSPLANT`, `TRASH_COLLECTION`, `RESEARCH`, `MONITORING`, `OTHER`)
 - `submittedAt` (선택): 제출일시 (없으면 현재 시간 사용)
 - `authorName` (필수): 작성자명
 - `authorEmail` (선택): 작성자 이메일
@@ -195,7 +195,7 @@ Authorization: Bearer {access_token}
 **Query Parameters:**
 - `keyword` (optional): 검색 키워드 (현장명, 작성자)
 - `status` (optional): 상태 필터 (`PENDING`, `APPROVED`, `REJECTED`, `DELETED`)
-- `activityType` (optional): 활동 유형 (`URCHIN_REMOVAL`, `TRASH_COLLECTION`, `OTHER`)
+- `activityType` (optional): 활동 유형 (`TRANSPLANT`, `TRASH_COLLECTION`, `RESEARCH`, `MONITORING`, `OTHER`)
 - `startDate` (optional): 시작 날짜 (ISO 8601 형식: `2025-01-01T00:00:00`)
 - `endDate` (optional): 종료 날짜 (ISO 8601 형식: `2025-01-31T23:59:59`)
 - `page` (default: 0): 페이지 번호
@@ -212,7 +212,7 @@ Authorization: Bearer {access_token}
       {
         "submissionId": 1,
         "siteName": "포항 해안가",
-        "activityType": "URCHIN_REMOVAL",
+        "activityType": "TRANSPLANT",
         "submittedAt": "2025-01-15T09:00:00",
         "status": "PENDING",
         "authorName": "홍길동",
@@ -249,7 +249,7 @@ Authorization: Bearer {access_token}
   "data": {
     "submissionId": 1,
     "siteName": "포항 해안가",
-    "activityType": "URCHIN_REMOVAL",
+    "activityType": "TRANSPLANT",
     "submittedAt": "2025-01-15T09:00:00",
     "status": "PENDING",
     "authorName": "홍길동",
@@ -274,8 +274,8 @@ Authorization: Bearer {access_token}
       "role": "CITIZEN_DIVER"
     },
     "activity": {
-      "type": "URCHIN_REMOVAL",
-      "details": "성게 제거 작업을 수행했습니다. 총 50개를 수거했습니다.",
+      "type": "TRANSPLANT",
+      "details": "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
       "collectionAmount": 50.0,
       "durationHours": 3.5
     },
@@ -672,8 +672,10 @@ Authorization: Bearer {access_token}
 - `DELETED`: 삭제됨
 
 ### ActivityType
-- `URCHIN_REMOVAL`: 성게 제거
-- `TRASH_COLLECTION`: 쓰레기 수거
+- `TRANSPLANT`: 이식
+- `TRASH_COLLECTION`: 폐기물수거
+- `RESEARCH`: 연구
+- `MONITORING`: 모니터링
 - `OTHER`: 기타
 
 ### CurrentState
