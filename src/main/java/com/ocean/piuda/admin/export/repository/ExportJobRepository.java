@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ExportJobRepository extends JpaRepository<ExportJob, Long> {
     List<ExportJob> findAllByOrderByCreatedAtDesc();
+
 }

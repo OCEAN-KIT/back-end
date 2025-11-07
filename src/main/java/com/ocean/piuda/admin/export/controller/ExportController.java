@@ -1,5 +1,6 @@
 package com.ocean.piuda.admin.export.controller;
 
+import com.ocean.piuda.admin.export.dto.request.ExportByIdsRequest;
 import com.ocean.piuda.admin.export.dto.request.ExportRequest;
 import com.ocean.piuda.admin.export.dto.response.ExportJobResponse;
 import com.ocean.piuda.admin.export.service.ExportService;
@@ -91,4 +92,52 @@ public class ExportController {
         List<ExportJobResponse> history = exportService.getExportHistory();
         return ApiData.ok(history);
     }
+
+    @PostMapping("/download/by-ids")
+    @Operation(
+            summary = "데이터 내보내기 (IDs 기반 CSV 다운로드)",
+            description = "지정한 submission ids 목록을 CSV 파일로 내보냅니다. 승인된 데이터만 포함됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "CSV 파일 다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류 (format/ids 누락 등)"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ResponseEntity<byte[]> downloadExportByIds(
+            @Valid @RequestBody ExportByIdsRequest request
+    ) {
+        byte[] csvBytes = exportService.generateExportFileByIds(request);
+        String fileName = exportService.generateFileName(request.getFormat());
+
+        try {
+            String requestedBy = tokenUserService.getCurrentUser().getEmail() != null
+                    ? tokenUserService.getCurrentUser().getEmail()
+                    : tokenUserService.getCurrentUser().getUsername();
+            exportService.saveExportHistory(request, requestedBy);
+        } catch (Exception e) {
+            log.warn("Export(IDs) 이력 저장 실패: {}", e.getMessage());
+        }
+
+        MediaType contentType = request.getFormat() == com.ocean.piuda.admin.common.enums.ExportFormat.CSV
+                ? new MediaType("text", "csv", StandardCharsets.UTF_8)
+                : MediaType.APPLICATION_OCTET_STREAM;
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(contentType);
+        headers.setContentDisposition(contentDisposition);
+        headers.setContentLength(csvBytes.length);
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBytes);
+    }
+
 }

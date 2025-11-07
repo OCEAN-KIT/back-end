@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -58,4 +59,18 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable
     );
+    @Query("""
+        SELECT DISTINCT s FROM Submission s
+        LEFT JOIN FETCH s.basicEnv
+        LEFT JOIN FETCH s.participants
+        LEFT JOIN FETCH s.activity
+        LEFT JOIN FETCH s.attachments
+        WHERE s.status = :status
+          AND s.submissionId IN :ids
+        """)
+    List<Submission> findAllByIdsAndStatusWithDetails(
+            @Param("ids") List<Long> ids,
+            @Param("status") SubmissionStatus status
+    );
 }
+
