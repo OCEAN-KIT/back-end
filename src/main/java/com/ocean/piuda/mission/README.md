@@ -1,23 +1,9 @@
 # Mission Module Manual
 
-이 문서는 `com.ocean.piuda.mission` 패키지에 구현된 REST API를 로컬에서 빠르게 검증하기 위한 안내서입니다.
-
-## 1. 선행 조건
-- JDK 17 이상
-- Spring Boot 3.5.x (이미 프로젝트에 포함)
-- 로컬 DB(H2 인메모리 또는 MySQL). `application.yml`에서 사용하는 프로필을 확인하세요.
-
-### 애플리케이션 실행
-```bash
-./gradlew bootRun
-```
-
 ## 2. 공통 정보
 - Base URL: `http://localhost:8080/api/missions`
 - 모든 응답은 JSON
 - `FakeCurrentUserProvider`가 기본 ADMIN/USER를 결정하므로, 필요 시 해당 클래스에서 반환값을 바꿔 권한 시나리오를 테스트할 수 있습니다.
-
-## 3. API 테스트 가이드
 
 ### 3.1 미션 생성 (ADMIN만)
 ```bash
