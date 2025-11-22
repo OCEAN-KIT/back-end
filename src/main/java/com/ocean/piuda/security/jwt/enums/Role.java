@@ -13,7 +13,8 @@ public enum Role {
      */
     NOT_REGISTERED("ROLE_NOT_REGISTERED", "회원가입 이전 유저"),
     USER("ROLE_USER", "회원가입 완료된 일반 유저"),
-    MERCHANT("ROLE_MERCHANT", "회원가입 완료된 상인 유저"),
+    DIVER("ROLE_DIVER", "회원가입 완료된 다이버 유저"),
+    RESEARCHER("ROLE_RESEARCHER", "회원가입 완료된 연구원 유저"),
     ADMIN("ROLE_ADMIN", "애플리케이션 관리자");
 
     private final String key;

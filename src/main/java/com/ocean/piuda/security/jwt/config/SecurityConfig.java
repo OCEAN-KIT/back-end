@@ -52,7 +52,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/sign-up").permitAll()
                         .requestMatchers("/api/auth/complete-sign-up/**").hasAuthority(Role.NOT_REGISTERED.getKey())
-
+                        
+                        // Admin 전용 API
+                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMIN.getKey())
+                        
         // 그 외 비로그인 사용자도 허용
                         .anyRequest().permitAll()
                 )

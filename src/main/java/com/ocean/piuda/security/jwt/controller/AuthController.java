@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,5 +79,20 @@ public class AuthController {
         return ApiData.created(null);
     }
 
+    /** 로그아웃 */
+    @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "사용자 로그아웃 처리. Access Token 쿠키를 삭제합니다.")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiData<Void>> logout(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal PrincipalDetails principal,
+            HttpServletResponse response
+    ) {
+        // 쿠키 삭제
+        ResponseCookie logoutCookie = tokenCookieFactory.buildLogoutCookie();
+        response.addHeader(HttpHeaders.SET_COOKIE, logoutCookie.toString());
+        
+        return ResponseEntity.ok(ApiData.ok(null));
+    }
 
 }
