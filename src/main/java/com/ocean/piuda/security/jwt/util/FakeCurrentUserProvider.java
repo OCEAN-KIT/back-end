@@ -1,7 +1,6 @@
-package com.ocean.piuda.common.security;
+package com.ocean.piuda.security.jwt.util;
 
 import com.ocean.piuda.security.jwt.enums.Role;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
