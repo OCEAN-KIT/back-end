@@ -62,10 +62,9 @@ public class OrderQueryService {
 
         boolean isOwner = o.getUser().getId().equals(userId);
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
-        boolean isMerchant = currentUser.getRole() == Role.MERCHANT
-                && o.getStore().getOwner().getId().equals(userId);
+        boolean isStoreOwner = o.getStore().getOwner().getId().equals(userId);
 
-        if (!(isOwner || isAdmin || isMerchant)) {
+        if (!(isOwner || isAdmin || isStoreOwner)) {
             throw  new BusinessException(ExceptionType.RESOURCE_NOT_FOUND);
         }
 
