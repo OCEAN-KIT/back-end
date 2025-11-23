@@ -25,45 +25,25 @@ public interface UserRepository extends JpaRepository<User , Long> {
 
 
     // 검색: nickname 전용
-    @Query(
-            value = """
-                SELECT * FROM users
-                WHERE MATCH(nickname) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            countQuery = """
-                SELECT COUNT(*) FROM users
-                WHERE MATCH(nickname) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            nativeQuery = true
-    )
+    @Query("""
+           SELECT u FROM User u
+           WHERE LOWER(u.nickname) LIKE LOWER(CONCAT('%', :q, '%'))
+           """)
     Page<User> searchByNicknameFulltext(@Param("q") String q, Pageable pageable);
 
     // 검색: username 전용
-    @Query(
-            value = """
-                SELECT * FROM users
-                WHERE MATCH(username) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            countQuery = """
-                SELECT COUNT(*) FROM users
-                WHERE MATCH(username) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            nativeQuery = true
-    )
+    @Query("""
+           SELECT u FROM User u
+           WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))
+           """)
     Page<User> searchByUsernameFulltext(@Param("q") String q, Pageable pageable);
 
     // 검색: nickname + username 동시
-    @Query(
-            value = """
-                SELECT * FROM users
-                WHERE MATCH(nickname, username) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            countQuery = """
-                SELECT COUNT(*) FROM users
-                WHERE MATCH(nickname, username) AGAINST (CONCAT(:q, '*') IN BOOLEAN MODE)
-                """,
-            nativeQuery = true
-    )
+    @Query("""
+           SELECT u FROM User u
+           WHERE LOWER(u.nickname) LIKE LOWER(CONCAT('%', :q, '%'))
+              OR LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))
+           """)
     Page<User> searchByNicknameOrUsernameFulltext(@Param("q") String q, Pageable pageable);
 
 
