@@ -1,6 +1,8 @@
 package com.ocean.piuda.mission.domain;
 
+import com.ocean.piuda.bio.enums.BioGroup;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.mission.enums.MissionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
