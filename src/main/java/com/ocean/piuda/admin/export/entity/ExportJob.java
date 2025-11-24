@@ -25,7 +25,7 @@ public class ExportJob extends BaseEntity {
     @Column(name = "requested_by", nullable = false, length = 100)
     private String requestedBy;
 
-    @Column(name = "filters_json", columnDefinition = "JSON")
+    @Column(name = "filters_json", columnDefinition = "TEXT")
     private String filtersJson;
 
     @Enumerated(EnumType.STRING)
