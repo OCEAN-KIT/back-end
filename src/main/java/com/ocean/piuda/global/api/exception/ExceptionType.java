@@ -55,8 +55,12 @@ public enum ExceptionType {
 
     //mission
     MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
-    MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다.")
-    ;
+    MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다."),
+
+    //garmin
+    WATCH_API_KEY_INVALID(UNAUTHORIZED, "W001", "유효하지 않은 시계 API 키"),
+    INVALID_PAYLOAD(BAD_REQUEST, "W002", "유효하지 않은 페이로드")
+            ;
 
 
     private final HttpStatus status;

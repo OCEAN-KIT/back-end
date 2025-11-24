@@ -51,6 +51,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/sign-up").permitAll()
+                        .requestMatchers("/api/v1/activities").permitAll()
                         .requestMatchers("/api/auth/complete-sign-up/**").hasAuthority(Role.NOT_REGISTERED.getKey())
                         
                         // Admin 전용 API
