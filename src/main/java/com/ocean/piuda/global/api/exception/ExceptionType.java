@@ -59,8 +59,11 @@ public enum ExceptionType {
 
     //garmin
     WATCH_API_KEY_INVALID(UNAUTHORIZED, "W001", "유효하지 않은 시계 API 키"),
-    INVALID_PAYLOAD(BAD_REQUEST, "W002", "유효하지 않은 페이로드")
-            ;
+    INVALID_PAYLOAD(BAD_REQUEST, "W002", "유효하지 않은 페이로드"),
+    WATCH_NOT_PAIRED(HttpStatus.FORBIDDEN, "WATCH_NOT_PAIRED", "해당 워치는 아직 계정에 등록되지 않았습니다."),
+    WATCH_ALREADY_PAIRED(HttpStatus.CONFLICT, "WATCH_ALREADY_PAIRED", "이미 페어링된 워치입니다."),
+    WATCH_DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "WATCH_DEVICE_NOT_FOUND", "등록된 워치 정보를 찾을 수 없습니다.")
+    ;
 
 
     private final HttpStatus status;
