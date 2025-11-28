@@ -3,6 +3,7 @@ package com.ocean.piuda.security.jwt.service;
 
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.enums.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,16 +38,23 @@ public class TokenUserService {
     }
 
 
+
     /**
-     * 있으면 userId 를 반환하되, null 이어도 예외를 발생시키지 않습니다.
+     * 현재 인증된 사용자의 ID를 반환합니다.
      */
-    public Long getCurrentUserIdOrNull() {
-        try {
-            return getCurrentUser().getId();
-        } catch (Exception e) {
-            return null;
-        }
+    public Long getCurrentUserId() {
+        return getCurrentUser().getId();
     }
+
+
+
+    /**
+     * 현재 인증된 사용자의 ID를 반환합니다.
+     */
+    public Role getCurrentUserRole() {
+        return getCurrentUser().getRole();
+    }
+
 
 
     /**

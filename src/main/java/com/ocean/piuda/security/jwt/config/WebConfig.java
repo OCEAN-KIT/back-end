@@ -22,6 +22,9 @@ public class WebConfig implements WebMvcConfigurer {
 
                         // 프론트 배포
                         "https://어쩌구저쩌구.vercel.app",
+                        "https://front-endadmin-app.vercel.app",
+                        "https://front-endmanagement.vercel.app",
+                        "https://front-enddashboard.vercel.app",
 
                         //스웨거용
                         "https://www.jungjiyu.com",

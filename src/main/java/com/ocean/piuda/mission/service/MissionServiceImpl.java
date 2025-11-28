@@ -1,10 +1,10 @@
 package com.ocean.piuda.mission.service;
 
-import com.ocean.piuda.common.security.CurrentUserProvider;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
 import com.ocean.piuda.mission.domain.Mission;
 import com.ocean.piuda.mission.dto.*;
-import com.ocean.piuda.mission.exception.MissionAccessDeniedException;
-import com.ocean.piuda.mission.exception.MissionNotFoundException;
 import com.ocean.piuda.mission.repository.MissionRepository;
 import com.ocean.piuda.security.jwt.enums.Role;
 import jakarta.persistence.criteria.Predicate;
@@ -24,7 +24,7 @@ import java.util.List;
 public class MissionServiceImpl implements MissionService {
 
     private final MissionRepository missionRepository;
-    private final CurrentUserProvider currentUserProvider;
+    private final TokenUserService tokenUserService;
 
     @Override
     @Transactional
@@ -32,7 +32,7 @@ public class MissionServiceImpl implements MissionService {
         // 권한 체크: ADMIN만 가능
         ensureAdmin();
 
-        Long ownerId = currentUserProvider.getCurrentUserId();
+        Long ownerId = tokenUserService.getCurrentUserId();
         Mission mission = request.toEntity(ownerId);
         mission = missionRepository.save(mission);
         return MissionResponse.from(mission);
@@ -88,22 +88,22 @@ public class MissionServiceImpl implements MissionService {
 
     private Mission findMission(Long id) {
         return missionRepository.findById(id)
-                .orElseThrow(() -> new MissionNotFoundException(id));
+                .orElseThrow(() -> new BusinessException(ExceptionType.MISSION_NOT_FOUND));
     }
 
     private void ensureAdmin() {
-        Role currentRole = currentUserProvider.getCurrentUserRole();
+        Role currentRole = tokenUserService.getCurrentUserRole();
         if (currentRole != Role.ADMIN) {
-            throw new MissionAccessDeniedException("ADMIN 권한이 필요합니다.");
+            throw new BusinessException(ExceptionType.MISSION_ACCESS_DENIED);
         }
     }
 
     private void ensureOwnerOrAdmin(Long ownerId) {
-        Role currentRole = currentUserProvider.getCurrentUserRole();
-        Long currentUserId = currentUserProvider.getCurrentUserId();
+        Role currentRole = tokenUserService.getCurrentUserRole();
+        Long currentUserId = tokenUserService.getCurrentUserId();
 
         if (currentRole != Role.ADMIN && !ownerId.equals(currentUserId)) {
-            throw new MissionAccessDeniedException("미션 소유자 또는 ADMIN 권한이 필요합니다.");
+            throw new BusinessException(ExceptionType.MISSION_ACCESS_DENIED);
         }
     }
 

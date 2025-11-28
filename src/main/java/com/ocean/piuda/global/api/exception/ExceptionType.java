@@ -51,8 +51,11 @@ public enum ExceptionType {
     REJECT_REASON_REQUIRED(UNPROCESSABLE_ENTITY, "AD005", "반려 사유를 입력해주세요."),
     EXPORT_NOT_FOUND(NOT_FOUND, "AD006", "내보내기 작업을 찾을 수 없습니다."),
     EXPORT_NOT_READY(UNPROCESSABLE_ENTITY, "AD007", "내보내기 파일이 아직 준비되지 않았습니다."),
-    EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다.")
+    EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다."),
 
+    //mission
+    MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
+    MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다.")
     ;
 
 
