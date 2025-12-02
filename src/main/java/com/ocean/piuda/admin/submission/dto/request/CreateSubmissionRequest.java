@@ -2,6 +2,7 @@ package com.ocean.piuda.admin.submission.dto.request;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.CurrentState;
+import com.ocean.piuda.admin.common.enums.HealthGrade;
 import com.ocean.piuda.admin.common.enums.ParticipantRole;
 import com.ocean.piuda.admin.common.enums.Weather;
 import jakarta.validation.Valid;
@@ -90,6 +91,31 @@ public class CreateSubmissionRequest {
         private String details;
         private Float collectionAmount;
         private Float durationHours;
+
+        // --- 추가된 필드 ---
+        private HealthGrade healthGrade;
+        private Float growthCm;
+        private NaturalReproductionDto naturalReproduction;
+        private SurvivalDto survival;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NaturalReproductionDto {
+        private Float radiusM;
+        private Float numerator;
+        private Float denominator;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SurvivalDto {
+        private Float dieCount;
+        private Float totalCount;
     }
 
     @Getter
@@ -103,4 +129,3 @@ public class CreateSubmissionRequest {
         private Integer fileSize;
     }
 }
-
