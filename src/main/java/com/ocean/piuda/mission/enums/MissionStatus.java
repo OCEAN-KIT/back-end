@@ -1,4 +1,4 @@
-package com.ocean.piuda.mission.domain;
+package com.ocean.piuda.mission.enums;
 
 public enum MissionStatus {
     PLANNED,

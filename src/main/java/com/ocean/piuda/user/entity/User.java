@@ -1,7 +1,5 @@
 package com.ocean.piuda.user.entity;
 
-
-
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import com.ocean.piuda.security.jwt.dto.request.UserUpdateRequestDto;
 import com.ocean.piuda.security.jwt.enums.Role;
@@ -12,7 +10,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
 @Table(name = "users")
 @Entity
 @Getter
@@ -20,64 +17,38 @@ import lombok.NoArgsConstructor;
 @Builder
 public class User extends BaseEntity {
 
-    /**
-     * 우리 애플리케이션 상의 (물리적) 식별자값
-     * 자체로그인, OAuth2 공통
-     */
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-    /**
-     * OAuth2 provider 벤더명 (KAKAO, NAVER, GOOGLE)
-     * 자체 로그인일 경우 null
-     */
     @Enumerated(EnumType.STRING)
     private ProviderType providerType;
 
-    /**
-     * OAuth2 provider 상의 식별자 값
-     * 자체 로그인일 경우 null
-     */
     private String providerId;
 
-
-
-    /**
-     * 자체로그인 논리적 식별자값
-     * OAuth2 로그인일경우 null
-     */
     @Column(unique = true)
     private String username;
 
-    /**
-     * 자체로그인 비밀번호
-     * OAuth2 로그인일경우 null
-     */
     @Column
     private String password;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-
-    /**
-     * 부가적인 정보들
-     */
-    // 닉네임. 사용자명
+    // 부가 정보
     private String nickname;
     private String email;
     private String phone;
 
-
-
-
-
+    /**
+     * 한 유저당 최대 1개의 워치만 등록 (0개 허용)
+     * 암호화된 deviceId 기준으로 관리
+     */
+    @Column(name = "watch_device_id", length = 100, unique = true)
+    private String watchDeviceId;
 
     public void updateRole(Role role){
         this.role = role;
     }
-
 
     public void update(UserUpdateRequestDto dto) {
         if (dto.getNickname() != null && !dto.getNickname().isBlank()) {
@@ -86,12 +57,16 @@ public class User extends BaseEntity {
         if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
             this.email = dto.getEmail();
         }
-
         if (dto.getPhone() != null && !dto.getPhone().isBlank()) {
             this.phone = dto.getPhone();
         }
-
     }
 
+    public void pairWatch(String watchDeviceId) {
+        this.watchDeviceId = watchDeviceId;
+    }
 
+    public void unpairWatch() {
+        this.watchDeviceId = null;
+    }
 }

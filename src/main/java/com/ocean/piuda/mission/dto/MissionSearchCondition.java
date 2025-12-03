@@ -1,7 +1,7 @@
 package com.ocean.piuda.mission.dto;
 
-import com.ocean.piuda.mission.domain.BioGroup;
-import com.ocean.piuda.mission.domain.MissionStatus;
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.enums.MissionStatus;
 import lombok.Builder;
 
 @Builder

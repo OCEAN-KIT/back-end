@@ -38,19 +38,18 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     Optional<Submission> findByIdWithAuditLogs(@Param("id") Long id);
 
     @Query("""
-        SELECT DISTINCT s FROM Submission s
-        LEFT JOIN FETCH s.basicEnv be
-        LEFT JOIN FETCH s.participants p
-        LEFT JOIN FETCH s.activity a
-        LEFT JOIN FETCH s.attachments att
-        WHERE (:keyword IS NULL OR :keyword = '' OR 
-               s.siteName LIKE %:keyword% OR 
-               s.authorName LIKE %:keyword%)
-          AND (:status IS NULL OR s.status = :status)
-          AND (:activityType IS NULL OR s.activityType = :activityType)
-          AND (:startDate IS NULL OR s.submittedAt >= :startDate)
-          AND (:endDate IS NULL OR s.submittedAt <= :endDate)
-        """)
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.participants
+    LEFT JOIN FETCH s.activity
+    WHERE (:keyword IS NULL OR :keyword = '' OR 
+           s.siteName LIKE %:keyword% OR 
+           s.authorName LIKE %:keyword%)
+      AND (:status IS NULL OR s.status = :status)
+      AND (:activityType IS NULL OR s.activityType = :activityType)
+      AND (cast(:startDate as timestamp) IS NULL OR s.submittedAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR s.submittedAt <= :endDate)
+    """)
     Page<Submission> findWithFilters(
             @Param("keyword") String keyword,
             @Param("status") SubmissionStatus status,
@@ -59,6 +58,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable
     );
+
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv

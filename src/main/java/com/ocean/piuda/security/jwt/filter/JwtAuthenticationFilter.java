@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && jwtTokenProvider.isValidToken(token)) {
             Long id =jwtTokenProvider.extractId(token);  // JWT에서 사용자명 추출
 
-            log.debug("[JwtAuthenticationFilter] userId from token: {}", id);
+            log.debug("[JwtAuthenticationFilter] deviceId from token: {}", id);
 
             // UserDetailsService 를 통해 사용자 정보 로드
             PrincipalDetails userDetails = (PrincipalDetails) customUserDetailsService.loadUserById(id);

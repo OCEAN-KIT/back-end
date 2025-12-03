@@ -3,9 +3,7 @@ package com.ocean.piuda.admin.submission.controller;
 import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
-import com.ocean.piuda.admin.submission.dto.response.AuditLogResponse;
-import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
-import com.ocean.piuda.admin.submission.dto.response.SubmissionListResponse;
+import com.ocean.piuda.admin.submission.dto.response.*;
 import com.ocean.piuda.admin.submission.service.SubmissionCommandService;
 import com.ocean.piuda.admin.submission.service.SubmissionQueryService;
 import com.ocean.piuda.global.api.dto.ApiData;
@@ -193,10 +191,10 @@ public class SubmissionController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
-    public ApiData<SubmissionCommandService.BulkApproveResponse> bulkApprove(
+    public ApiData<BulkApproveResponse> bulkApprove(
             @RequestBody @Valid BulkApproveRequest request
     ) {
-        SubmissionCommandService.BulkApproveResponse response = submissionCommandService.bulkApprove(request);
+        BulkApproveResponse response = submissionCommandService.bulkApprove(request);
         return ApiData.ok(response);
     }
 
@@ -211,10 +209,10 @@ public class SubmissionController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
-    public ApiData<SubmissionCommandService.BulkRejectResponse> bulkReject(
+    public ApiData<BulkRejectResponse> bulkReject(
             @RequestBody @Valid BulkRejectRequest request
     ) {
-        SubmissionCommandService.BulkRejectResponse response = submissionCommandService.bulkReject(request);
+        BulkRejectResponse response = submissionCommandService.bulkReject(request);
         return ApiData.ok(response);
     }
 
@@ -228,10 +226,10 @@ public class SubmissionController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
-    public ApiData<SubmissionCommandService.BulkDeleteResponse> bulkDelete(
+    public ApiData<BulkDeleteResponse> bulkDelete(
             @RequestBody @Valid BulkDeleteRequest request
     ) {
-        SubmissionCommandService.BulkDeleteResponse response = submissionCommandService.bulkDelete(request);
+        BulkDeleteResponse response = submissionCommandService.bulkDelete(request);
         return ApiData.ok(response);
     }
 }
