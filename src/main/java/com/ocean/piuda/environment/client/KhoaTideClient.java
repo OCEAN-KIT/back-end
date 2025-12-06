@@ -3,7 +3,6 @@ package com.ocean.piuda.environment.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ocean.piuda.environment.client.dto.KhoaTideResponse;
 import com.ocean.piuda.environment.properties.MarineApiProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -21,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class KhoaTideClient {
 
-    private static final String BASE_URL = "https://apis.data.go.kr/1192136/surveyTideLevel";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HHmm");
 
@@ -29,46 +27,56 @@ public class KhoaTideClient {
     private final MarineApiProperties properties;
     private final ObjectMapper objectMapper;
 
-    public KhoaTideClient(@Qualifier("marineWebClient") WebClient webClient,
-                         MarineApiProperties properties,
-                         ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public KhoaTideClient(
+            @Qualifier("marineWebClient") WebClient marineWebClient,
+            MarineApiProperties properties,
+            ObjectMapper objectMapper
+    ) {
+        this.webClient = marineWebClient;
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
     /**
      * 조위 관측값 조회
-     *
-     * @param stationId 관측소 ID
-     * @param date 관측일
-     * @param time 관측시각 (선택)
-     * @return 조위 관측값
      */
     public Mono<KhoaTideResponse.Item> fetchTideLevel(String stationId, LocalDate date, LocalTime time) {
         String dateStr = date.format(DATE_FORMATTER);
-        String timeStr = time != null ? time.format(TIME_FORMATTER) : "";
-
-        String url = String.format("%s?ServiceKey=%s&obs_post_id=%s&date=%s",
-                BASE_URL, properties.getKhoa().getKeyEncoding(), stationId, dateStr);
-
-        if (!timeStr.isEmpty()) {
-            url += "&time=" + timeStr;
-        }
 
         return webClient.get()
-                .uri(url)
+                .uri(uriBuilder -> {
+                    MarineApiProperties.Khoa config = properties.getKhoa();
+
+                    var builder = uriBuilder
+                            .scheme("https")
+                            .host(config.getHost())
+                            .path(config.getTidePath())
+                            .queryParam("ServiceKey", config.getKeyEncoding()) // 인코딩된 키 사용
+                            .queryParam("obs_post_id", stationId)
+                            .queryParam("date", dateStr)
+                            .queryParam("ResultType", "json"); // JSON 포맷 명시
+
+                    if (time != null) {
+                        builder.queryParam("time", time.format(TIME_FORMATTER));
+                    }
+
+                    return builder.build();
+                })
                 .retrieve()
+                // [확정] KHOA는 UTF-8이므로 String으로 받음
                 .bodyToMono(String.class)
-                .map(response -> {
+                .flatMap(response -> {
                     try {
-                        // 에러 응답 확인
-                        if (response == null || response.trim().isEmpty() || response.contains("unexpected errors")) {
+                        if (response == null || response.trim().isEmpty() || response.contains("Unexpected errors")) {
                             log.warn("KHOA API 오류 응답: stationId={}, response={}", stationId, response);
-                            return null;
+                            return Mono.empty();
                         }
 
-                        log.debug("KHOA 응답: {}", response.substring(0, Math.min(500, response.length())));
+                        // 정상 JSON 응답인지 확인 (간단한 체크)
+                        if (!response.trim().startsWith("{")) {
+                            log.warn("KHOA API 응답이 JSON이 아닙니다: stationId={}, response={}", stationId, response);
+                            return Mono.empty();
+                        }
 
                         KhoaTideResponse parsed = objectMapper.readValue(response, KhoaTideResponse.class);
                         if (parsed.getResponse() == null
@@ -76,42 +84,34 @@ public class KhoaTideClient {
                                 || parsed.getResponse().getBody().getItems() == null
                                 || parsed.getResponse().getBody().getItems().isEmpty()) {
                             log.warn("KHOA 조위 데이터가 없습니다: stationId={}, date={}", stationId, date);
-                            return null;
+                            return Mono.empty();
                         }
 
-                        // 최신 관측값 반환
-                        return parsed.getResponse().getBody().getItems().get(0);
+                        return Mono.just(parsed.getResponse().getBody().getItems().get(0));
                     } catch (Exception e) {
-                        log.error("KHOA 조위 응답 파싱 실패: stationId={}, date={}, response={}", 
-                                stationId, date, response != null ? response.substring(0, Math.min(500, response.length())) : "null", e);
-                        return null;
+                        log.error("KHOA 조위 응답 파싱 실패: stationId={}, date={}, response={}",
+                                stationId, date,
+                                response != null ? response.substring(0, Math.min(500, response.length())) : "null",
+                                e);
+                        return Mono.empty();
                     }
                 })
                 .doOnError(error -> {
-                    // 500 에러는 외부 서버 문제이므로 WARN 레벨로 로깅
-                    if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
-                        org.springframework.web.reactive.function.client.WebClientResponseException webClientError = 
-                                (org.springframework.web.reactive.function.client.WebClientResponseException) error;
+                    if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException webClientError) {
                         if (webClientError.getStatusCode().value() == 500) {
-                            log.warn("KHOA 조위 API 서버 오류 (500): stationId={}, 이는 외부 API 서버 문제입니다.", stationId);
+                            log.warn("KHOA 조위 API 서버 오류 (500): stationId={}, 외부 서버 문제 또는 키/파라미터 확인 필요.", stationId);
                         } else {
-                            log.error("KHOA 조위 API 호출 실패: stationId={}, status={}", stationId, webClientError.getStatusCode(), error);
+                            log.error("KHOA 조위 API 호출 실패: stationId={}, status={}",
+                                    stationId, webClientError.getStatusCode(), error);
                         }
                     } else {
                         log.error("KHOA 조위 API 호출 실패: stationId={}", stationId, error);
                     }
                 })
-                .onErrorResume(error -> {
-                    // 에러 발생 시 null 반환 (이미 doOnError에서 로깅됨)
-                    return Mono.justOrEmpty((KhoaTideResponse.Item) null);
-                });
+                .onErrorResume(error -> Mono.empty());
     }
 
-    /**
-     * 오늘의 최신 조위 관측값 조회
-     */
     public Mono<KhoaTideResponse.Item> fetchLatestTideLevel(String stationId) {
         return fetchTideLevel(stationId, LocalDate.now(), null);
     }
 }
-

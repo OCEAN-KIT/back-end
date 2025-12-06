@@ -2,6 +2,7 @@ package com.ocean.piuda.environment.service;
 
 import com.ocean.piuda.environment.dto.EnvironmentSummaryRequest;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
+import reactor.core.publisher.Mono;
 
 /**
  * 해양 환경 요약 서비스 인터페이스
@@ -9,11 +10,10 @@ import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
 public interface EnvironmentSummaryService {
 
     /**
-     * 해양 환경 요약 조회
+     * 해양 환경 요약 조회 (Reactive)
      *
      * @param request 요청 파라미터 (lat/lon 또는 pointId)
-     * @return 환경 요약 정보
+     * @return 환경 요약 정보 Mono
      */
-    EnvironmentSummaryResponse getEnvironmentSummary(EnvironmentSummaryRequest request);
+    Mono<EnvironmentSummaryResponse> getEnvironmentSummary(EnvironmentSummaryRequest request);
 }
-

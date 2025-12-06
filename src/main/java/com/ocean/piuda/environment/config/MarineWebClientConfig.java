@@ -4,8 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.Duration;
-
 /**
  * 해양 환경 API용 WebClient 설정
  */
@@ -25,4 +23,3 @@ public class MarineWebClientConfig {
                 .build();
     }
 }
-

@@ -1,0 +1,710 @@
+
+================================================================================
+File Path: .\controller\MissionController.java
+================================================================================
+
+package com.ocean.piuda.mission.controller;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.enums.MissionStatus;
+import com.ocean.piuda.mission.dto.*;
+import com.ocean.piuda.mission.service.MissionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * Mission 관련 REST API 컨트롤러
+ */
+@RestController
+@RequestMapping("/api/missions")
+@RequiredArgsConstructor
+public class MissionController {
+
+    private final MissionService missionService;
+
+    /**
+     * 미션 생성 (ADMIN만 가능)
+     * POST /api/missions
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public MissionResponse createMission(@Valid @RequestBody MissionCreateRequest request) {
+        return missionService.createMission(request);
+    }
+
+    /**
+     * 미션 단건 조회 (모든 사용자 접근 가능)
+     * GET /api/missions/{id}
+     */
+    @GetMapping("/{id}")
+    public MissionResponse getMission(@PathVariable Long id) {
+        return missionService.getMission(id);
+    }
+
+    /**
+     * 미션 목록 조회 (필터링 지원, 모든 사용자 접근 가능)
+     * GET /api/missions?status=ACTIVE&targetBioGroup=FISH&regionName=포항&page=0&size=20
+     */
+    @GetMapping
+    public Page<MissionResponse> getMissions(
+            @RequestParam(required = false) MissionStatus status,
+            @RequestParam(required = false) BioGroup targetBioGroup,
+            @RequestParam(required = false) String regionName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        MissionSearchCondition condition = MissionSearchCondition.builder()
+                .status(status)
+                .targetBioGroup(targetBioGroup)
+                .regionName(regionName)
+                .build();
+
+        Pageable pageable = PageRequest.of(page, size);
+        return missionService.getMissions(condition, pageable);
+    }
+
+    /**
+     * 미션 수정 (ADMIN 또는 owner만 가능)
+     * PATCH /api/missions/{id}
+     */
+    @PatchMapping("/{id}")
+    public MissionResponse updateMission(
+            @PathVariable Long id,
+            @Valid @RequestBody MissionUpdateRequest request
+    ) {
+        return missionService.updateMission(id, request);
+    }
+
+    /**
+     * 미션 삭제 (ADMIN 또는 owner만 가능)
+     * DELETE /api/missions/{id}
+     */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMission(@PathVariable Long id) {
+        missionService.deleteMission(id);
+    }
+}
+
+
+
+================================================================================
+File Path: .\domain\Mission.java
+================================================================================
+
+package com.ocean.piuda.mission.domain;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.mission.enums.MissionStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "missions")
+@SuperBuilder(toBuilder = true)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+public class Mission extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BioGroup targetBioGroup;
+
+    @Column(nullable = false)
+    private Long ownerId;
+
+    @Column(nullable = false)
+    private Long pointId;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    private String regionName;
+
+    @Column(nullable = false)
+    private LocalDate startDate;
+
+    private LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MissionStatus status = MissionStatus.PLANNED;
+
+    private String coverMediaUrl;
+
+    public void update(MissionUpdater updater) {
+        if (updater.getTitle() != null) {
+            this.title = updater.getTitle();
+        }
+        if (updater.getTargetBioGroup() != null) {
+            this.targetBioGroup = updater.getTargetBioGroup();
+        }
+        if (updater.getPointId() != null) {
+            this.pointId = updater.getPointId();
+        }
+        if (updater.getDescription() != null) {
+            this.description = updater.getDescription();
+        }
+        if (updater.getRegionName() != null) {
+            this.regionName = updater.getRegionName();
+        }
+        if (updater.getStartDate() != null) {
+            this.startDate = updater.getStartDate();
+        }
+        if (updater.getEndDate() != null) {
+            this.endDate = updater.getEndDate();
+        }
+        if (updater.getStatus() != null) {
+            this.status = updater.getStatus();
+        }
+        if (updater.getCoverMediaUrl() != null) {
+            this.coverMediaUrl = updater.getCoverMediaUrl();
+        }
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    public static class MissionUpdater {
+        private final String title;
+        private final BioGroup targetBioGroup;
+        private final Long pointId;
+        private final String description;
+        private final String regionName;
+        private final LocalDate startDate;
+        private final LocalDate endDate;
+        private final MissionStatus status;
+        private final String coverMediaUrl;
+    }
+}
+
+
+
+================================================================================
+File Path: .\dto\MissionCreateRequest.java
+================================================================================
+
+package com.ocean.piuda.mission.dto;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.domain.Mission;
+import com.ocean.piuda.mission.enums.MissionStatus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
+
+public record MissionCreateRequest(
+        @NotBlank(message = "제목은 필수입니다")
+        @Size(max = 200, message = "제목은 200자 이하여야 합니다")
+        String title,
+
+        @NotNull(message = "대상 생물 분류는 필수입니다")
+        BioGroup targetBioGroup,
+
+        @NotNull(message = "포인트 ID는 필수입니다")
+        Long pointId,
+
+        String description,
+
+        String regionName,
+
+        @NotNull(message = "시작일은 필수입니다")
+        LocalDate startDate,
+
+        LocalDate endDate,
+
+        MissionStatus status,
+
+        String coverMediaUrl
+) {
+    public Mission toEntity(Long ownerId) {
+        return Mission.builder()
+                .title(title)
+                .targetBioGroup(targetBioGroup)
+                .ownerId(ownerId)
+                .pointId(pointId)
+                .description(description)
+                .regionName(regionName)
+                .startDate(startDate)
+                .endDate(endDate)
+                .status(status != null ? status : MissionStatus.PLANNED)
+                .coverMediaUrl(coverMediaUrl)
+                .build();
+    }
+}
+
+
+
+================================================================================
+File Path: .\dto\MissionResponse.java
+================================================================================
+
+package com.ocean.piuda.mission.dto;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.domain.Mission;
+import com.ocean.piuda.mission.enums.MissionStatus;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record MissionResponse(
+        Long id,
+        String title,
+        BioGroup targetBioGroup,
+        Long ownerId,
+        Long pointId,
+        String description,
+        String regionName,
+        LocalDate startDate,
+        LocalDate endDate,
+        MissionStatus status,
+        String coverMediaUrl,
+        LocalDateTime createdAt,
+        LocalDateTime modifiedAt
+) {
+    public static MissionResponse from(Mission mission) {
+        return new MissionResponse(
+                mission.getId(),
+                mission.getTitle(),
+                mission.getTargetBioGroup(),
+                mission.getOwnerId(),
+                mission.getPointId(),
+                mission.getDescription(),
+                mission.getRegionName(),
+                mission.getStartDate(),
+                mission.getEndDate(),
+                mission.getStatus(),
+                mission.getCoverMediaUrl(),
+                mission.getCreatedAt(),
+                mission.getModifiedAt()
+        );
+    }
+}
+
+
+
+================================================================================
+File Path: .\dto\MissionSearchCondition.java
+================================================================================
+
+package com.ocean.piuda.mission.dto;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.enums.MissionStatus;
+import lombok.Builder;
+
+@Builder
+public record MissionSearchCondition(
+        MissionStatus status,
+        BioGroup targetBioGroup,
+        String regionName
+) {}
+
+
+
+================================================================================
+File Path: .\dto\MissionUpdateRequest.java
+================================================================================
+
+package com.ocean.piuda.mission.dto;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.enums.MissionStatus;
+
+import java.time.LocalDate;
+
+public record MissionUpdateRequest(
+        String title,
+        BioGroup targetBioGroup,
+        Long pointId,
+        String description,
+        String regionName,
+        LocalDate startDate,
+        LocalDate endDate,
+        MissionStatus status,
+        String coverMediaUrl
+) {}
+
+
+
+================================================================================
+File Path: .\enums\MissionStatus.java
+================================================================================
+
+package com.ocean.piuda.mission.enums;
+
+public enum MissionStatus {
+    PLANNED,
+    ACTIVE,
+    CLOSED
+}
+
+
+
+================================================================================
+File Path: .\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.mission;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\repository\MissionRepository.java
+================================================================================
+
+package com.ocean.piuda.mission.repository;
+
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.mission.domain.Mission;
+import com.ocean.piuda.mission.enums.MissionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+public interface MissionRepository extends JpaRepository<Mission, Long>, JpaSpecificationExecutor<Mission> {
+
+    Page<Mission> findByStatus(MissionStatus status, Pageable pageable);
+
+    Page<Mission> findByTargetBioGroup(BioGroup targetBioGroup, Pageable pageable);
+}
+
+
+
+================================================================================
+File Path: .\service\MissionService.java
+================================================================================
+
+package com.ocean.piuda.mission.service;
+
+import com.ocean.piuda.mission.dto.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+public interface MissionService {
+
+    /**
+     * 미션 생성 (ADMIN만 가능)
+     */
+    MissionResponse createMission(MissionCreateRequest request);
+
+    /**
+     * 미션 단건 조회 (모든 사용자 접근 가능)
+     */
+    MissionResponse getMission(Long id);
+
+    /**
+     * 미션 목록 조회 (필터링 지원, 모든 사용자 접근 가능)
+     */
+    Page<MissionResponse> getMissions(MissionSearchCondition condition, Pageable pageable);
+
+    /**
+     * 미션 수정 (ADMIN 또는 owner만 가능)
+     */
+    MissionResponse updateMission(Long id, MissionUpdateRequest request);
+
+    /**
+     * 미션 삭제 (ADMIN 또는 owner만 가능)
+     */
+    void deleteMission(Long id);
+}
+
+
+
+================================================================================
+File Path: .\service\MissionServiceImpl.java
+================================================================================
+
+package com.ocean.piuda.mission.service;
+
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
+import com.ocean.piuda.mission.domain.Mission;
+import com.ocean.piuda.mission.dto.*;
+import com.ocean.piuda.mission.repository.MissionRepository;
+import com.ocean.piuda.security.jwt.enums.Role;
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class MissionServiceImpl implements MissionService {
+
+    private final MissionRepository missionRepository;
+    private final TokenUserService tokenUserService;
+
+    @Override
+    @Transactional
+    public MissionResponse createMission(MissionCreateRequest request) {
+        // 권한 체크: ADMIN만 가능
+        ensureAdmin();
+
+        Long ownerId = tokenUserService.getCurrentUserId();
+        Mission mission = request.toEntity(ownerId);
+        mission = missionRepository.save(mission);
+        return MissionResponse.from(mission);
+    }
+
+    @Override
+    public MissionResponse getMission(Long id) {
+        Mission mission = findMission(id);
+        return MissionResponse.from(mission);
+    }
+
+    @Override
+    public Page<MissionResponse> getMissions(MissionSearchCondition condition, Pageable pageable) {
+        Specification<Mission> spec = buildSpecification(condition);
+        return missionRepository.findAll(spec, pageable)
+                .map(MissionResponse::from);
+    }
+
+    @Override
+    @Transactional
+    public MissionResponse updateMission(Long id, MissionUpdateRequest request) {
+        Mission mission = findMission(id);
+
+        // 권한 체크: ADMIN 또는 owner만 가능
+        ensureOwnerOrAdmin(mission.getOwnerId());
+
+        Mission.MissionUpdater updater = Mission.MissionUpdater.builder()
+                .title(request.title())
+                .targetBioGroup(request.targetBioGroup())
+                .pointId(request.pointId())
+                .description(request.description())
+                .regionName(request.regionName())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .status(request.status())
+                .coverMediaUrl(request.coverMediaUrl())
+                .build();
+
+        mission.update(updater);
+        return MissionResponse.from(mission);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMission(Long id) {
+        Mission mission = findMission(id);
+
+        // 권한 체크: ADMIN 또는 owner만 가능
+        ensureOwnerOrAdmin(mission.getOwnerId());
+
+        missionRepository.delete(mission);
+    }
+
+    private Mission findMission(Long id) {
+        return missionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ExceptionType.MISSION_NOT_FOUND));
+    }
+
+    private void ensureAdmin() {
+        Role currentRole = tokenUserService.getCurrentUserRole();
+        if (currentRole != Role.ADMIN) {
+            throw new BusinessException(ExceptionType.MISSION_ACCESS_DENIED);
+        }
+    }
+
+    private void ensureOwnerOrAdmin(Long ownerId) {
+        Role currentRole = tokenUserService.getCurrentUserRole();
+        Long currentUserId = tokenUserService.getCurrentUserId();
+
+        if (currentRole != Role.ADMIN && !ownerId.equals(currentUserId)) {
+            throw new BusinessException(ExceptionType.MISSION_ACCESS_DENIED);
+        }
+    }
+
+    private Specification<Mission> buildSpecification(MissionSearchCondition condition) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (condition != null) {
+                if (condition.status() != null) {
+                    predicates.add(cb.equal(root.get("status"), condition.status()));
+                }
+                if (condition.targetBioGroup() != null) {
+                    predicates.add(cb.equal(root.get("targetBioGroup"), condition.targetBioGroup()));
+                }
+                if (condition.regionName() != null && !condition.regionName().isBlank()) {
+                    predicates.add(cb.like(
+                            cb.lower(root.get("regionName")),
+                            "%" + condition.regionName().toLowerCase() + "%"
+                    ));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+}
+
+

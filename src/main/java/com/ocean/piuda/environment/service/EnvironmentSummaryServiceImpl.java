@@ -3,32 +3,33 @@ package com.ocean.piuda.environment.service;
 import com.ocean.piuda.environment.client.KhoaTideClient;
 import com.ocean.piuda.environment.client.KmaSeaObsClient;
 import com.ocean.piuda.environment.client.NifsRisaClient;
-import com.ocean.piuda.environment.client.dto.KhoaTideResponse;
-import com.ocean.piuda.environment.client.dto.KmaSeaObsResponse;
-import com.ocean.piuda.environment.client.dto.NifsRisaResponse;
-import com.ocean.piuda.environment.domain.*;
+import com.ocean.piuda.divePoint.entity.DivePoint;
+import com.ocean.piuda.environment.domain.MarineStation;
+import com.ocean.piuda.environment.domain.StationSource;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryRequest;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
-import com.ocean.piuda.environment.repository.DivePointRepository;
+import com.ocean.piuda.divePoint.repository.DivePointRepository;
 import com.ocean.piuda.environment.repository.MarineStationRepository;
 import com.ocean.piuda.environment.util.DistanceCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
- * 해양 환경 요약 서비스 구현체
+ * 해양 환경 요약 서비스 구현체 (Reactive)
  */
 @Slf4j
 @Service
@@ -42,12 +43,75 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
     private final MarineStationRepository marineStationRepository;
     private final DivePointRepository divePointRepository;
 
-    private static final DateTimeFormatter NIFS_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
+    // [추가] 매직 넘버 추출: fallback으로 시도할 최대 관측소 수
+    private static final int MAX_FALLBACK_STATIONS = 9;
+
+    /**
+     * 한 요청 내에서 재사용할 관측소/좌표 컨텍스트
+     */
+    private record StationContext(
+            double lat,
+            double lon,
+            List<MarineStation> nifsStations,
+            List<MarineStation> kmaStations,
+            List<MarineStation> khoaStations,
+            MarineStation nifsNearest,
+            MarineStation kmaNearest,
+            MarineStation khoaNearest,
+            EnvironmentSummaryResponse.NearestStations nearestStations
+    ) {}
 
     @Override
-    public EnvironmentSummaryResponse getEnvironmentSummary(EnvironmentSummaryRequest request) {
-        // 1. 기준 좌표 확보
-        double lat, lon;
+    public Mono<EnvironmentSummaryResponse> getEnvironmentSummary(EnvironmentSummaryRequest request) {
+        // 1) DB 접근 / 관측소 리스트 조회 / 최근접 관측소 선택은 blocking → boundedElastic에서 수행
+        return Mono.fromCallable(() -> buildStationContext(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                // 2) 외부 API는 reactive로 병렬 호출
+                .flatMap(ctx -> {
+                    Mono<EnvironmentSummaryResponse.Water> waterMono =
+                            fetchWaterData(ctx.nifsNearest(), ctx.lat(), ctx.lon(), ctx.nifsStations());
+
+                    Mono<EnvironmentSummaryResponse.Wave> waveMono =
+                            fetchWaveData(ctx.kmaNearest(), ctx.lat(), ctx.lon(), ctx.kmaStations());
+
+                    Mono<EnvironmentSummaryResponse.Tide> tideMono =
+                            fetchTideData(ctx.khoaNearest());
+
+                    return Mono.zip(
+                            waterMono.defaultIfEmpty(EnvironmentSummaryResponse.Water.builder().build()),
+                            waveMono.defaultIfEmpty(EnvironmentSummaryResponse.Wave.builder().build()),
+                            tideMono.defaultIfEmpty(EnvironmentSummaryResponse.Tide.builder().build())
+                    ).map(tuple -> EnvironmentSummaryResponse.builder()
+                            .location(EnvironmentSummaryResponse.Location.builder()
+                                    .lat(ctx.lat())
+                                    .lon(ctx.lon())
+                                    .nearestStations(ctx.nearestStations())
+                                    .build())
+                            .timestamp(ZonedDateTime.now(ZONE_SEOUL))
+                            .water(tuple.getT1())
+                            .wave(tuple.getT2())
+                            .tide(tuple.getT3())
+                            .meta(EnvironmentSummaryResponse.Meta.builder()
+                                    .rawSources(List.of(
+                                            StationSource.NIFS_RISA.name(),
+                                            StationSource.KMA_SEA_OBS.name(),
+                                            StationSource.KHOA_SURVEY_TIDE.name()
+                                    ))
+                                    .note("실시간 관측자료는 품질 검증 전 데이터일 수 있음")
+                                    .build())
+                            .build());
+                });
+    }
+
+    /**
+     * 좌표/포인트 처리 + 관측소 리스트 조회 + 최근접 관측소 선택까지 한 번에 수행
+     */
+    private StationContext buildStationContext(EnvironmentSummaryRequest request) {
+        // 기준 좌표
+        double lat;
+        double lon;
+
         if (request.isPointIdBased()) {
             DivePoint point = divePointRepository.findById(request.pointId())
                     .orElseThrow(() -> new IllegalArgumentException("다이빙 포인트를 찾을 수 없습니다: " + request.pointId()));
@@ -62,86 +126,79 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
 
         log.info("환경 요약 조회 시작: lat={}, lon={}, pointId={}", lat, lon, request.pointId());
 
-        // 2. 가장 가까운 관측소 매칭
-        MarineStation nifsStation = findNearestStation(lat, lon, StationSource.NIFS_RISA);
-        MarineStation kmaStation = findNearestStation(lat, lon, StationSource.KMA_SEA_OBS);
-        MarineStation khoaStation = findNearestStation(lat, lon, StationSource.KHOA_SURVEY_TIDE);
+        // 관측소 리스트를 각 source별로 딱 한 번씩만 조회
+        List<MarineStation> nifsStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.NIFS_RISA);
+        List<MarineStation> kmaStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS);
+        List<MarineStation> khoaStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
 
-        if (nifsStation == null && kmaStation == null && khoaStation == null) {
+        MarineStation nifsNearest = findNearestStation(lat, lon, StationSource.NIFS_RISA, nifsStations, khoaStations);
+        MarineStation kmaNearest = findNearestStation(lat, lon, StationSource.KMA_SEA_OBS, kmaStations, null);
+        MarineStation khoaNearest = findNearestStation(lat, lon, StationSource.KHOA_SURVEY_TIDE, khoaStations, null);
+
+        if (nifsNearest == null && kmaNearest == null && khoaNearest == null) {
             log.warn("모든 관측소 데이터가 없습니다. 관측소 데이터를 초기화해야 합니다.");
         }
 
-        // 3. 각 API 호출 (비동기로 병렬 처리 가능하지만, 여기서는 순차 처리)
-        EnvironmentSummaryResponse.Water water = fetchWaterData(nifsStation, lat, lon);
-        EnvironmentSummaryResponse.Wave wave = fetchWaveData(kmaStation, lat, lon);
-        EnvironmentSummaryResponse.Tide tide = fetchTideData(khoaStation);
+        EnvironmentSummaryResponse.NearestStations nearestStations =
+                EnvironmentSummaryResponse.NearestStations.builder()
+                        .nifs(buildStationInfo(nifsNearest, lat, lon, khoaStations))
+                        .kma(buildStationInfo(kmaNearest, lat, lon, null))
+                        .khoa(buildStationInfo(khoaNearest, lat, lon, null))
+                        .build();
 
-        // 4. 최종 JSON 조립
-        return EnvironmentSummaryResponse.builder()
-                .location(EnvironmentSummaryResponse.Location.builder()
-                        .lat(lat)
-                        .lon(lon)
-                        .nearestStations(EnvironmentSummaryResponse.NearestStations.builder()
-                                .nifs(buildStationInfo(nifsStation, lat, lon))
-                                .kma(buildStationInfo(kmaStation, lat, lon))
-                                .khoa(buildStationInfo(khoaStation, lat, lon))
-                                .build())
-                        .build())
-                .timestamp(ZonedDateTime.now(ZoneId.of("Asia/Seoul")))
-                .water(water)
-                .wave(wave)
-                .tide(tide)
-                .meta(EnvironmentSummaryResponse.Meta.builder()
-                        .rawSources(List.of("NIFS_RISA", "KMA_SEA_OBS", "KHOA_SURVEY_TIDE"))
-                        .note("실시간 관측자료는 품질 검증 전 데이터일 수 있음")
-                        .build())
-                .build();
+        return new StationContext(
+                lat,
+                lon,
+                nifsStations,
+                kmaStations,
+                khoaStations,
+                nifsNearest,
+                kmaNearest,
+                khoaNearest,
+                nearestStations
+        );
     }
 
     /**
-     * 가장 가까운 관측소 찾기
-     * NIFS RISA의 경우 좌표가 없는 경우 KHOA 조위관측소 좌표를 참고하여 매칭
+     * 가장 가까운 관측소 찾기 (이미 조회한 리스트 활용)
      */
-    private MarineStation findNearestStation(double lat, double lon, StationSource source) {
-        List<MarineStation> stations = marineStationRepository.findByExternalSourceAndIsActiveTrue(source);
-
-        if (stations.isEmpty()) {
+    private MarineStation findNearestStation(double lat,
+                                             double lon,
+                                             StationSource source,
+                                             List<MarineStation> sourceStations,
+                                             List<MarineStation> khoaStationsForNifsFallback) {
+        if (sourceStations == null || sourceStations.isEmpty()) {
             log.warn("관측소 데이터가 없습니다: source={}, lat={}, lon={}", source, lat, lon);
             return null;
         }
 
-        // 위치 정보가 있는 관측소만 필터링 (0.0, 0.0 좌표 제외 - 임시 좌표)
-        List<MarineStation> stationsWithLocation = stations.stream()
+        // 유효한 좌표를 가진 관측소만
+        List<MarineStation> stationsWithLocation = sourceStations.stream()
                 .filter(station -> station.getLat() != null && station.getLon() != null)
                 .filter(station -> station.getLat() != 0.0 && station.getLon() != 0.0)
                 .toList();
 
-        // NIFS RISA의 경우 좌표가 없는 관측소가 있으면 KHOA 조위관측소 좌표를 참고하여 매칭
-        if (source == StationSource.NIFS_RISA && stationsWithLocation.isEmpty()) {
-            log.info("NIFS RISA 관측소에 좌표가 없어 KHOA 조위관측소 좌표를 참고하여 매칭 시도");
-            List<MarineStation> khoaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
-            List<MarineStation> khoaWithLocation = khoaStations.stream()
-                    .filter(station -> station.getLat() != null && station.getLon() != null)
-                    .filter(station -> station.getLat() != 0.0 && station.getLon() != 0.0)
-                    .toList();
+        // NIFS RISA 이고 좌표 있는 관측소가 없으면 KHOA 좌표를 참고해서 첫 관측소를 선택
+        if (source == StationSource.NIFS_RISA && stationsWithLocation.isEmpty()
+                && khoaStationsForNifsFallback != null && !khoaStationsForNifsFallback.isEmpty()) {
+            MarineStation nearestKhoa = khoaStationsForNifsFallback.stream()
+                    .filter(khoa -> khoa.getLat() != null && khoa.getLon() != null)
+                    .filter(khoa -> khoa.getLat() != 0.0 && khoa.getLon() != 0.0)
+                    .min(Comparator.comparingDouble(station ->
+                            DistanceCalculator.calculateDistance(lat, lon, station.getLat(), station.getLon())))
+                    .orElse(null);
 
-            if (!khoaWithLocation.isEmpty()) {
-                // 가장 가까운 KHOA 관측소 찾기
-                MarineStation nearestKhoa = khoaWithLocation.stream()
-                        .min(Comparator.comparingDouble(station ->
-                                DistanceCalculator.calculateDistance(lat, lon, station.getLat(), station.getLon())))
-                        .orElse(null);
-
-                if (nearestKhoa != null) {
-                    // NIFS 관측소는 좌표가 없으므로, 가장 가까운 KHOA 관측소를 기준으로 
-                    // 첫 번째 NIFS 관측소를 반환 (실제로는 모든 NIFS 관측소가 동일하게 처리됨)
-                    // 거리는 KHOA 관측소 기준으로 계산
-                    MarineStation nifsStation = stations.get(0);
-                    double distance = DistanceCalculator.calculateDistance(lat, lon, nearestKhoa.getLat(), nearestKhoa.getLon());
-                    log.info("NIFS RISA 관측소 매칭 (KHOA 좌표 참고): stationId={}, name={}, khoaStation={}, distance={}km",
-                            nifsStation.getExternalStationId(), nifsStation.getName(), nearestKhoa.getName(), Math.round(distance * 10.0) / 10.0);
-                    return nifsStation; // NIFS 관측소 반환 (관측소 ID는 유효하지만 좌표는 없음)
-                }
+            if (nearestKhoa != null) {
+                MarineStation nifsStation = sourceStations.get(0); // 좌표 없는 NIFS 중 첫 번째
+                double distance = DistanceCalculator.calculateDistance(
+                        lat, lon, nearestKhoa.getLat(), nearestKhoa.getLon());
+                log.info("NIFS RISA 관측소 매칭 (KHOA 좌표 참고): stationId={}, name={}, khoaStation={}, distance={}km",
+                        nifsStation.getExternalStationId(), nifsStation.getName(),
+                        nearestKhoa.getName(), Math.round(distance * 10.0) / 10.0);
+                return nifsStation;
             }
         }
 
@@ -156,287 +213,282 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
                 .orElse(null);
 
         if (nearest != null) {
-            double distance = DistanceCalculator.calculateDistance(lat, lon, nearest.getLat(), nearest.getLon());
-            log.debug("가장 가까운 관측소 찾음: source={}, stationId={}, name={}, distance={}km", 
-                    source, nearest.getExternalStationId(), nearest.getName(), Math.round(distance * 10.0) / 10.0);
+            double distance = DistanceCalculator.calculateDistance(
+                    lat, lon, nearest.getLat(), nearest.getLon());
+            log.debug("가장 가까운 관측소 찾음: source={}, stationId={}, name={}, distance={}km",
+                    source, nearest.getExternalStationId(), nearest.getName(),
+                    Math.round(distance * 10.0) / 10.0);
         }
 
         return nearest;
     }
 
     /**
-     * 수온/염분/용존산소 데이터 조회
-     * 관측소가 NIFS RISA API에서 제공하지 않으면 다음 가까운 관측소를 시도
-     * 
-     * @param station 첫 번째 관측소
-     * @param requestLat 요청한 위도
-     * @param requestLon 요청한 경도
+     * 수온/염분/용존산소 데이터 조회 (이미 조회한 NIFS 리스트로 fallback 수행)
      */
-    private EnvironmentSummaryResponse.Water fetchWaterData(MarineStation station, double requestLat, double requestLon) {
+    private Mono<EnvironmentSummaryResponse.Water> fetchWaterData(MarineStation station,
+                                                                  double requestLat,
+                                                                  double requestLon,
+                                                                  List<MarineStation> allNifsStations) {
         if (station == null) {
             log.warn("수온 데이터 조회 실패: 관측소가 null입니다");
-            return EnvironmentSummaryResponse.Water.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Water.builder().build());
         }
 
-        // 첫 번째 관측소 시도
-        EnvironmentSummaryResponse.Water result = fetchWaterDataFromStation(station);
-        
-        // 수온 데이터가 null인 경우 다음 가까운 관측소 시도
-        if (result.midLayerTemp() == null && result.surfaceTemp() == null) {
-            log.info("수온 데이터가 없어 다음 가까운 NIFS RISA 관측소를 시도합니다: stationId={}", station.getExternalStationId());
-            
-            // 요청 좌표 기준으로 다음 가까운 관측소 찾기
-            List<MarineStation> allNifsStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.NIFS_RISA);
-            List<MarineStation> stationsWithLocation = allNifsStations.stream()
-                    .filter(s -> s.getLat() != null && s.getLon() != null)
-                    .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .filter(s -> !s.getExternalStationId().equals(station.getExternalStationId())) // 현재 관측소 제외
-                    .toList();
-            
-            if (!stationsWithLocation.isEmpty()) {
-                // 요청 좌표 기준으로 거리순 정렬하여 다음 가까운 관측소 찾기
-                MarineStation nextStation = stationsWithLocation.stream()
-                        .min(Comparator.comparingDouble(s ->
-                                DistanceCalculator.calculateDistance(
-                                        requestLat, requestLon,
-                                        s.getLat(), s.getLon())))
-                        .orElse(null);
-                
-                if (nextStation != null) {
-                    double distance = DistanceCalculator.calculateDistance(
-                            requestLat, requestLon,
-                            nextStation.getLat(), nextStation.getLon());
-                    log.info("다음 가까운 NIFS RISA 관측소 시도: stationId={}, name={}, distance={}km",
-                            nextStation.getExternalStationId(), nextStation.getName(), Math.round(distance * 10.0) / 10.0);
-                    
-                    EnvironmentSummaryResponse.Water nextResult = fetchWaterDataFromStation(nextStation);
-                    
-                    // 다음 관측소에서 수온 데이터를 얻었으면 반환
-                    if (nextResult.midLayerTemp() != null || nextResult.surfaceTemp() != null) {
-                        log.info("다음 관측소에서 수온 데이터 획득: stationId={}, temp={}",
-                                nextStation.getExternalStationId(), nextResult.midLayerTemp());
-                        return nextResult;
-                    } else {
-                        log.warn("다음 관측소에서도 수온 데이터를 얻지 못했습니다: stationId={}", nextStation.getExternalStationId());
+        return fetchWaterDataFromStation(station)
+                .flatMap(firstResult -> {
+                    // 첫 관측소에 유효한 수온 데이터가 있으면 그대로 사용
+                    if (firstResult.midLayerTemp() != null || firstResult.surfaceTemp() != null) {
+                        return Mono.just(firstResult);
                     }
-                }
-            } else {
-                log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
-            }
-        }
-        
-        return result;
+
+                    log.info("수온 데이터가 없어 다음 가까운 NIFS RISA 관측소를 시도합니다: stationId={}",
+                            station.getExternalStationId());
+
+                    // 이미 조회한 NIFS 관측소 리스트에서 다음 가까운 관측소 찾기
+                    List<MarineStation> candidates = allNifsStations.stream()
+                            .filter(s -> s.getLat() != null && s.getLon() != null)
+                            .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
+                            .filter(s -> !Objects.equals(
+                                    s.getExternalStationId(), station.getExternalStationId()))
+                            .toList();
+
+                    if (candidates.isEmpty()) {
+                        log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    MarineStation nextStation = candidates.stream()
+                            .min(Comparator.comparingDouble(s ->
+                                    DistanceCalculator.calculateDistance(
+                                            requestLat, requestLon, s.getLat(), s.getLon())))
+                            .orElse(null);
+
+                    if (nextStation == null) {
+                        log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    double distance = DistanceCalculator.calculateDistance(
+                            requestLat, requestLon, nextStation.getLat(), nextStation.getLon());
+                    log.info("다음 가까운 NIFS RISA 관측소 시도: stationId={}, name={}, distance={}km",
+                            nextStation.getExternalStationId(), nextStation.getName(),
+                            Math.round(distance * 10.0) / 10.0);
+
+                    return fetchWaterDataFromStation(nextStation)
+                            .map(nextResult -> {
+                                if (nextResult.midLayerTemp() != null || nextResult.surfaceTemp() != null) {
+                                    log.info("다음 관측소에서 수온 데이터 획득: stationId={}, temp={}",
+                                            nextStation.getExternalStationId(), nextResult.midLayerTemp());
+                                    return nextResult;
+                                } else {
+                                    log.warn("다음 관측소에서도 수온 데이터를 얻지 못했습니다: stationId={}",
+                                            nextStation.getExternalStationId());
+                                    return firstResult;
+                                }
+                            });
+                });
     }
 
     /**
-     * 특정 관측소에서 수온/염분/용존산소 데이터 조회
+     * 특정 NIFS 관측소에서 수온/염분/용존산소 데이터 조회
      */
-    private EnvironmentSummaryResponse.Water fetchWaterDataFromStation(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Water> fetchWaterDataFromStation(MarineStation station) {
         String stationId = station.getExternalStationId();
         log.info("수온 데이터 조회 시작: stationId={}, name={}", stationId, station.getName());
 
-        try {
-            NifsRisaResponse.NifsRisaItem observation = nifsRisaClient
-                    .fetchLatestObservation(stationId)
-                    .block(); // 비동기 호출을 동기로 변환
+        return nifsRisaClient.fetchLatestObservation(stationId)
+                .map(observation -> {
+                    Double waterTemp = observation.getWaterTemp();
+                    log.info("수온 데이터 조회 성공: stationId={}, temp={}, layer={}",
+                            stationId, waterTemp, observation.getObsLayInt());
 
-            if (observation == null) {
-                log.warn("수온 데이터 조회 실패: observation이 null입니다. stationId={} (API에서 제공하지 않을 수 있음)", stationId);
-                return EnvironmentSummaryResponse.Water.builder().build();
-            }
-
-            Double waterTemp = observation.getWaterTemp();
-            log.info("수온 데이터 조회 성공: stationId={}, temp={}, layer={}", 
-                    stationId, waterTemp, observation.getObsLayInt());
-
-            return EnvironmentSummaryResponse.Water.builder()
-                    .midLayerTemp(waterTemp)
-                    .surfaceTemp(waterTemp) // 중층 데이터를 표층으로도 사용
-                    .salinity(observation.getSalinity()) // 현재 API에서 제공하지 않음
-                    .dissolvedOxygen(observation.getDissolvedOxygen()) // 현재 API에서 제공하지 않음
-                    .build();
-        } catch (Exception e) {
-            log.error("수온 데이터 조회 실패: stationId={}", stationId, e);
-            return EnvironmentSummaryResponse.Water.builder().build();
-        }
+                    return EnvironmentSummaryResponse.Water.builder()
+                            .midLayerTemp(waterTemp)
+                            .surfaceTemp(waterTemp) // 중층 데이터를 표층으로도 사용
+                            .salinity(observation.getSalinity())
+                            .dissolvedOxygen(observation.getDissolvedOxygen())
+                            .build();
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("수온 데이터 조회 실패: observation이 null입니다. stationId={} (API에서 제공하지 않을 수 있음)",
+                                        stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Water.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("수온 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Water.builder().build());
+                });
     }
 
     /**
      * 파고/풍향/풍속 데이터 조회
-     * 풍향/풍속이 null이면 최대 3번째 관측소까지 시도
-     * 
-     * @param station 첫 번째 관측소
-     * @param requestLat 요청한 위도
-     * @param requestLon 요청한 경도
+     * - 첫 관측소에서 파고만 있고 풍향/풍속이 없으면
+     * 미리 조회한 KMA 관측소 리스트를 이용해
+     * 최대 MAX_FALLBACK_STATIONS 개까지 다른 관측소에서 풍향/풍속을 보충
      */
-    private EnvironmentSummaryResponse.Wave fetchWaveData(MarineStation station, double requestLat, double requestLon) {
+    private Mono<EnvironmentSummaryResponse.Wave> fetchWaveData(MarineStation station,
+                                                                double requestLat,
+                                                                double requestLon,
+                                                                List<MarineStation> allKmaStations) {
         if (station == null) {
             log.warn("파고 데이터 조회 실패: 관측소가 null입니다");
-            return EnvironmentSummaryResponse.Wave.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Wave.builder().build());
         }
 
-        // 첫 번째 관측소 시도
-        EnvironmentSummaryResponse.Wave result = fetchWaveDataFromStation(station);
-        Double significantWaveHeight = result.significantWaveHeight(); // 첫 번째 관측소의 파고 저장
-        
-        // 풍향/풍속이 모두 null이고, 파고 데이터는 있는 경우 다음 가까운 관측소 시도 (최대 10개까지 또는 풍향/풍속 데이터를 찾을 때까지)
-        if (result.windDirectionDeg() == null && result.windSpeedMs() == null && significantWaveHeight != null) {
-            log.info("풍향/풍속 데이터가 없어 다음 가까운 KMA 관측소를 시도합니다: stationId={}", station.getExternalStationId());
-            
-            // 요청 좌표 기준으로 다음 가까운 관측소 찾기
-            List<MarineStation> allKmaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS);
-            List<MarineStation> stationsWithLocation = allKmaStations.stream()
-                    .filter(s -> s.getLat() != null && s.getLon() != null)
-                    .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .filter(s -> !s.getExternalStationId().equals(station.getExternalStationId())) // 현재 관측소 제외
-                    .sorted(Comparator.comparingDouble(s ->
-                            DistanceCalculator.calculateDistance(requestLat, requestLon, s.getLat(), s.getLon())))
-                    .toList();
-            
-            // 이미 시도한 관측소 목록
-            List<String> triedStationIds = new ArrayList<>();
-            triedStationIds.add(station.getExternalStationId());
-            
-            // 최대 9개 더 시도 (총 10개까지) 또는 풍향/풍속 데이터를 찾을 때까지
-            int maxAttempts = Math.min(9, stationsWithLocation.size());
-            for (int i = 0; i < maxAttempts; i++) {
-                MarineStation nextStation = stationsWithLocation.get(i);
-                
-                if (triedStationIds.contains(nextStation.getExternalStationId())) {
-                    continue;
-                }
-                
-                double distance = DistanceCalculator.calculateDistance(
-                        requestLat, requestLon,
-                        nextStation.getLat(), nextStation.getLon());
-                log.info("다음 가까운 KMA 관측소 시도 ({}/{}): stationId={}, name={}, distance={}km",
-                        i + 2, maxAttempts + 1, nextStation.getExternalStationId(), nextStation.getName(), Math.round(distance * 10.0) / 10.0);
-                
-                EnvironmentSummaryResponse.Wave nextResult = fetchWaveDataFromStation(nextStation);
-                triedStationIds.add(nextStation.getExternalStationId());
-                
-                // 다음 관측소에서 풍향/풍속 데이터를 얻었으면 병합
-                if (nextResult.windDirectionDeg() != null || nextResult.windSpeedMs() != null) {
-                    log.info("관측소에서 풍향/풍속 데이터 획득: stationId={}, wd={}, ws={}",
-                            nextStation.getExternalStationId(), nextResult.windDirectionDeg(), nextResult.windSpeedMs());
-                    return EnvironmentSummaryResponse.Wave.builder()
-                            .significantWaveHeight(significantWaveHeight) // 첫 번째 관측소의 파고 사용
-                            .windDirectionDeg(nextResult.windDirectionDeg())
-                            .windSpeedMs(nextResult.windSpeedMs())
-                            .build();
-                } else {
-                    log.warn("관측소에서 풍향/풍속 데이터를 얻지 못했습니다: stationId={}", nextStation.getExternalStationId());
-                }
-            }
-            
-            log.warn("{}개 관측소를 모두 시도했지만 풍향/풍속 데이터를 얻지 못했습니다.", maxAttempts + 1);
-        }
-        
-        return result;
+        return fetchWaveDataFromStation(station)
+                .flatMap(firstResult -> {
+                    Double significantWaveHeight = firstResult.significantWaveHeight();
+
+                    // 풍향/풍속이 있거나, 파고 자체도 없으면 더 시도하지 않음
+                    if ((firstResult.windDirectionDeg() != null || firstResult.windSpeedMs() != null)
+                            || significantWaveHeight == null) {
+                        return Mono.just(firstResult);
+                    }
+
+                    log.info("풍향/풍속 데이터가 없어 다음 가까운 KMA 관측소를 시도합니다: stationId={}",
+                            station.getExternalStationId());
+
+                    // 이미 조회한 KMA 관측소 리스트에서 fallback 후보 정렬
+                    List<MarineStation> candidates = allKmaStations.stream()
+                            .filter(s -> s.getLat() != null && s.getLon() != null)
+                            .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
+                            .filter(s -> !Objects.equals(
+                                    s.getExternalStationId(), station.getExternalStationId()))
+                            .sorted(Comparator.comparingDouble(s ->
+                                    DistanceCalculator.calculateDistance(
+                                            requestLat, requestLon, s.getLat(), s.getLon())))
+                            .limit(MAX_FALLBACK_STATIONS) // 1차 관측소 포함 총 10개가 되도록 제한
+                            .toList();
+
+                    if (candidates.isEmpty()) {
+                        log.warn("다음 가까운 KMA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    return Flux.fromIterable(candidates)
+                            .concatMap(nextStation -> {
+                                double distance = DistanceCalculator.calculateDistance(
+                                        requestLat, requestLon, nextStation.getLat(), nextStation.getLon());
+                                log.info("다음 가까운 KMA 관측소 시도: stationId={}, name={}, distance={}km",
+                                        nextStation.getExternalStationId(), nextStation.getName(),
+                                        Math.round(distance * 10.0) / 10.0);
+
+                                return fetchWaveDataFromStation(nextStation)
+                                        .filter(wave -> wave.windDirectionDeg() != null
+                                                || wave.windSpeedMs() != null)
+                                        .doOnNext(wave -> log.info("관측소에서 풍향/풍속 데이터 획득: stationId={}, wd={}, ws={}",
+                                                nextStation.getExternalStationId(),
+                                                wave.windDirectionDeg(), wave.windSpeedMs()));
+                            })
+                            .next()
+                            .map(waveWithWind -> EnvironmentSummaryResponse.Wave.builder()
+                                    .significantWaveHeight(significantWaveHeight)
+                                    .windDirectionDeg(waveWithWind.windDirectionDeg())
+                                    .windSpeedMs(waveWithWind.windSpeedMs())
+                                    .build())
+                            .switchIfEmpty(Mono.fromRunnable(() ->
+                                            log.warn("여러 관측소를 시도했지만 풍향/풍속 데이터를 얻지 못했습니다."))
+                                    .then(Mono.just(firstResult)));
+                });
     }
 
     /**
-     * 특정 관측소에서 파고/풍향/풍속 데이터 조회
+     * 특정 KMA 관측소에서 파고/풍향/풍속 데이터 조회
      */
-    private EnvironmentSummaryResponse.Wave fetchWaveDataFromStation(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Wave> fetchWaveDataFromStation(MarineStation station) {
         String stationId = station.getExternalStationId();
         log.info("파고 데이터 조회 시작: stationId={}, name={}", stationId, station.getName());
 
-        try {
-            KmaSeaObsResponse.Item observation = kmaSeaObsClient
-                    .fetchLatestObservation(stationId)
-                    .block();
+        return kmaSeaObsClient.fetchLatestObservation(stationId)
+                .map(observation -> {
+                    log.info("파고 데이터 조회 성공: stationId={}, wh={}, wd={}, ws={}",
+                            stationId, observation.getWh(), observation.getWd(), observation.getWs());
 
-            if (observation == null) {
-                log.warn("파고 데이터 조회 실패: observation이 null입니다. stationId={}", stationId);
-                return EnvironmentSummaryResponse.Wave.builder().build();
-            }
-
-            log.info("파고 데이터 조회 성공: stationId={}, wh={}, wd={}, ws={}", 
-                    stationId, observation.getWh(), observation.getWd(), observation.getWs());
-
-            return EnvironmentSummaryResponse.Wave.builder()
-                    .significantWaveHeight(observation.getWh())
-                    .windDirectionDeg(observation.getWd())
-                    .windSpeedMs(observation.getWs())
-                    .build();
-        } catch (Exception e) {
-            log.error("파고 데이터 조회 실패: stationId={}", stationId, e);
-            return EnvironmentSummaryResponse.Wave.builder().build();
-        }
+                    return EnvironmentSummaryResponse.Wave.builder()
+                            .significantWaveHeight(observation.getWh())
+                            .windDirectionDeg(observation.getWd())
+                            .windSpeedMs(observation.getWs())
+                            .build();
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("파고 데이터 조회 실패: observation이 null입니다. stationId={}", stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Wave.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("파고 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Wave.builder().build());
+                });
     }
 
     /**
-     * 조위 데이터 조회
+     * 조위 데이터 조회 (Reactive)
      */
-    private EnvironmentSummaryResponse.Tide fetchTideData(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Tide> fetchTideData(MarineStation station) {
         if (station == null) {
-            return EnvironmentSummaryResponse.Tide.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Tide.builder().build());
         }
 
-        try {
-            KhoaTideResponse.Item observation = khoaTideClient
-                    .fetchLatestTideLevel(station.getExternalStationId())
-                    .block();
+        String stationId = station.getExternalStationId();
 
-            if (observation == null) {
-                return EnvironmentSummaryResponse.Tide.builder().build();
-            }
+        return khoaTideClient.fetchLatestTideLevel(stationId)
+                .flatMap(observation -> {
+                    // 관측시각 파싱 (yyyyMMddHHmm)
+                    ZonedDateTime observedAt = null;
+                    if (observation.getObsDt() != null && observation.getObsDt().length() >= 12) {
+                        try {
+                            String dtStr = observation.getObsDt();
+                            LocalDate date = LocalDate.parse(dtStr.substring(0, 8),
+                                    DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            LocalTime time = LocalTime.parse(dtStr.substring(8, 12),
+                                    DateTimeFormatter.ofPattern("HHmm"));
+                            observedAt = ZonedDateTime.of(date, time, ZONE_SEOUL);
+                        } catch (Exception e) {
+                            log.warn("조위 관측시각 파싱 실패: {}", observation.getObsDt(), e);
+                        }
+                    }
 
-            // 관측시각 파싱 (yyyyMMddHHmm 형식)
-            ZonedDateTime observedAt = null;
-            if (observation.getObsDt() != null && observation.getObsDt().length() >= 12) {
-                try {
-                    String dtStr = observation.getObsDt();
-                    LocalDate date = LocalDate.parse(dtStr.substring(0, 8), DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    LocalTime time = LocalTime.parse(dtStr.substring(8, 12), DateTimeFormatter.ofPattern("HHmm"));
-                    observedAt = ZonedDateTime.of(date, time, ZoneId.of("Asia/Seoul"));
-                } catch (Exception e) {
-                    log.warn("조위 관측시각 파싱 실패: {}", observation.getObsDt(), e);
-                }
-            }
-
-            return EnvironmentSummaryResponse.Tide.builder()
-                    .tideLevelCm(observation.getTideLevel())
-                    .tideObservedAt(observedAt)
-                    .build();
-        } catch (Exception e) {
-            log.error("조위 데이터 조회 실패: stationId={}", station.getExternalStationId(), e);
-            return EnvironmentSummaryResponse.Tide.builder().build();
-        }
+                    return Mono.just(EnvironmentSummaryResponse.Tide.builder()
+                            .tideLevelCm(observation.getTideLevel())
+                            .tideObservedAt(observedAt)
+                            .build());
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("조위 데이터 조회 실패: observation이 null입니다. stationId={}", stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Tide.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("조위 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Tide.builder().build());
+                });
     }
 
     /**
-     * 관측소 정보 빌드
+     * 관측소 정보 + 거리 정보 빌드
+     * - NIFS 좌표가 0.0,0.0인 경우 KHOA 관측소 좌표를 참고해서 거리 계산
      */
-    private EnvironmentSummaryResponse.StationInfo buildStationInfo(MarineStation station, double lat, double lon) {
+    private EnvironmentSummaryResponse.StationInfo buildStationInfo(MarineStation station,
+                                                                    double lat,
+                                                                    double lon,
+                                                                    List<MarineStation> khoaStations) {
         if (station == null) {
             return null;
         }
 
-        // NIFS RISA 관측소의 경우 좌표가 없으면 (0.0, 0.0)이므로, KHOA 조위관측소 좌표를 참고하여 거리 계산
         double stationLat = station.getLat();
         double stationLon = station.getLon();
-        
-        if (station.getExternalSource() == StationSource.NIFS_RISA && 
-            (stationLat == 0.0 || stationLon == 0.0)) {
-            // 가장 가까운 KHOA 조위관측소 좌표를 참고하여 거리 계산
-            List<MarineStation> khoaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
-            List<MarineStation> khoaWithLocation = khoaStations.stream()
+
+        if (station.getExternalSource() == StationSource.NIFS_RISA
+                && (stationLat == 0.0 || stationLon == 0.0)
+                && khoaStations != null && !khoaStations.isEmpty()) {
+
+            MarineStation nearestKhoa = khoaStations.stream()
                     .filter(s -> s.getLat() != null && s.getLon() != null)
                     .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .toList();
+                    .min(Comparator.comparingDouble(s ->
+                            DistanceCalculator.calculateDistance(lat, lon, s.getLat(), s.getLon())))
+                    .orElse(null);
 
-            if (!khoaWithLocation.isEmpty()) {
-                MarineStation nearestKhoa = khoaWithLocation.stream()
-                        .min(Comparator.comparingDouble(s ->
-                                DistanceCalculator.calculateDistance(lat, lon, s.getLat(), s.getLon())))
-                        .orElse(null);
-
-                if (nearestKhoa != null) {
-                    stationLat = nearestKhoa.getLat();
-                    stationLon = nearestKhoa.getLon();
-                }
+            if (nearestKhoa != null) {
+                stationLat = nearestKhoa.getLat();
+                stationLon = nearestKhoa.getLon();
             }
         }
 
@@ -445,8 +497,7 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
         return EnvironmentSummaryResponse.StationInfo.builder()
                 .id(station.getExternalStationId())
                 .name(station.getName())
-                .distanceKm(Math.round(distance * 10.0) / 10.0) // 소수점 첫째자리까지
+                .distanceKm(Math.round(distance * 10.0) / 10.0)
                 .build();
     }
 }
-
