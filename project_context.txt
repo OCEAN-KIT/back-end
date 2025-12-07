@@ -26,7 +26,95 @@ assignees: ''
 
 
 ================================================================================
-File Path: .\ADMIN_README.md
+File Path: .\build.gradle
+================================================================================
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.6'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ocean'
+version = '0.0.1-SNAPSHOT'
+description = 'piuda2025'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+//	implementation 'org.springframework:spring-aspects'
+//	implementation 'org.springframework.retry:spring-retry'
+	implementation 'io.portone:server-sdk:0.19.2'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'com.h2database:h2'
+
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// cashBill (barobill)
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.apache.commons:commons-text:1.10.0'
+	implementation 'org.jsoup:jsoup:1.17.2'
+
+	// AWS SDK
+	implementation platform("software.amazon.awssdk:bom:2.29.43")
+	implementation "software.amazon.awssdk:s3"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
+	//open ai
+	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2' // for Deserializatio
+
+	// Google GenAI SDK
+	implementation 'com.google.genai:google-genai:1.17.0'
+	constraints {
+		implementation('com.google.protobuf:protobuf-java:3.25.5') {
+			because 'Fixes CVE-2024-7254' // google-genai:1.17.0 Vulnerabilities 반영
+		}
+
+	}
+
+	// fcm
+	implementation 'com.google.firebase:firebase-admin:9.7.0'
+
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+================================================================================
+File Path: .\docs\ADMIN_GUIDE.md
 ================================================================================
 
 # OceanCampus Admin API 문서
@@ -791,95 +879,7 @@ Authorization: Bearer {access_token}
 
 
 ================================================================================
-File Path: .\build.gradle
-================================================================================
-
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.6'
-	id 'io.spring.dependency-management' version '1.1.7'
-}
-
-group = 'com.ocean'
-version = '0.0.1-SNAPSHOT'
-description = 'piuda2025'
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
-
-repositories {
-	mavenCentral()
-}
-
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-//	implementation 'org.springframework:spring-aspects'
-//	implementation 'org.springframework.retry:spring-retry'
-	implementation 'io.portone:server-sdk:0.19.2'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//	runtimeOnly 'com.mysql:mysql-connector-j'
-	runtimeOnly 'org.postgresql:postgresql'
-	runtimeOnly 'com.h2database:h2'
-
-
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-
-	// security
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
-	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
-	// cashBill (barobill)
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.apache.commons:commons-text:1.10.0'
-	implementation 'org.jsoup:jsoup:1.17.2'
-
-	// AWS SDK
-	implementation platform("software.amazon.awssdk:bom:2.29.43")
-	implementation "software.amazon.awssdk:s3"
-
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// swagger
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
-
-	//open ai
-	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
-	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2' // for Deserializatio
-
-	// Google GenAI SDK
-	implementation 'com.google.genai:google-genai:1.17.0'
-	constraints {
-		implementation('com.google.protobuf:protobuf-java:3.25.5') {
-			because 'Fixes CVE-2024-7254' // google-genai:1.17.0 Vulnerabilities 반영
-		}
-
-	}
-
-	// fcm
-	implementation 'com.google.firebase:firebase-admin:9.7.0'
-
-}
-
-
-tasks.named('test') {
-	useJUnitPlatform()
-}
-
-
-================================================================================
-File Path: .\EXPORT_TEST_GUIDE.md
+File Path: .\docs\EXPORT_TEST_GUIDE.md
 ================================================================================
 
 # Export 기능 테스트 가이드
@@ -1173,6 +1173,424 @@ head -5 submissions_export.csv
 
 
 ================================================================================
+File Path: .\docs\marin_guide.md
+================================================================================
+
+# 해양 환경 요약 API 모듈
+
+OC Community(OC Underwater) 앱에서 사용하는 해양 환경 요약 정보를 제공하는 REST API 모듈입니다.
+
+## 📋 목차
+
+- [개요](#개요)
+- [기능](#기능)
+- [API 엔드포인트](#api-엔드포인트)
+- [외부 API 연동](#외부-api-연동)
+- [데이터베이스 스키마](#데이터베이스-스키마)
+- [설정](#설정)
+- [사용 방법](#사용-방법)
+- [테스트](#테스트)
+
+---
+
+## 개요
+
+이 모듈은 다음 3개의 외부 해양 관측 API를 통합하여 실시간 해양 환경 정보를 제공합니다:
+
+1. **NIFS RISA** - 국립수산과학원 실시간 해양수산환경 관측 (수온/염분/용존산소)
+2. **KHOA** - 국립해양조사원 조위 관측
+3. **KMA** - 기상청 해양기상종합관측 (파고/풍향/풍속)
+
+사용자가 제공한 좌표 또는 다이빙 포인트 ID를 기반으로 가장 가까운 관측소를 자동으로 매칭하여 통합 환경 정보를 반환합니다.
+
+---
+
+## 기능
+
+### 주요 기능
+
+- ✅ 좌표 기반 환경 요약 조회
+- ✅ 다이빙 포인트 ID 기반 환경 요약 조회
+- ✅ Haversine 공식을 사용한 거리 기반 관측소 자동 매칭
+- ✅ 3개 외부 API 통합 (NIFS, KHOA, KMA)
+- ✅ 실시간 관측 데이터 조회
+- ✅ 관측소 정보 및 거리 정보 포함
+
+### 제공 정보
+
+- **수온/염분/용존산소**: NIFS RISA 중층 데이터 우선 사용
+- **파고/풍향/풍속**: KMA 해양기상 관측 데이터
+- **조위**: KHOA 조위 관측 데이터
+- **관측소 정보**: 각 소스별 가장 가까운 관측소 및 거리
+
+---
+
+## API 엔드포인트
+
+### 환경 요약 조회
+
+**엔드포인트**: `GET /api/environment/summary`
+
+#### Query Parameters
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|------|------|
+| `lat` | Double | 조건부 | 위도 (한국 해역: 약 33 ~ 38도) |
+| `lon` | Double | 조건부 | 경도 (한국 해역: 약 124 ~ 132도) |
+| `pointId` | Long | 조건부 | 다이빙 포인트 ID |
+
+**참고**: `pointId`가 제공되면 `lat`/`lon`은 무시됩니다. `pointId`가 없으면 `lat`과 `lon`이 모두 필요합니다.
+
+#### 응답 예시
+
+```json
+{
+  "location": {
+    "lat": 36.3500,
+    "lon": 129.7833,
+    "nearestStations": {
+      "nifs": {
+        "id": "fjdfc",
+        "name": "평택 조위",
+        "distanceKm": 250.6
+      },
+      "kma": {
+        "id": "22106",
+        "name": "포항",
+        "distanceKm": 0.5
+      },
+      "khoa": {
+        "id": "DT_0009",
+        "name": "포항",
+        "distanceKm": 2.1
+      }
+    }
+  },
+  "timestamp": "2025-11-30T12:00:00+09:00",
+  "water": {
+    "midLayerTemp": 18.3,
+    "surfaceTemp": 17.9,
+    "salinity": null,
+    "dissolvedOxygen": null
+  },
+  "wave": {
+    "significantWaveHeight": 3.4,
+    "windDirectionDeg": 304,
+    "windSpeedMs": 14.0
+  },
+  "tide": {
+    "tideLevelCm": 87.0,
+    "tideObservedAt": "2025-11-30T11:50:00+09:00"
+  },
+  "meta": {
+    "rawSources": ["NIFS_RISA", "KMA_SEA_OBS", "KHOA_SURVEY_TIDE"],
+    "note": "실시간 관측자료는 품질 검증 전 데이터일 수 있음"
+  }
+}
+```
+
+**참고**: 
+- KMA 관측소는 **B 타입 (BUOY)**을 사용하면 풍향/풍속 데이터를 제공합니다.
+- C 타입 (파고BUOY) 관측소는 풍향/풍속 데이터가 없을 수 있습니다.
+- 예시 좌표는 포항 해역 (B 타입 관측소 22106 근처)입니다.
+
+#### 사용 예시
+
+**좌표 기반 조회 (포항 해역 - B 타입 관측소 사용):**
+```bash
+# 포항 해역 (B 타입 관측소 22106 근처)
+curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833"
+```
+
+**포인트 ID 기반 조회:**
+```bash
+curl -X GET "http://localhost:8080/api/environment/summary?pointId=1"
+```
+
+---
+
+## 외부 API 연동
+
+### 1. NIFS RISA (국립수산과학원)
+
+- **URL**: `https://www.nifs.go.kr/OpenAPI_json`
+- **API Key**: `application.yml`의 `marine.nifs.key` 설정값 사용
+- **제공 데이터**: 수온, 염분, 용존산소
+- **수층 우선순위**: 중층(2) → 표층(1) → 저층(3)
+
+### 2. KHOA 조위 관측 (국립해양조사원)
+
+- **URL**: `https://apis.data.go.kr/1192136/surveyTideLevel`
+- **API Key**: `application.yml`의 `marine.khoa.key-encoding` 설정값 사용 (URL Encoding)
+- **제공 데이터**: 조위(cm), 관측시각
+
+### 3. KMA 해양기상종합관측 (기상청)
+
+- **URL**: `https://apihub.kma.go.kr/api/typ01/url/sea_obs.php`
+- **API Key**: `application.yml`의 `marine.kma.key` 설정값 사용
+- **제공 데이터**: 파고(WH), 풍향(WD), 풍속(WS), 해수면 온도(TW)
+- **관측소 타입**:
+  - **B 타입 (BUOY)**: 파고, 풍향, 풍속, 해수온 모두 제공 ✅
+  - **C 타입 (파고BUOY)**: 파고, 해수온만 제공 (풍향/풍속 없음)
+  - **권장**: 풍향/풍속 데이터가 필요한 경우 B 타입 관측소 사용
+
+---
+
+## 데이터베이스 스키마
+
+### MarineStation (관측소)
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | BIGINT | PK, 자동증가 |
+| `external_source` | VARCHAR(50) | 외부 API 소스 (NIFS_RISA, KMA_SEA_OBS, KHOA_SURVEY_TIDE) |
+| `external_station_id` | VARCHAR(100) | 외부 API에서 사용하는 관측소 ID |
+| `name` | VARCHAR(200) | 관측소 이름 |
+| `lat` | DECIMAL(9,6) | 위도 |
+| `lon` | DECIMAL(9,6) | 경도 |
+| `is_active` | BOOLEAN | 활성화 여부 |
+| `created_at` | TIMESTAMP | 생성 시각 |
+| `modified_at` | TIMESTAMP | 수정 시각 |
+
+**인덱스**:
+- `idx_source_ext`: `(external_source, external_station_id)`
+- `idx_lat_lon`: `(lat, lon)`
+
+### MarineObservation (관측값)
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | BIGINT | PK, 자동증가 |
+| `station_id` | BIGINT | FK, 관측소 ID |
+| `observed_at` | TIMESTAMP WITH TIME ZONE | 관측 시각 |
+| `layer` | VARCHAR(50) | 수층 정보 |
+| `water_temp` | DECIMAL(5,2) | 수온 (℃) |
+| `salinity` | DECIMAL(5,2) | 염분 (psu) |
+| `dissolved_oxygen` | DECIMAL(5,2) | 용존산소 (mg/L) |
+| `wave_height` | DECIMAL(5,2) | 파고 (m) |
+| `wind_direction` | DECIMAL(5,2) | 풍향 (도) |
+| `wind_speed` | DECIMAL(5,2) | 풍속 (m/s) |
+| `tide_level` | DECIMAL(6,2) | 조위 (cm) |
+| `raw_payload` | TEXT | 원본 API 응답 JSON |
+| `created_at` | TIMESTAMP | 생성 시각 |
+| `modified_at` | TIMESTAMP | 수정 시각 |
+
+**인덱스**:
+- `idx_station_observed`: `(station_id, observed_at)`
+
+### DivePoint (다이빙 포인트)
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | BIGINT | PK, 자동증가 |
+| `name` | VARCHAR(200) | 포인트 이름 |
+| `lat` | DECIMAL(9,6) | 위도 |
+| `lon` | DECIMAL(9,6) | 경도 |
+| `region_name` | VARCHAR(200) | 지역명 |
+| `description` | TEXT | 설명 |
+| `created_at` | TIMESTAMP | 생성 시각 |
+| `modified_at` | TIMESTAMP | 수정 시각 |
+
+**인덱스**:
+- `idx_dive_point_lat_lon`: `(lat, lon)`
+
+---
+
+## 설정
+
+### application.yml 설정
+
+```yaml
+marine:
+  nifs:
+    key: qPwOeIrU-2511-VFADBV-1349
+  khoa:
+    key-encoding: "Mw1rP8Brftnpf8vM%2BR%2FA4E%2FA9lhDJDLGNHoe6hmcFPpqGvHF4HdQGXWYHsKSqw2%2Bz5BWuJGa1Db9jTqeHcWe0Q%3D%3D"
+    key-decoding: "Mw1rP8Brftnpf8vM+R/A4E/A9lhDJDLGNHoe6hmcFPpqGvHF4HdQGXWYHsKSqw2+z5BWuJGa1Db9jTqeHcWe0Q=="
+  kma:
+    key: WgCdt_1OQHOAnbf9TpBzWA
+```
+
+### WebClient 설정
+
+`MarineWebClientConfig`에서 해양 환경 API 호출용 WebClient를 설정합니다:
+- 타임아웃 설정
+- 최대 메모리 버퍼 크기: 10MB
+
+---
+
+## 사용 방법
+
+### 1. 서버 실행
+
+```bash
+./gradlew bootRun
+```
+
+### 2. 관측소 데이터 초기화
+
+**중요**: API를 사용하기 전에 관측소 데이터를 데이터베이스에 저장해야 합니다.
+
+관측소 데이터는 다음 방법으로 초기화할 수 있습니다:
+
+1. **NIFS RISA 관측소 목록 조회 및 저장**
+   - `NifsRisaClient.fetchStations()` 호출
+   - 응답 데이터를 `MarineStation` 엔티티로 변환하여 저장
+
+2. **KMA 해양기상 관측소 목록 조회 및 저장**
+   - KMA API에서 관측소 목록 조회
+   - `MarineStation` 엔티티로 저장
+
+3. **KHOA 조위 관측소 목록 조회 및 저장**
+   - KHOA API에서 관측소 목록 조회
+   - `MarineStation` 엔티티로 저장
+
+**초기화 스크립트 예시** (별도 구현 필요):
+
+```java
+@Service
+@RequiredArgsConstructor
+public class MarineStationInitializer {
+    private final NifsRisaClient nifsRisaClient;
+    private final MarineStationRepository stationRepository;
+    
+    @Transactional
+    public void initializeStations() {
+        // NIFS 관측소 목록 조회 및 저장
+        List<NifsRisaResponse.NifsRisaItem> stations = 
+            nifsRisaClient.fetchStations().block();
+        
+        stations.forEach(item -> {
+            MarineStation station = MarineStation.builder()
+                .externalSource(StationSource.NIFS_RISA)
+                .externalStationId(item.getObsPostId())
+                .name(item.getObsPostNm())
+                .lat(item.getObsLat())
+                .lon(item.getObsLon())
+                .isActive(true)
+                .build();
+            stationRepository.save(station);
+        });
+    }
+}
+```
+
+### 3. API 호출
+
+**좌표 기반 조회 (포항 해역 - B 타입 관측소 사용):**
+```bash
+# 포항 해역 (B 타입 관측소 22106 근처) - 풍향/풍속 데이터 포함
+curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833"
+```
+
+**다른 B 타입 관측소 예시:**
+```bash
+# 덕적도 해역 (B 타입 관측소 22101)
+curl -X GET "http://localhost:8080/api/environment/summary?lat=37.2361&lon=126.0188"
+
+# 칠발도 해역 (B 타입 관측소 22102)
+curl -X GET "http://localhost:8080/api/environment/summary?lat=34.7933&lon=125.7769"
+```
+
+**포인트 ID 기반 조회:**
+```bash
+curl -X GET "http://localhost:8080/api/environment/summary?pointId=1"
+```
+
+---
+
+## 테스트
+
+### 1. 단위 테스트
+
+각 클라이언트와 서비스의 단위 테스트를 작성할 수 있습니다:
+
+```java
+@SpringBootTest
+class EnvironmentSummaryServiceTest {
+    @Autowired
+    private EnvironmentSummaryService service;
+    
+    @Test
+    void testGetEnvironmentSummary() {
+        EnvironmentSummaryRequest request = EnvironmentSummaryRequest.builder()
+            .lat(36.3500)  // 포항 해역 위도 (B 타입 관측소 22106 근처)
+            .lon(129.7833)  // 포항 해역 경도 (B 타입 관측소 22106 근처)
+            .build();
+        
+        EnvironmentSummaryResponse response = 
+            service.getEnvironmentSummary(request);
+        
+        assertNotNull(response);
+        assertNotNull(response.getLocation());
+    }
+}
+```
+
+### 2. 통합 테스트
+
+실제 외부 API를 호출하는 통합 테스트:
+
+```bash
+# 1. 서버 실행
+./gradlew bootRun
+
+# 2. API 호출 테스트 (B 타입 관측소 사용 - 풍향/풍속 데이터 포함)
+curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833" \
+  -H "Content-Type: application/json"
+```
+
+### 3. 테스트 시나리오
+
+#### 성공 케이스
+- ✅ 유효한 좌표로 조회
+- ✅ 유효한 포인트 ID로 조회
+- ✅ 모든 외부 API가 정상 응답
+
+#### 실패 케이스
+- ❌ 좌표와 포인트 ID 모두 없음
+- ❌ 존재하지 않는 포인트 ID
+- ❌ 외부 API 호출 실패 (에러 처리 확인)
+- ❌ 관측소 데이터가 없는 경우
+
+---
+
+## 주의사항
+
+1. **관측소 데이터 초기화 필수**: API를 사용하기 전에 관측소 데이터를 데이터베이스에 저장해야 합니다.
+
+2. **외부 API 의존성**: 이 모듈은 외부 API의 가용성에 의존합니다. 외부 API가 다운되거나 응답이 지연될 수 있습니다.
+
+3. **데이터 품질**: 실시간 관측 데이터는 품질 검증 전 데이터일 수 있으므로, 실제 사용 시 주의가 필요합니다.
+
+4. **비동기 처리**: 현재 구현은 `block()`을 사용하여 동기적으로 처리하지만, 향후 완전한 비동기 처리로 개선할 수 있습니다.
+
+5. **에러 처리**: 외부 API 호출 실패 시 해당 필드는 `null`로 반환됩니다. 클라이언트에서 이를 고려해야 합니다.
+
+---
+
+## 향후 개선 사항
+
+- [ ] 완전한 비동기 처리 (Mono/Flux 활용)
+- [ ] 관측소 데이터 자동 동기화 스케줄러
+- [ ] 관측값 캐싱 (Redis 등)
+- [ ] 관측소 데이터 초기화 스크립트 자동화
+- [ ] 더 상세한 에러 메시지 및 상태 코드
+- [ ] API 응답 시간 모니터링
+
+---
+
+## 관련 파일
+
+- **엔티티**: `domain/MarineStation.java`, `domain/MarineObservation.java`, `domain/DivePoint.java`
+- **클라이언트**: `client/NifsRisaClient.java`, `client/KhoaTideClient.java`, `client/KmaSeaObsClient.java`
+- **서비스**: `service/EnvironmentSummaryServiceImpl.java`
+- **컨트롤러**: `controller/EnvironmentSummaryController.java`
+- **설정**: `config/MarineWebClientConfig.java`, `properties/MarineApiProperties.java`
+
+
+
+================================================================================
 File Path: .\ProjectExporter.java
 ================================================================================
 
@@ -1452,8 +1870,8 @@ File Path: .\src\main\java\com\ocean\piuda\admin\dashboard\controller\DashboardC
 
 package com.ocean.piuda.admin.dashboard.controller;
 
-import com.ocean.piuda.admin.dashboard.dto.DashboardSummaryResponse;
-import com.ocean.piuda.admin.dashboard.service.DashboardService;
+import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
+import com.ocean.piuda.admin.dashboard.service.AdminDashboardService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -1524,7 +1942,7 @@ File Path: .\src\main\java\com\ocean\piuda\admin\dashboard\service\DashboardServ
 package com.ocean.piuda.admin.dashboard.service;
 
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
-import com.ocean.piuda.admin.dashboard.dto.DashboardSummaryResponse;
+import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
 import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -5895,6 +6313,84 @@ public enum BioGroup {
 
 
 ================================================================================
+File Path: .\src\main\java\com\ocean\piuda\divePoint\entity\DivePoint.java
+================================================================================
+
+package com.ocean.piuda.divePoint.entity;
+
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+/**
+ * 오션캠퍼스 지정 다이빙 포인트로,
+ * 미션과 게시물 에서 참조한다
+ */
+@Entity
+@Table(name = "dive_points", indexes = {
+    @Index(name = "idx_dive_point_lat_lon", columnList = "lat, lon")
+})
+@SuperBuilder(toBuilder = true)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+public class DivePoint extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * 포인트 이름
+     */
+    @Column(nullable = false, length = 200)
+    private String name;
+
+    /**
+     * 위도
+     */
+    @Column(nullable = false, columnDefinition = "DECIMAL(9,6)")
+    private Double lat;
+
+    /**
+     * 경도
+     */
+    @Column(nullable = false, columnDefinition = "DECIMAL(9,6)")
+    private Double lon;
+
+    /**
+     * 지역명 (예: "포항 월포")
+     */
+    @Column(length = 200)
+    private String regionName;
+
+    /**
+     * 설명
+     */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+}
+
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\divePoint\repository\DivePointRepository.java
+================================================================================
+
+package com.ocean.piuda.divePoint.repository;
+
+import com.ocean.piuda.divePoint.entity.DivePoint;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/**
+ * 다이빙 포인트 Repository
+ */
+public interface DivePointRepository extends JpaRepository<DivePoint, Long> {
+}
+
+
+================================================================================
 File Path: .\src\main\java\com\ocean\piuda\environment\client\dto\KhoaTideResponse.java
 ================================================================================
 
@@ -6025,6 +6521,7 @@ package com.ocean.piuda.environment.client.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -6059,6 +6556,7 @@ public class NifsRisaResponse {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @Slf4j // 내부 클래스에 직접 로그 어노테이션 적용
     public static class NifsRisaItem {
         @JsonProperty("sta_cde")
         private String staCde; // 관측소 코드 (기존 obs_post_id)
@@ -6078,6 +6576,10 @@ public class NifsRisaResponse {
         @JsonProperty("obs_tim")
         private String obsTim; // 관측시각
 
+        // 파싱된 값 캐싱용 (JSON 직렬화 제외)
+        private transient Integer obsLayIntCached;
+        private transient Double waterTempCached;
+
         // 관측소 위치 정보는 별도 API로 가져와야 할 수 있음
         // 임시로 null 처리
         public Double getObsLat() {
@@ -6096,18 +6598,51 @@ public class NifsRisaResponse {
             return staNamKor;
         }
 
+        /**
+         * 수층(Integer) 파싱 + 캐싱
+         */
         public Integer getObsLayInt() {
+            if (obsLayIntCached != null) {
+                return obsLayIntCached;
+            }
+
+            if (obsLay == null || obsLay.isBlank()) {
+                return null;
+            }
+
             try {
-                return Integer.parseInt(obsLay);
-            } catch (Exception e) {
+                obsLayIntCached = Integer.parseInt(obsLay.trim());
+                return obsLayIntCached;
+            } catch (NumberFormatException e) {
+                log.warn("수층(obs_lay) 파싱 실패: sta_cde={}, obs_lay={}", staCde, obsLay);
                 return null;
             }
         }
 
+        /**
+         * 수온(Double) 파싱 + 캐싱
+         * - 빈 값 / -99 / -99.0 등은 데이터 없음으로 처리
+         */
         public Double getWaterTemp() {
+            if (waterTempCached != null) {
+                return waterTempCached;
+            }
+
+            if (wtrTmp == null || wtrTmp.isBlank()) {
+                return null;
+            }
+
+            String value = wtrTmp.trim();
+            if ("-99".equals(value) || "-99.0".equals(value)) {
+                // 관측값 없음
+                return null;
+            }
+
             try {
-                return Double.parseDouble(wtrTmp);
-            } catch (Exception e) {
+                waterTempCached = Double.parseDouble(value);
+                return waterTempCached;
+            } catch (NumberFormatException e) {
+                log.warn("수온(wtr_tmp) 파싱 실패: sta_cde={}, wtr_tmp={}", staCde, wtrTmp);
                 return null;
             }
         }
@@ -6124,7 +6659,6 @@ public class NifsRisaResponse {
 }
 
 
-
 ================================================================================
 File Path: .\src\main\java\com\ocean\piuda\environment\client\KhoaTideClient.java
 ================================================================================
@@ -6134,7 +6668,6 @@ package com.ocean.piuda.environment.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ocean.piuda.environment.client.dto.KhoaTideResponse;
 import com.ocean.piuda.environment.properties.MarineApiProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -6152,7 +6685,6 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class KhoaTideClient {
 
-    private static final String BASE_URL = "https://apis.data.go.kr/1192136/surveyTideLevel";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HHmm");
 
@@ -6160,46 +6692,56 @@ public class KhoaTideClient {
     private final MarineApiProperties properties;
     private final ObjectMapper objectMapper;
 
-    public KhoaTideClient(@Qualifier("marineWebClient") WebClient webClient,
-                         MarineApiProperties properties,
-                         ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public KhoaTideClient(
+            @Qualifier("marineWebClient") WebClient marineWebClient,
+            MarineApiProperties properties,
+            ObjectMapper objectMapper
+    ) {
+        this.webClient = marineWebClient;
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
     /**
      * 조위 관측값 조회
-     *
-     * @param stationId 관측소 ID
-     * @param date 관측일
-     * @param time 관측시각 (선택)
-     * @return 조위 관측값
      */
     public Mono<KhoaTideResponse.Item> fetchTideLevel(String stationId, LocalDate date, LocalTime time) {
         String dateStr = date.format(DATE_FORMATTER);
-        String timeStr = time != null ? time.format(TIME_FORMATTER) : "";
-
-        String url = String.format("%s?ServiceKey=%s&obs_post_id=%s&date=%s",
-                BASE_URL, properties.getKhoa().getKeyEncoding(), stationId, dateStr);
-
-        if (!timeStr.isEmpty()) {
-            url += "&time=" + timeStr;
-        }
 
         return webClient.get()
-                .uri(url)
+                .uri(uriBuilder -> {
+                    MarineApiProperties.Khoa config = properties.getKhoa();
+
+                    var builder = uriBuilder
+                            .scheme("https")
+                            .host(config.getHost())
+                            .path(config.getTidePath())
+                            .queryParam("ServiceKey", config.getKeyEncoding()) // 인코딩된 키 사용
+                            .queryParam("obs_post_id", stationId)
+                            .queryParam("date", dateStr)
+                            .queryParam("ResultType", "json"); // JSON 포맷 명시
+
+                    if (time != null) {
+                        builder.queryParam("time", time.format(TIME_FORMATTER));
+                    }
+
+                    return builder.build();
+                })
                 .retrieve()
+                // [확정] KHOA는 UTF-8이므로 String으로 받음
                 .bodyToMono(String.class)
-                .map(response -> {
+                .flatMap(response -> {
                     try {
-                        // 에러 응답 확인
-                        if (response == null || response.trim().isEmpty() || response.contains("unexpected errors")) {
+                        if (response == null || response.trim().isEmpty() || response.contains("Unexpected errors")) {
                             log.warn("KHOA API 오류 응답: stationId={}, response={}", stationId, response);
-                            return null;
+                            return Mono.empty();
                         }
 
-                        log.debug("KHOA 응답: {}", response.substring(0, Math.min(500, response.length())));
+                        // 정상 JSON 응답인지 확인 (간단한 체크)
+                        if (!response.trim().startsWith("{")) {
+                            log.warn("KHOA API 응답이 JSON이 아닙니다: stationId={}, response={}", stationId, response);
+                            return Mono.empty();
+                        }
 
                         KhoaTideResponse parsed = objectMapper.readValue(response, KhoaTideResponse.class);
                         if (parsed.getResponse() == null
@@ -6207,45 +6749,37 @@ public class KhoaTideClient {
                                 || parsed.getResponse().getBody().getItems() == null
                                 || parsed.getResponse().getBody().getItems().isEmpty()) {
                             log.warn("KHOA 조위 데이터가 없습니다: stationId={}, date={}", stationId, date);
-                            return null;
+                            return Mono.empty();
                         }
 
-                        // 최신 관측값 반환
-                        return parsed.getResponse().getBody().getItems().get(0);
+                        return Mono.just(parsed.getResponse().getBody().getItems().get(0));
                     } catch (Exception e) {
-                        log.error("KHOA 조위 응답 파싱 실패: stationId={}, date={}, response={}", 
-                                stationId, date, response != null ? response.substring(0, Math.min(500, response.length())) : "null", e);
-                        return null;
+                        log.error("KHOA 조위 응답 파싱 실패: stationId={}, date={}, response={}",
+                                stationId, date,
+                                response != null ? response.substring(0, Math.min(500, response.length())) : "null",
+                                e);
+                        return Mono.empty();
                     }
                 })
                 .doOnError(error -> {
-                    // 500 에러는 외부 서버 문제이므로 WARN 레벨로 로깅
-                    if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
-                        org.springframework.web.reactive.function.client.WebClientResponseException webClientError = 
-                                (org.springframework.web.reactive.function.client.WebClientResponseException) error;
+                    if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException webClientError) {
                         if (webClientError.getStatusCode().value() == 500) {
-                            log.warn("KHOA 조위 API 서버 오류 (500): stationId={}, 이는 외부 API 서버 문제입니다.", stationId);
+                            log.warn("KHOA 조위 API 서버 오류 (500): stationId={}, 외부 서버 문제 또는 키/파라미터 확인 필요.", stationId);
                         } else {
-                            log.error("KHOA 조위 API 호출 실패: stationId={}, status={}", stationId, webClientError.getStatusCode(), error);
+                            log.error("KHOA 조위 API 호출 실패: stationId={}, status={}",
+                                    stationId, webClientError.getStatusCode(), error);
                         }
                     } else {
                         log.error("KHOA 조위 API 호출 실패: stationId={}", stationId, error);
                     }
                 })
-                .onErrorResume(error -> {
-                    // 에러 발생 시 null 반환 (이미 doOnError에서 로깅됨)
-                    return Mono.justOrEmpty((KhoaTideResponse.Item) null);
-                });
+                .onErrorResume(error -> Mono.empty());
     }
 
-    /**
-     * 오늘의 최신 조위 관측값 조회
-     */
     public Mono<KhoaTideResponse.Item> fetchLatestTideLevel(String stationId) {
         return fetchTideLevel(stationId, LocalDate.now(), null);
     }
 }
-
 
 
 ================================================================================
@@ -6257,17 +6791,16 @@ package com.ocean.piuda.environment.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ocean.piuda.environment.client.dto.KmaSeaObsResponse;
 import com.ocean.piuda.environment.properties.MarineApiProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -6277,63 +6810,71 @@ import java.util.List;
 @Component
 public class KmaSeaObsClient {
 
-    private static final String BASE_URL = "https://apihub.kma.go.kr/api/typ01/url/sea_obs.php";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+    // [필수] KMA는 EUC-KR 인코딩을 사용함
+    private static final Charset EUC_KR = Charset.forName("EUC-KR");
 
     private final WebClient webClient;
     private final MarineApiProperties properties;
+    @SuppressWarnings("unused")
     private final ObjectMapper objectMapper;
 
-    public KmaSeaObsClient(@Qualifier("marineWebClient") WebClient webClient,
-                          MarineApiProperties properties,
-                          ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public KmaSeaObsClient(
+            @Qualifier("marineWebClient") WebClient marineWebClient,
+            MarineApiProperties properties,
+            ObjectMapper objectMapper
+    ) {
+        this.webClient = marineWebClient;
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
     /**
      * 해양기상 관측값 조회
-     *
-     * @param stationId 관측소 번호 (0이면 전체)
-     * @param dateTime 관측시각
-     * @return 관측값 리스트
      */
     public Mono<List<KmaSeaObsResponse.Item>> fetchObservations(String stationId, LocalDateTime dateTime) {
         String tm = dateTime.format(DATE_TIME_FORMATTER);
-        String url = String.format("%s?tm=%s&stn=%s&authKey=%s",
-                BASE_URL, tm, stationId, properties.getKma().getKey());
 
         return webClient.get()
-                .uri(url)
+                .uri(uriBuilder -> {
+                    MarineApiProperties.Kma config = properties.getKma();
+                    return uriBuilder
+                            .scheme("https")
+                            .host(config.getHost())
+                            .path(config.getSeaObsPath())
+                            .queryParam("tm", tm)
+                            .queryParam("stn", stationId)
+                            .queryParam("authKey", config.getKey())
+                            .build();
+                })
                 .retrieve()
-                .bodyToMono(String.class)
+                // [중요] byte[]로 받아서 EUC-KR로 디코딩
+                .bodyToMono(byte[].class)
+                .map(bytes -> new String(bytes, EUC_KR))
                 .map(response -> {
                     try {
-                        // KMA API는 텍스트 형식으로 응답
                         return parseKmaTextResponse(response, stationId);
                     } catch (Exception e) {
                         log.error("KMA 해양기상 응답 파싱 실패: stationId={}, dateTime={}", stationId, dateTime, e);
-                        log.debug("KMA 응답 내용: {}", response.substring(0, Math.min(500, response.length())));
+                        if (response != null) {
+                            log.debug("KMA 응답 내용: {}", response.substring(0, Math.min(500, response.length())));
+                        }
                         return new ArrayList<KmaSeaObsResponse.Item>();
                     }
                 })
                 .doOnError(error -> log.error("KMA 해양기상 API 호출 실패: stationId={}", stationId, error))
-                .onErrorResume(error -> Mono.just(new ArrayList<KmaSeaObsResponse.Item>()));
+                .onErrorResume(error -> Mono.just(new ArrayList<>()));
     }
 
-    /**
-     * 최신 해양기상 관측값 조회
-     */
     public Mono<KmaSeaObsResponse.Item> fetchLatestObservation(String stationId) {
         return fetchObservations(stationId, LocalDateTime.now())
-                .map(items -> items.isEmpty() ? null : items.get(0));
+                .flatMap(items -> items.isEmpty()
+                        ? Mono.empty()
+                        : Mono.just(items.get(0)));
     }
 
     /**
      * KMA 텍스트 형식 응답 파싱
-     * 형식: B, 202511261200, 22101, 관측소명, 126.01880000, 37.23610000, 0.5, 284, 2.2, 4.2, 15.2, 8.9, 1026.3, 49.0, ,=
-     * 컬럼: 타입, 시각, 관측소ID, 관측소명, 경도, 위도, WH(파고), WD(풍향), WS(풍속), GST, TW(해수온), TA, PA, HM, ...
      */
     private List<KmaSeaObsResponse.Item> parseKmaTextResponse(String text, String targetStationId) {
         List<KmaSeaObsResponse.Item> items = new ArrayList<>();
@@ -6346,12 +6887,10 @@ public class KmaSeaObsClient {
         String[] lines = text.split("\n");
         for (String line : lines) {
             line = line.trim();
-            // 주석이나 헤더 라인 건너뛰기
             if (line.startsWith("#") || line.isEmpty() || line.startsWith("START") || line.startsWith("END")) {
                 continue;
             }
 
-            // 데이터 라인 파싱 (B 또는 C로 시작)
             if (line.startsWith("B,") || line.startsWith("C,")) {
                 try {
                     String[] parts = line.split(",");
@@ -6360,7 +6899,6 @@ public class KmaSeaObsClient {
                     }
 
                     String stn = parts[2].trim();
-                    // 특정 관측소만 조회하는 경우 필터링
                     if (targetStationId != null && !targetStationId.equals("0") && !targetStationId.equals(stn)) {
                         continue;
                     }
@@ -6370,7 +6908,6 @@ public class KmaSeaObsClient {
                     item.setStnNm(parts[3].trim());
                     item.setTm(parts[1].trim());
 
-                    // 경도, 위도
                     try {
                         item.setLon(Double.parseDouble(parts[4].trim()));
                         item.setLat(Double.parseDouble(parts[5].trim()));
@@ -6378,8 +6915,7 @@ public class KmaSeaObsClient {
                         log.warn("좌표 파싱 실패: {}", line);
                     }
 
-                    // WH (파고), WD (풍향), WS (풍속), TW (해수온)
-                    // 컬럼 순서: TP(0), TM(1), STN_ID(2), STN_KO(3), LON(4), LAT(5), WH(6), WD(7), WS(8), WS_GST(9), TW(10), TA(11), PA(12), HM(13)
+                    // WH
                     try {
                         String whStr = parts[6].trim();
                         if (!whStr.equals("-99.0") && !whStr.equals("-99") && !whStr.isEmpty()) {
@@ -6389,6 +6925,7 @@ public class KmaSeaObsClient {
                         log.debug("파고(WH) 파싱 실패: stn={}, value={}", stn, parts[6]);
                     }
 
+                    // WD
                     try {
                         String wdStr = parts[7].trim();
                         if (!wdStr.equals("-99") && !wdStr.equals("-99.0") && !wdStr.isEmpty()) {
@@ -6398,19 +6935,17 @@ public class KmaSeaObsClient {
                         log.debug("풍향(WD) 파싱 실패: stn={}, value={}", stn, parts[7]);
                     }
 
+                    // WS
                     try {
                         String wsStr = parts[8].trim();
                         if (!wsStr.equals("-99.0") && !wsStr.equals("-99") && !wsStr.isEmpty()) {
-                            Double ws = Double.parseDouble(wsStr);
-                            item.setWs(ws);
-                            log.debug("풍속(WS) 파싱 성공: stn={}, ws={}", stn, ws);
-                        } else {
-                            log.debug("풍속(WS) 데이터 없음: stn={}, value={}", stn, wsStr);
+                            item.setWs(Double.parseDouble(wsStr));
                         }
                     } catch (Exception e) {
                         log.warn("풍속(WS) 파싱 실패: stn={}, value={}, error={}", stn, parts[8], e.getMessage());
                     }
 
+                    // TW
                     try {
                         String twStr = parts[10].trim();
                         if (!twStr.equals("-99.0") && !twStr.equals("-99") && !twStr.isEmpty()) {
@@ -6432,7 +6967,6 @@ public class KmaSeaObsClient {
 }
 
 
-
 ================================================================================
 File Path: .\src\main\java\com\ocean\piuda\environment\client\NifsRisaClient.java
 ================================================================================
@@ -6441,18 +6975,15 @@ package com.ocean.piuda.environment.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ocean.piuda.environment.client.dto.NifsRisaResponse;
-import com.ocean.piuda.environment.domain.StationSource;
 import com.ocean.piuda.environment.properties.MarineApiProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.time.ZonedDateTime;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -6462,17 +6993,20 @@ import java.util.List;
 @Component
 public class NifsRisaClient {
 
-    private static final String BASE_URL = "https://www.nifs.go.kr/bweb/OpenAPI_json";
     private static final List<Integer> LAYER_PRIORITY = List.of(2, 1, 3); // 중층 -> 표층 -> 저층 순
+    // [필수] NIFS는 EUC-KR 인코딩을 사용함 (헤더도 없음)
+    private static final Charset EUC_KR = Charset.forName("EUC-KR");
 
     private final WebClient webClient;
     private final MarineApiProperties properties;
     private final ObjectMapper objectMapper;
 
-    public NifsRisaClient(@Qualifier("marineWebClient") WebClient webClient,
-                         MarineApiProperties properties,
-                         ObjectMapper objectMapper) {
-        this.webClient = webClient;
+    public NifsRisaClient(
+            @Qualifier("marineWebClient") WebClient marineWebClient,
+            MarineApiProperties properties,
+            ObjectMapper objectMapper
+    ) {
+        this.webClient = marineWebClient;
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
@@ -6481,12 +7015,21 @@ public class NifsRisaClient {
      * 관측소 목록 조회
      */
     public Mono<List<NifsRisaResponse.NifsRisaItem>> fetchStations() {
-        String url = String.format("%s?id=risaList&key=%s", BASE_URL, properties.getNifs().getKey());
-
         return webClient.get()
-                .uri(url)
+                .uri(uriBuilder -> {
+                    MarineApiProperties.Nifs config = properties.getNifs();
+                    return uriBuilder
+                            .scheme("https")
+                            .host(config.getHost())
+                            .path(config.getRisaPath())
+                            .queryParam("id", "risaList")
+                            .queryParam("key", config.getKey())
+                            .build();
+                })
                 .retrieve()
-                .bodyToMono(String.class)
+                // [중요] byte[]로 받아서 EUC-KR로 디코딩
+                .bodyToMono(byte[].class)
+                .map(bytes -> new String(bytes, EUC_KR))
                 .map(response -> {
                     try {
                         NifsRisaResponse parsed = objectMapper.readValue(response, NifsRisaResponse.class);
@@ -6495,81 +7038,87 @@ public class NifsRisaClient {
                         }
                         return new ArrayList<NifsRisaResponse.NifsRisaItem>();
                     } catch (Exception e) {
-                        log.error("NIFS RISA 응답 파싱 실패: {}", response.substring(0, Math.min(200, response.length())), e);
+                        String preview = response != null
+                                ? response.substring(0, Math.min(200, response.length()))
+                                : "null";
+                        log.error("NIFS RISA 응답 파싱 실패: {}", preview, e);
                         return new ArrayList<NifsRisaResponse.NifsRisaItem>();
                     }
                 })
                 .doOnError(error -> log.error("NIFS RISA API 호출 실패", error))
-                .onErrorResume(error -> Mono.just(new ArrayList<NifsRisaResponse.NifsRisaItem>()));
+                .onErrorResume(error -> Mono.just(new ArrayList<>()));
     }
 
     /**
      * 특정 관측소의 최신 관측값 조회
-     * obs_lay 우선순위: 2(중층) -> 1(표층) -> 3(저층)
-     * 
-     * 주의: NIFS RISA API는 sta_cde 파라미터를 넣어도 모든 관측소 데이터를 반환하므로,
-     * 응답에서 해당 관측소만 필터링해야 함
      */
     public Mono<NifsRisaResponse.NifsRisaItem> fetchLatestObservation(String stationId) {
-        String url = String.format("%s?id=risaList&key=%s&sta_cde=%s",
-                BASE_URL, properties.getNifs().getKey(), stationId);
-
         return webClient.get()
-                .uri(url)
+                .uri(uriBuilder -> {
+                    MarineApiProperties.Nifs config = properties.getNifs();
+                    return uriBuilder
+                            .scheme("https")
+                            .host(config.getHost())
+                            .path(config.getRisaPath())
+                            .queryParam("id", "risaList")
+                            .queryParam("key", config.getKey())
+                            .queryParam("sta_cde", stationId)
+                            .build();
+                })
                 .retrieve()
-                .bodyToMono(String.class)
+                // [중요] byte[]로 받아서 EUC-KR로 디코딩
+                .bodyToMono(byte[].class)
+                .map(bytes -> new String(bytes, EUC_KR))
                 .flatMap(response -> {
                     try {
                         NifsRisaResponse parsed = objectMapper.readValue(response, NifsRisaResponse.class);
-                        if (parsed.getBody() == null || parsed.getBody().getItem() == null || parsed.getBody().getItem().isEmpty()) {
+                        if (parsed.getBody() == null || parsed.getBody().getItem() == null
+                                || parsed.getBody().getItem().isEmpty()) {
                             log.warn("NIFS RISA API 응답이 비어있습니다: stationId={}", stationId);
                             return Mono.empty();
                         }
 
                         List<NifsRisaResponse.NifsRisaItem> allItems = parsed.getBody().getItem();
-                        
-                        // 해당 관측소의 데이터만 필터링 (sta_cde로 매칭)
                         List<NifsRisaResponse.NifsRisaItem> stationItems = allItems.stream()
                                 .filter(item -> stationId.equals(item.getStaCde()))
                                 .toList();
 
                         if (stationItems.isEmpty()) {
-                            log.warn("NIFS RISA API에서 해당 관측소 데이터를 찾을 수 없습니다: stationId={}, 전체 관측소 수={}", 
+                            log.warn("NIFS RISA API에서 해당 관측소 데이터를 찾을 수 없습니다: stationId={}, 전체 관측소 수={}",
                                     stationId, allItems.size());
                             return Mono.empty();
                         }
 
-                        // 우선순위에 따라 관측값 선택 (중층 -> 표층 -> 저층)
                         for (Integer layer : LAYER_PRIORITY) {
                             for (NifsRisaResponse.NifsRisaItem item : stationItems) {
                                 if (item.getObsLayInt() != null && item.getObsLayInt().equals(layer)) {
-                                    log.debug("NIFS RISA 관측값 조회 성공: stationId={}, layer={}, temp={}", 
+                                    log.debug("NIFS RISA 관측값 조회 성공: stationId={}, layer={}, temp={}",
                                             stationId, layer, item.getWaterTemp());
                                     return Mono.just(item);
                                 }
                             }
                         }
 
-                        // 우선순위에 맞는 레이어가 없으면 첫 번째 항목 반환
                         NifsRisaResponse.NifsRisaItem firstItem = stationItems.get(0);
-                        log.debug("NIFS RISA 관측값 조회 성공 (우선순위 레이어 없음): stationId={}, layer={}, temp={}", 
+                        log.debug("NIFS RISA 관측값 조회 성공 (우선순위 레이어 없음): stationId={}, layer={}, temp={}",
                                 stationId, firstItem.getObsLayInt(), firstItem.getWaterTemp());
                         return Mono.just(firstItem);
                     } catch (Exception e) {
-                        log.error("NIFS RISA 관측값 파싱 실패: stationId={}, response={}", stationId, 
-                                response.substring(0, Math.min(200, response.length())), e);
+                        String preview = response != null
+                                ? response.substring(0, Math.min(200, response.length()))
+                                : "null";
+                        log.error("NIFS RISA 관측값 파싱 실패: stationId={}, response={}", stationId, preview, e);
                         return Mono.empty();
                     }
                 })
                 .doOnError(error -> log.error("NIFS RISA 관측값 조회 실패: stationId={}", stationId, error))
                 .onErrorResume(error -> {
-                    log.warn("NIFS RISA 관측값 조회 에러 처리: stationId={}, error={} (관측소가 API에서 제공되지 않을 수 있음)", 
+                    log.warn("NIFS RISA 관측값 조회 에러 처리: stationId={}, error={} (관측소가 API에서 제공되지 않을 수 있음)",
                             stationId, error.getMessage());
                     return Mono.empty();
                 });
     }
 }
-
 
 
 ================================================================================
@@ -6581,8 +7130,6 @@ package com.ocean.piuda.environment.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.time.Duration;
 
 /**
  * 해양 환경 API용 WebClient 설정
@@ -6605,7 +7152,6 @@ public class MarineWebClientConfig {
 }
 
 
-
 ================================================================================
 File Path: .\src\main\java\com\ocean\piuda\environment\controller\EnvironmentSummaryController.java
 ================================================================================
@@ -6615,10 +7161,10 @@ package com.ocean.piuda.environment.controller;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryRequest;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
 import com.ocean.piuda.environment.service.EnvironmentSummaryService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 /**
  * 해양 환경 요약 API 컨트롤러
@@ -6632,17 +7178,12 @@ public class EnvironmentSummaryController {
 
     /**
      * 해양 환경 요약 조회
-     * 
+     *
      * GET /api/environment/summary?lat={lat}&lon={lon}
      * GET /api/environment/summary?pointId={pointId}
-     * 
-     * @param lat 위도 (선택, pointId가 있으면 무시)
-     * @param lon 경도 (선택, pointId가 있으면 무시)
-     * @param pointId 다이빙 포인트 ID (선택, 있으면 lat/lon 무시)
-     * @return 환경 요약 정보
      */
     @GetMapping("/summary")
-    public ResponseEntity<EnvironmentSummaryResponse> getEnvironmentSummary(
+    public Mono<ResponseEntity<EnvironmentSummaryResponse>> getEnvironmentSummary(
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lon,
             @RequestParam(required = false) Long pointId
@@ -6653,178 +7194,10 @@ public class EnvironmentSummaryController {
                 .pointId(pointId)
                 .build();
 
-        EnvironmentSummaryResponse response = environmentSummaryService.getEnvironmentSummary(request);
-        return ResponseEntity.ok(response);
+        return environmentSummaryService.getEnvironmentSummary(request)
+                .map(ResponseEntity::ok);
     }
 }
-
-
-
-================================================================================
-File Path: .\src\main\java\com\ocean\piuda\environment\domain\DivePoint.java
-================================================================================
-
-package com.ocean.piuda.environment.domain;
-
-import com.ocean.piuda.global.api.domain.BaseEntity;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-
-/**
- * 다이빙 포인트 엔티티
- * Mission에서 참조하는 다이빙 지점 정보
- */
-@Entity
-@Table(name = "dive_points", indexes = {
-    @Index(name = "idx_dive_point_lat_lon", columnList = "lat, lon")
-})
-@SuperBuilder(toBuilder = true)
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-public class DivePoint extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    /**
-     * 포인트 이름
-     */
-    @Column(nullable = false, length = 200)
-    private String name;
-
-    /**
-     * 위도
-     */
-    @Column(nullable = false, columnDefinition = "DECIMAL(9,6)")
-    private Double lat;
-
-    /**
-     * 경도
-     */
-    @Column(nullable = false, columnDefinition = "DECIMAL(9,6)")
-    private Double lon;
-
-    /**
-     * 지역명 (예: "포항 월포")
-     */
-    @Column(length = 200)
-    private String regionName;
-
-    /**
-     * 설명
-     */
-    @Column(columnDefinition = "TEXT")
-    private String description;
-}
-
-
-
-================================================================================
-File Path: .\src\main\java\com\ocean\piuda\environment\domain\MarineObservation.java
-================================================================================
-
-package com.ocean.piuda.environment.domain;
-
-import com.ocean.piuda.global.api.domain.BaseEntity;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-
-import java.time.ZonedDateTime;
-
-/**
- * 해양 관측값 엔티티
- * 모든 외부 API의 관측값을 통합하는 정규화된 엔티티
- */
-@Entity
-@Table(name = "marine_observations", indexes = {
-    @Index(name = "idx_station_observed", columnList = "station_id, observedAt")
-})
-@SuperBuilder(toBuilder = true)
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-public class MarineObservation extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    /**
-     * 관측소
-     */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "station_id", nullable = false)
-    private MarineStation station;
-
-    /**
-     * 관측 시각
-     */
-    @Column(nullable = false)
-    private ZonedDateTime observedAt;
-
-    /**
-     * 수층 정보 (예: "surface", "mid", "bottom", "2" 등)
-     */
-    @Column(length = 50)
-    private String layer;
-
-    // 수온/염분/용존산소
-    /**
-     * 수온 (℃)
-     */
-    @Column
-    private Double waterTemp;
-
-    /**
-     * 염분 (psu)
-     */
-    @Column
-    private Double salinity;
-
-    /**
-     * 용존산소 (mg/L)
-     */
-    @Column
-    private Double dissolvedOxygen;
-
-    // 파고/풍향/풍속
-    /**
-     * 파고 (m)
-     */
-    @Column
-    private Double waveHeight;
-
-    /**
-     * 풍향 (도)
-     */
-    @Column
-    private Double windDirection;
-
-    /**
-     * 풍속 (m/s)
-     */
-    @Column
-    private Double windSpeed;
-
-    // 조위
-    /**
-     * 조위 (cm)
-     */
-    @Column
-    private Double tideLevel;
-
-    /**
-     * 원본 API 응답 JSON (디버깅/감사용)
-     */
-    @Lob
-    @Column(columnDefinition = "TEXT")
-    private String rawPayload;
-}
-
 
 
 ================================================================================
@@ -7069,15 +7442,24 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * 해양 관측소 데이터 초기화
- * 애플리케이션 시작 시 외부 API에서 관측소 목록을 가져와 데이터베이스에 저장
+ * 애플리케이션 시작 시 외부 API 및 CSV에서 관측소 목록을 가져와 데이터베이스에 저장
+ *
+ * [주요 변경 사항]
+ * 1. 성능 최적화 (Batch Processing):
+ * - 기존: for문 내에서 매번 DB 조회(Select) 및 저장(Insert) -> N+1 문제 발생
+ * - 변경: 전체 ID 메모리 로드 -> 중복 검사 -> saveAll()로 일괄 저장
+ * 2. 예외 처리 강화:
+ * - CSV 파일이 없거나 API 호출 실패 시, 전체 로직이 중단되지 않고 해당 단계만 건너뛰도록 처리
+ * 3. CSV 인코딩 처리:
+ * - UTF-8 -> EUC-KR 순으로 시도 (한글 깨짐 방지)
+ * 4. KHOA 파일명 및 구조 변경:
+ * - 파일명: khoa-stations.csv
+ * - 컬럼: [0]ID, [1]이름, [2]위도, [3]경도
  */
 @Slf4j
 @Component
@@ -7095,43 +7477,41 @@ public class MarineStationInitializer implements CommandLineRunner {
         log.info("해양 관측소 데이터 초기화 시작...");
 
         try {
-            // NIFS RISA 관측소 데이터 초기화 (CSV 파일에서 읽기)
+            // 1. NIFS RISA 관측소 데이터 초기화 (CSV 파일: nifs-stations.csv)
             initializeNifsRisaStationsFromCsv();
 
-            // KMA 관측소 데이터 초기화
+            // 2. KMA 관측소 데이터 초기화 (API 호출)
             initializeKmaStations();
 
-            // KHOA 조위관측소 데이터 초기화 (CSV 파일에서 읽기)
+            // 3. KHOA 조위관측소 데이터 초기화 (CSV 파일: khoa-stations.csv)
             initializeKhoaStationsFromCsv();
 
         } catch (Exception e) {
-            log.error("해양 관측소 데이터 초기화 실패", e);
+            log.error("해양 관측소 데이터 초기화 중 전체 오류 발생", e);
         }
     }
 
     /**
-     * NIFS RISA 관측소 데이터 초기화
-     * 1. CSV 파일(관측소 정보.csv)에서 모든 관측소 좌표 정보 읽기
-     * 2. NIFS RISA API에서 관측소 목록 조회 (이름 매칭용)
-     * 3. DB에 저장: CSV의 모든 관측소를 저장 (API에서 제공하지 않더라도 좌표 기반 매칭을 위해)
+     * NIFS RISA 관측소 데이터 초기화 (Batch 최적화 적용)
      */
     private void initializeNifsRisaStationsFromCsv() {
-        // 기존 NIFS RISA 관측소 데이터 삭제 (좌표 업데이트를 위해)
-        marineStationRepository.deleteByExternalSource(StationSource.NIFS_RISA);
-        log.info("기존 NIFS RISA 관측소 데이터 삭제 완료.");
-
         try {
-            // 1. CSV 파일에서 모든 NIFS 관측소 좌표 정보 읽기
+            // 1. CSV 파일 읽기
             log.info("CSV 파일에서 NIFS 관측소 좌표 정보 읽기 중...");
             Map<String, NifsStationCsvRecord> csvStations = loadNifsStationsFromCsv();
+
+            if (csvStations.isEmpty()) {
+                log.info("NIFS 관측소 CSV 데이터가 없거나 파일을 찾을 수 없어 초기화를 건너뜁니다.");
+                return;
+            }
             log.info("CSV에서 {}개의 NIFS 관측소 좌표 정보 발견", csvStations.size());
 
-            // 2. NIFS RISA API에서 관측소 목록 조회 (이름 매칭용, 선택적)
-            Map<String, String> apiStationNames = new java.util.HashMap<>();
+            // 2. API 관측소 이름 매칭 (선택적)
+            Map<String, String> apiStationNames = new HashMap<>();
             try {
                 log.info("NIFS RISA API에서 관측소 목록 조회 중...");
                 List<NifsRisaResponse.NifsRisaItem> apiStations = nifsRisaClient.fetchStations().block();
-                
+
                 if (apiStations != null && !apiStations.isEmpty()) {
                     apiStations.stream()
                             .filter(item -> item.getStaCde() != null && !item.getStaCde().isEmpty())
@@ -7142,30 +7522,35 @@ public class MarineStationInitializer implements CommandLineRunner {
                 log.warn("NIFS RISA API에서 관측소 목록을 가져올 수 없습니다. CSV 데이터만 사용합니다: {}", e.getMessage());
             }
 
-            // 3. CSV의 모든 관측소를 DB에 저장
-            int savedCount = 0;
+            // 3. DB 중복 체크 (Batch) - 쿼리 1회 실행
+            Set<String> existingIds = marineStationRepository
+                    .findByExternalSourceAndIsActiveTrue(StationSource.NIFS_RISA)
+                    .stream()
+                    .map(MarineStation::getExternalStationId)
+                    .collect(Collectors.toSet());
+
+            // 4. 저장할 엔티티 생성
+            List<MarineStation> stationsToSave = new ArrayList<>();
             int apiMatchedCount = 0;
 
             for (NifsStationCsvRecord csvRecord : csvStations.values()) {
                 String stationId = csvRecord.stationId;
+
+                // 이미 존재하면 건너뜀
+                if (existingIds.contains(stationId)) {
+                    continue;
+                }
+
                 String stationName = csvRecord.stationName;
                 Double lat = csvRecord.lat;
                 Double lon = csvRecord.lon;
 
-                // 이미 존재하는지 확인
-                if (marineStationRepository
-                        .findByExternalSourceAndExternalStationId(StationSource.NIFS_RISA, stationId)
-                        .isPresent()) {
-                    continue;
-                }
-
-                // API에서 이름이 있으면 사용, 없으면 CSV 이름 사용
+                // API 이름 매칭
                 String finalName = apiStationNames.getOrDefault(stationId, stationName);
                 if (apiStationNames.containsKey(stationId)) {
                     apiMatchedCount++;
                 }
 
-                // NIFS RISA 관측소 저장
                 MarineStation station = MarineStation.builder()
                         .externalSource(StationSource.NIFS_RISA)
                         .externalStationId(stationId)
@@ -7175,17 +7560,17 @@ public class MarineStationInitializer implements CommandLineRunner {
                         .isActive(true)
                         .build();
 
-                try {
-                    marineStationRepository.save(station);
-                    savedCount++;
-                    log.debug("NIFS 관측소 저장: ID={}, name={}, lat={}, lon={}", 
-                            stationId, finalName, lat, lon);
-                } catch (Exception e) {
-                    log.error("NIFS 관측소 저장 실패: ID={}, 이름={}", stationId, finalName, e);
-                }
+                stationsToSave.add(station);
             }
 
-            log.info("NIFS RISA 관측소 데이터 저장 완료: 총 {}개 저장 (CSV 기준), {}개 API 이름 매칭", savedCount, apiMatchedCount);
+            // 5. 일괄 저장
+            if (!stationsToSave.isEmpty()) {
+                marineStationRepository.saveAll(stationsToSave);
+                log.info("NIFS RISA 관측소 데이터 신규 저장 완료: {}개 (API 이름 매칭: {}개)",
+                        stationsToSave.size(), apiMatchedCount);
+            } else {
+                log.info("NIFS RISA 관측소 데이터가 모두 최신입니다.");
+            }
 
         } catch (Exception e) {
             log.error("NIFS RISA 관측소 데이터 초기화 실패", e);
@@ -7193,338 +7578,268 @@ public class MarineStationInitializer implements CommandLineRunner {
     }
 
     /**
-     * NIFS 관측소 CSV 파일에서 좌표 정보 읽기
-     * CSV 형식: 해역코드, 해역, 관측소, 설치일자, 종료일자, 위도(°N), 경도(°E), ...
+     * KMA 관측소 데이터 초기화 (Batch 최적화 적용)
+     */
+    private void initializeKmaStations() {
+        try {
+            // 1. DB 중복 체크
+            Set<String> existingIds = marineStationRepository
+                    .findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS)
+                    .stream()
+                    .map(MarineStation::getExternalStationId)
+                    .collect(Collectors.toSet());
+
+            if (!existingIds.isEmpty()) {
+                log.info("KMA 관측소 데이터가 이미 {}개 존재합니다.", existingIds.size());
+            }
+
+            // 2. API 호출
+            List<KmaSeaObsResponse.Item> kmaItems = kmaSeaObsClient
+                    .fetchObservations("0", LocalDateTime.now())
+                    .block();
+
+            if (kmaItems == null || kmaItems.isEmpty()) {
+                log.warn("KMA 관측소 데이터를 가져올 수 없습니다.");
+                return;
+            }
+
+            log.info("KMA API에서 관측소 {}개 발견", kmaItems.size());
+
+            // 3. 중복 제거 및 엔티티 변환
+            Map<String, KmaSeaObsResponse.Item> uniqueStations = kmaItems.stream()
+                    .filter(item -> item.getStn() != null && item.getLat() != null && item.getLon() != null)
+                    .collect(Collectors.toMap(
+                            KmaSeaObsResponse.Item::getStn,
+                            item -> item,
+                            (existing, replacement) -> existing
+                    ));
+
+            List<MarineStation> stationsToSave = new ArrayList<>();
+
+            for (KmaSeaObsResponse.Item item : uniqueStations.values()) {
+                if (existingIds.contains(item.getStn())) {
+                    continue;
+                }
+
+                MarineStation station = MarineStation.builder()
+                        .externalSource(StationSource.KMA_SEA_OBS)
+                        .externalStationId(item.getStn())
+                        .name(item.getStnNm() != null ? item.getStnNm() : "KMA_" + item.getStn())
+                        .lat(item.getLat())
+                        .lon(item.getLon())
+                        .isActive(true)
+                        .build();
+                stationsToSave.add(station);
+            }
+
+            // 4. 일괄 저장
+            if (!stationsToSave.isEmpty()) {
+                marineStationRepository.saveAll(stationsToSave);
+                log.info("{}개의 KMA 신규 관측소 데이터 저장 완료", stationsToSave.size());
+            } else {
+                log.info("KMA 관측소 데이터가 모두 최신입니다.");
+            }
+
+        } catch (Exception e) {
+            log.error("KMA 관측소 데이터 초기화 실패", e);
+        }
+    }
+
+    /**
+     * KHOA 조위관측소 데이터 초기화 (Batch 최적화 적용)
+     */
+    private void initializeKhoaStationsFromCsv() {
+        try {
+            // 1. DB 중복 체크
+            Set<String> existingIds = marineStationRepository
+                    .findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE)
+                    .stream()
+                    .map(MarineStation::getExternalStationId)
+                    .collect(Collectors.toSet());
+
+            if (!existingIds.isEmpty()) {
+                log.info("KHOA 조위관측소 데이터가 이미 {}개 존재합니다.", existingIds.size());
+            }
+
+            // 2. CSV 읽기
+            log.info("CSV 파일에서 KHOA 조위관측소 위치 정보 읽기 중...");
+            List<CsvStationRecord> csvRecords = loadCsvStations();
+
+            if (csvRecords.isEmpty()) {
+                log.info("KHOA 조위관측소 CSV 데이터가 없거나 파일을 찾을 수 없어 초기화를 건너뜁니다.");
+                return;
+            }
+            log.info("CSV에서 {}개의 조위관측소 위치 정보 발견", csvRecords.size());
+
+            // 3. 엔티티 생성
+            List<MarineStation> stationsToSave = new ArrayList<>();
+
+            for (CsvStationRecord csvRecord : csvRecords) {
+                if (existingIds.contains(csvRecord.stationId)) {
+                    continue;
+                }
+
+                if (csvRecord.lat == null || csvRecord.lon == null ||
+                        csvRecord.lat == 0.0 || csvRecord.lon == 0.0) {
+                    log.warn("유효하지 않은 좌표: stationId={}, lat={}, lon={}",
+                            csvRecord.stationId, csvRecord.lat, csvRecord.lon);
+                    continue;
+                }
+
+                MarineStation station = MarineStation.builder()
+                        .externalSource(StationSource.KHOA_SURVEY_TIDE)
+                        .externalStationId(csvRecord.stationId)
+                        .name(csvRecord.nameKor != null ? csvRecord.nameKor : csvRecord.nameEng)
+                        .lat(csvRecord.lat)
+                        .lon(csvRecord.lon)
+                        .isActive(true)
+                        .build();
+
+                stationsToSave.add(station);
+            }
+
+            // 4. 일괄 저장
+            if (!stationsToSave.isEmpty()) {
+                marineStationRepository.saveAll(stationsToSave);
+                log.info("KHOA 조위관측소 데이터 신규 저장 완료: 총 {}개", stationsToSave.size());
+            } else {
+                log.info("KHOA 조위관측소 데이터가 모두 최신입니다.");
+            }
+
+        } catch (Exception e) {
+            log.error("KHOA 조위관측소 데이터 초기화 실패", e);
+        }
+    }
+
+    // --- CSV Parsing Helper Methods ---
+
+    /**
+     * NIFS (수산과학원) CSV 파일 로딩
+     * 파일명: nifs-stations.csv
+     * 인코딩 순서: UTF-8 -> EUC-KR
      */
     private Map<String, NifsStationCsvRecord> loadNifsStationsFromCsv() {
-        Map<String, NifsStationCsvRecord> records = new java.util.HashMap<>();
-
+        Map<String, NifsStationCsvRecord> records = new HashMap<>();
         try {
-            ClassPathResource resource = new ClassPathResource("nifs-tide-stations.csv");
+            ClassPathResource resource = new ClassPathResource("nifs-stations.csv");
+            if (!resource.exists()) {
+                log.warn("nifs-stations.csv 파일을 찾을 수 없습니다. NIFS 관측소 좌표 초기화를 건너뜁니다.");
+                return records;
+            }
 
-            // CSV 파일 읽기 (인코딩: UTF-8 시도 후 EUC-KR)
+            // UTF-8 우선 시도
             List<Charset> charsets = List.of(StandardCharsets.UTF_8, Charset.forName("EUC-KR"));
 
             for (Charset charset : charsets) {
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(resource.getInputStream(), charset))) {
+
                     String line;
                     int lineNumber = 0;
-
                     while ((line = reader.readLine()) != null) {
                         lineNumber++;
-                        
-                        // 헤더 라인 건너뛰기 (첫 2줄)
-                        if (lineNumber <= 2) {
-                            continue;
-                        }
-                        
-                        if (line.trim().isEmpty()) {
-                            continue;
-                        }
+                        if (lineNumber <= 2 || line.trim().isEmpty()) continue; // 헤더 스킵
 
                         String[] parts = parseCsvLine(line);
-                        // CSV 형식: 해역코드, 해역, 관측소, 설치일자, 종료일자, 위도(°N), 경도(°E), ...
-                        if (parts.length < 7) {
-                            log.warn("CSV 라인 컬럼 수 부족: parts.length={}, line={}", parts.length, line);
-                            continue;
-                        }
+                        if (parts.length < 7) continue;
 
                         try {
-                            String stationId = parts[0].trim(); // 해역코드 (sta_cde와 매칭)
-                            String region = parts[1].trim(); // 해역
-                            String stationName = parts[2].trim(); // 관측소 이름
-                            String installDate = parts[3].trim(); // 설치일자
-                            String endDate = parts[4].trim(); // 종료일자
-                            Double lat = Double.parseDouble(parts[5].trim()); // 위도
-                            Double lon = Double.parseDouble(parts[6].trim()); // 경도
+                            String stationId = parts[0].trim();
+                            String stationName = parts[2].trim();
+                            String endDate = parts[4].trim();
+                            Double lat = Double.parseDouble(parts[5].trim());
+                            Double lon = Double.parseDouble(parts[6].trim());
 
-                            if (stationId.isEmpty() || lat == null || lon == null) {
+                            if (stationId.isEmpty() || lat == null || lon == null || !endDate.isEmpty()) {
                                 continue;
                             }
-
-                            // 종료일자가 있으면 제외 (운영 중인 관측소만)
-                            if (!endDate.isEmpty()) {
-                                continue;
-                            }
-
                             records.put(stationId, new NifsStationCsvRecord(stationId, stationName, lat, lon));
-                        } catch (NumberFormatException e) {
-                            log.warn("CSV 라인 숫자 파싱 실패: line={}, error={}", line, e.getMessage());
-                            continue;
-                        }
+                        } catch (NumberFormatException ignored) {}
                     }
-                    
+
                     if (!records.isEmpty()) {
-                        log.info("CSV 파일 읽기 성공 (인코딩: {}): {}개 관측소", charset.name(), records.size());
+                        log.info("NIFS CSV 파일 읽기 성공 (인코딩: {}): {}개 관측소", charset.name(), records.size());
                         return records;
                     }
-                } catch (Exception e) {
-                    log.warn("CSV 파일 읽기 실패 (인코딩: {}): {}", charset.name(), e.getMessage());
-                    records.clear();
-                }
+                } catch (Exception ignored) {}
             }
         } catch (Exception e) {
-            log.error("CSV 파일 읽기 실패", e);
+            log.error("NIFS CSV 파일 읽기 중 오류", e);
         }
-
         return records;
     }
 
     /**
-     * NIFS 관측소 CSV 레코드
-     */
-    private static class NifsStationCsvRecord {
-        final String stationId;
-        final String stationName;
-        final Double lat;
-        final Double lon;
-
-        NifsStationCsvRecord(String stationId, String stationName, Double lat, Double lon) {
-            this.stationId = stationId;
-            this.stationName = stationName;
-            this.lat = lat;
-            this.lon = lon;
-        }
-    }
-
-    /**
-     * CSV 파일에서 관측소 위치 정보 읽기
+     * KHOA (조위관측소) CSV 파일 로딩
+     * 파일명: khoa-stations.csv (변경됨!)
+     * 포맷: [0]ID, [1]이름, [2]위도, [3]경도
+     * 인코딩 순서: UTF-8 -> EUC-KR
      */
     private List<CsvStationRecord> loadCsvStations() {
         List<CsvStationRecord> records = new ArrayList<>();
-
         try {
-            ClassPathResource resource = new ClassPathResource("nifs-tide-stations.csv");
+            // [파일명 변경] khoa-stations.csv
+            ClassPathResource resource = new ClassPathResource("khoa-stations.csv");
+            if (!resource.exists()) {
+                log.warn("khoa-stations.csv 파일을 찾을 수 없습니다. KHOA 관측소 초기화를 건너뜁니다.");
+                return records;
+            }
 
-            // CSV 파일 읽기 (인코딩: UTF-8 시도 후 EUC-KR)
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                boolean isFirstLine = true;
+            // UTF-8 우선 시도
+            List<Charset> charsets = List.of(StandardCharsets.UTF_8, Charset.forName("EUC-KR"));
 
-                while ((line = reader.readLine()) != null) {
-                    if (isFirstLine) {
-                        isFirstLine = false;
-                        continue;
-                    }
-                    if (line.trim().isEmpty()) {
-                        continue;
-                    }
-
-                    String[] parts = parseCsvLine(line);
-                    if (parts.length < 5) {
-                        continue;
-                    }
-
-                    try {
-                        // CSV 형식: 관측소ID, 관측소 유형, 조위관측소 명(한글명), 조위관측소 위도, 조위관측소 경도, 조위관측소 영문명
-                        if (parts.length < 5) {
-                            log.warn("CSV 라인 컬럼 수 부족: parts.length={}, line={}", parts.length, line);
-                            continue;
-                        }
-                        String stationId = parts[0].trim();
-                        String stationType = parts[1].trim(); // 관측소 유형 (사용 안 함)
-                        String nameKor = parts[2].trim(); // 조위관측소 명
-                        Double lat = Double.parseDouble(parts[3].trim()); // 조위관측소 위도
-                        Double lon = Double.parseDouble(parts[4].trim()); // 조위관측소 경도
-                        String nameEng = parts.length > 5 ? parts[5].trim() : "";
-
-                        if (stationId.isEmpty() || lat == null || lon == null) {
-                            continue;
-                        }
-
-                        records.add(new CsvStationRecord(stationId, nameKor, nameEng, lat, lon));
-                    } catch (NumberFormatException e) {
-                        continue;
-                    }
-                }
-            } catch (Exception e) {
-                // UTF-8 실패 시 EUC-KR로 재시도
-                log.warn("UTF-8 인코딩 실패, EUC-KR로 재시도: {}", e.getMessage());
+            for (Charset charset : charsets) {
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(resource.getInputStream(), "EUC-KR"))) {
-                    String line;
-                    boolean isFirstLine = true;
+                        new InputStreamReader(resource.getInputStream(), charset))) {
 
+                    String line;
+                    int lineNumber = 0;
                     while ((line = reader.readLine()) != null) {
-                        if (isFirstLine) {
-                            isFirstLine = false;
-                            continue;
-                        }
-                        if (line.trim().isEmpty()) {
-                            continue;
-                        }
+                        lineNumber++;
+                        // 헤더 스킵 (첫 번째 줄)
+                        if (lineNumber == 1) continue;
+                        if (line.trim().isEmpty()) continue;
 
                         String[] parts = parseCsvLine(line);
-                        if (parts.length < 5) {
-                            continue;
-                        }
+
+                        // [수정] 4개 컬럼만 있으면 됨
+                        if (parts.length < 4) continue;
 
                         try {
-                            // CSV 형식: 관측소ID, 관측소 유형, 조위관측소 명(한글명), 조위관측소 위도, 조위관측소 경도, 조위관측소 영문명
-                            if (parts.length < 5) {
-                                log.warn("CSV 라인 컬럼 수 부족: parts.length={}, line={}", parts.length, line);
-                                continue;
-                            }
+                            // [0]: ID
                             String stationId = parts[0].trim();
-                            String stationType = parts[1].trim(); // 관측소 유형 (사용 안 함)
-                            String nameKor = parts[2].trim(); // 조위관측소 명
-                            Double lat = Double.parseDouble(parts[3].trim()); // 조위관측소 위도
-                            Double lon = Double.parseDouble(parts[4].trim()); // 조위관측소 경도
-                            String nameEng = parts.length > 5 ? parts[5].trim() : "";
+                            // [1]: 이름
+                            String nameKor = parts[1].trim();
+                            // [2]: 위도
+                            Double lat = Double.parseDouble(parts[2].trim());
+                            // [3]: 경도
+                            Double lon = Double.parseDouble(parts[3].trim());
 
-                            if (stationId.isEmpty() || lat == null || lon == null) {
-                                continue;
-                            }
+                            // 영문명 없음
+                            String nameEng = "";
+
+                            if (stationId.isEmpty() || lat == null || lon == null) continue;
 
                             records.add(new CsvStationRecord(stationId, nameKor, nameEng, lat, lon));
-                        } catch (NumberFormatException ex) {
-                            continue;
-                        }
+                        } catch (NumberFormatException ignored) {}
                     }
-                }
+
+                    if (!records.isEmpty()) {
+                        log.info("KHOA CSV 파일 읽기 성공 (인코딩: {}): {}개 관측소", charset.name(), records.size());
+                        return records;
+                    }
+                } catch (Exception ignored) {}
             }
         } catch (Exception e) {
-            log.error("CSV 파일 읽기 실패", e);
+            log.error("KHOA CSV 파일 읽기 중 오류", e);
         }
-
         return records;
     }
 
-    /**
-     * CSV에서 매칭하는 관측소 찾기 (이름 매칭 우선, 실패 시 좌표 기반)
-     */
-    private Optional<CsvStationRecord> findMatchingCsvStation(String apiStationName, List<CsvStationRecord> csvRecords) {
-        if (apiStationName == null || apiStationName.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // 1. 이름 정확 매칭 시도
-        Optional<CsvStationRecord> exactMatch = csvRecords.stream()
-                .filter(csv -> csv.nameKor != null && csv.nameKor.equals(apiStationName))
-                .findFirst();
-
-        if (exactMatch.isPresent()) {
-            return exactMatch;
-        }
-
-        // 2. 이름 부분 매칭 시도 (공백 제거 후 비교)
-        String normalizedApiName = apiStationName.replaceAll("\\s+", "");
-        Optional<CsvStationRecord> partialMatch = csvRecords.stream()
-                .filter(csv -> csv.nameKor != null) 
-                .filter(csv -> {
-                    String normalizedCsvName = csv.nameKor.replaceAll("\\s+", "");
-                    return normalizedCsvName.contains(normalizedApiName) || 
-                           normalizedApiName.contains(normalizedCsvName);
-                })
-                .findFirst();
-
-        if (partialMatch.isPresent()) {
-            return partialMatch;
-        }
-
-        // 3. 이름 키워드 매칭 시도 (주요 지역명 추출)
-        String[] keywords = extractKeywords(apiStationName);
-        if (keywords.length > 0) {
-            Optional<CsvStationRecord> keywordMatch = csvRecords.stream()
-                    .filter(csv -> csv.nameKor != null)
-                    .filter(csv -> {
-                        for (String keyword : keywords) {
-                            if (csv.nameKor.contains(keyword)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    })
-                    .findFirst();
-
-            if (keywordMatch.isPresent()) {
-                return keywordMatch;
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     * 관측소 이름에서 주요 키워드 추출
-     */
-    private String[] extractKeywords(String name) {
-        // 주요 지역명 키워드 (예: 포항, 부산, 제주 등)
-        String[] commonKeywords = {"포항", "부산", "제주", "울산", "목포", "여수", "거제", "통영", 
-                                   "완도", "진도", "안산", "인천", "평택", "영광", "무안", "강화",
-                                   "울진", "동해", "속초", "묵호", "거문도", "마라도", "추자도",
-                                   "서귀포", "완도", "진도", "안흥", "대산", "태안", "영덕"};
-        
-        List<String> found = new ArrayList<>();
-        for (String keyword : commonKeywords) {
-            if (name.contains(keyword)) {
-                found.add(keyword);
-            }
-        }
-        return found.toArray(new String[0]);
-    }
-
-    /**
-     * 좌표 기반으로 가장 가까운 CSV 관측소 찾기
-     * NIFS RISA API 관측소 이름에서 지역 키워드를 추출하여, 해당 지역의 CSV 관측소를 찾습니다.
-     * 키워드 매칭이 실패하면 모든 CSV 관측소 중에서 첫 번째를 반환 (임시)
-     */
-    private Optional<CsvStationRecord> findNearestCsvByCoordinates(String apiStationName, List<CsvStationRecord> csvRecords) {
-        if (apiStationName == null || apiStationName.isEmpty() || csvRecords.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // 지역 키워드 추출
-        String[] keywords = extractKeywords(apiStationName);
-        if (keywords.length > 0) {
-            // 키워드가 포함된 CSV 관측소 찾기
-            List<CsvStationRecord> candidateRecords = csvRecords.stream()
-                    .filter(csv -> csv.nameKor != null)
-                    .filter(csv -> {
-                        for (String keyword : keywords) {
-                            if (csv.nameKor.contains(keyword)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    })
-                    .toList();
-
-            if (!candidateRecords.isEmpty()) {
-                return Optional.of(candidateRecords.get(0));
-            }
-        }
-
-        // 키워드 매칭 실패 시, 모든 CSV 관측소 중 첫 번째 반환 (임시)
-        // 실제로는 더 정교한 매칭 로직이 필요하지만, 일단 모든 관측소에 좌표를 할당
-        log.warn("키워드 매칭 실패, 첫 번째 CSV 관측소 사용: apiStationName={}", apiStationName);
-        return csvRecords.stream().findFirst();
-    }
-
-    /**
-     * NIFS RISA 관측소와 CSV 관측소 수동 매핑
-     * API 관측소 이름과 CSV 관측소 이름이 정확히 일치하지 않는 경우를 위한 수동 매핑
-     * 
-     * 주의: CSV 파일의 관측소 ID는 KHOA 조위관측소 ID이므로, 
-     * NIFS RISA 관측소와는 다른 시스템입니다.
-     * 따라서 이름 기반 매칭만 사용합니다.
-     */
-    private Optional<CsvStationRecord> findManualMapping(String apiStationId, String apiStationName, List<CsvStationRecord> csvRecords) {
-        // 현재는 수동 매핑 테이블 없음 (이름 기반 매칭만 사용)
-        // 필요시 여기에 특정 관측소에 대한 수동 매핑 추가 가능
-        return Optional.empty();
-    }
-
-    /**
-     * CSV 라인 파싱 (쉼표로 구분, 인용부호 처리)
-     */
     private String[] parseCsvLine(String line) {
         List<String> parts = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
-
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
             if (c == '"') {
@@ -7537,20 +7852,28 @@ public class MarineStationInitializer implements CommandLineRunner {
             }
         }
         parts.add(current.toString());
-
         return parts.toArray(new String[0]);
     }
 
-    /**
-     * CSV 레코드 임시 클래스
-     */
+    private static class NifsStationCsvRecord {
+        final String stationId;
+        final String stationName;
+        final Double lat;
+        final Double lon;
+        NifsStationCsvRecord(String stationId, String stationName, Double lat, Double lon) {
+            this.stationId = stationId;
+            this.stationName = stationName;
+            this.lat = lat;
+            this.lon = lon;
+        }
+    }
+
     private static class CsvStationRecord {
         final String stationId;
         final String nameKor;
         final String nameEng;
         final Double lat;
         final Double lon;
-
         CsvStationRecord(String stationId, String nameKor, String nameEng, Double lat, Double lon) {
             this.stationId = stationId;
             this.nameKor = nameKor;
@@ -7559,123 +7882,7 @@ public class MarineStationInitializer implements CommandLineRunner {
             this.lon = lon;
         }
     }
-
-    /**
-     * KMA 관측소 데이터 초기화
-     */
-    private void initializeKmaStations() {
-        if (marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS).size() > 0) {
-            log.info("KMA 관측소 데이터가 이미 존재합니다. 초기화를 건너뜁니다.");
-            return;
-        }
-
-        try {
-            // KMA API에서 전체 관측소 목록 조회 (stn=0)
-            List<KmaSeaObsResponse.Item> kmaItems = kmaSeaObsClient
-                    .fetchObservations("0", LocalDateTime.now())
-                    .block();
-
-            if (kmaItems == null || kmaItems.isEmpty()) {
-                log.warn("KMA 관측소 데이터를 가져올 수 없습니다.");
-                return;
-            }
-
-            log.info("KMA 관측소 {}개 발견", kmaItems.size());
-
-            // 관측소 ID별로 그룹화 (같은 관측소의 중복 데이터 제거)
-            Map<String, KmaSeaObsResponse.Item> uniqueStations = kmaItems.stream()
-                    .filter(item -> item.getStn() != null && item.getLat() != null && item.getLon() != null)
-                    .collect(Collectors.toMap(
-                            KmaSeaObsResponse.Item::getStn,
-                            item -> item,
-                            (existing, replacement) -> existing // 중복 시 기존 것 유지
-                    ));
-
-            int savedCount = 0;
-            for (KmaSeaObsResponse.Item item : uniqueStations.values()) {
-                // 이미 존재하는지 확인
-                if (marineStationRepository
-                        .findByExternalSourceAndExternalStationId(StationSource.KMA_SEA_OBS, item.getStn())
-                        .isEmpty()) {
-                    MarineStation station = MarineStation.builder()
-                            .externalSource(StationSource.KMA_SEA_OBS)
-                            .externalStationId(item.getStn())
-                            .name(item.getStnNm() != null ? item.getStnNm() : "KMA_" + item.getStn())
-                            .lat(item.getLat())
-                            .lon(item.getLon())
-                            .isActive(true)
-                            .build();
-                    marineStationRepository.save(station);
-                    savedCount++;
-                }
-            }
-
-            log.info("{}개의 KMA 관측소 데이터 저장 완료", savedCount);
-
-        } catch (Exception e) {
-            log.error("KMA 관측소 데이터 초기화 실패", e);
-        }
-    }
-
-    /**
-     * KHOA 조위관측소 데이터 초기화 (CSV 파일에서 읽기)
-     * CSV 파일의 조위관측소 데이터를 DB에 저장
-     */
-    private void initializeKhoaStationsFromCsv() {
-        // 이미 데이터가 있으면 건너뛰기
-        if (marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE).size() > 0) {
-            log.info("KHOA 조위관측소 데이터가 이미 존재합니다. 초기화를 건너뜁니다.");
-            return;
-        }
-
-        try {
-            // CSV 파일에서 조위관측소 위치 정보 읽기
-            log.info("CSV 파일에서 KHOA 조위관측소 위치 정보 읽기 중...");
-            List<CsvStationRecord> csvRecords = loadCsvStations();
-            log.info("CSV에서 {}개의 조위관측소 위치 정보 발견", csvRecords.size());
-
-            int savedCount = 0;
-            for (CsvStationRecord csvRecord : csvRecords) {
-                // 이미 존재하는지 확인 (stationId 기준)
-                if (marineStationRepository
-                        .findByExternalSourceAndExternalStationId(StationSource.KHOA_SURVEY_TIDE, csvRecord.stationId)
-                        .isPresent()) {
-                    continue;
-                }
-
-                // 유효한 좌표인지 확인
-                if (csvRecord.lat == null || csvRecord.lon == null || 
-                    csvRecord.lat == 0.0 || csvRecord.lon == 0.0) {
-                    log.warn("유효하지 않은 좌표: stationId={}, lat={}, lon={}", 
-                            csvRecord.stationId, csvRecord.lat, csvRecord.lon);
-                    continue;
-                }
-
-                MarineStation station = MarineStation.builder()
-                        .externalSource(StationSource.KHOA_SURVEY_TIDE)
-                        .externalStationId(csvRecord.stationId) // CSV의 stationId 사용 (예: DT_0009)
-                        .name(csvRecord.nameKor != null ? csvRecord.nameKor : csvRecord.nameEng)
-                        .lat(csvRecord.lat)
-                        .lon(csvRecord.lon)
-                        .isActive(true)
-                        .build();
-
-                try {
-                    marineStationRepository.save(station);
-                    savedCount++;
-                } catch (Exception e) {
-                    log.error("KHOA 관측소 저장 실패: ID={}, 이름={}", csvRecord.stationId, csvRecord.nameKor, e);
-                }
-            }
-
-            log.info("KHOA 조위관측소 데이터 저장 완료: 총 {}개 저장", savedCount);
-
-        } catch (Exception e) {
-            log.error("KHOA 조위관측소 데이터 초기화 실패", e);
-        }
-    }
 }
-
 
 
 ================================================================================
@@ -7855,6 +8062,16 @@ public class MarineApiProperties {
          * NIFS RISA API 키
          */
         private String key;
+
+        /**
+         * NIFS RISA API 호스트 (예: www.nifs.go.kr)
+         */
+        private String host;
+
+        /**
+         * NIFS RISA API 경로 (예: /bweb/OpenAPI_json)
+         */
+        private String risaPath;
     }
 
     @Getter
@@ -7869,6 +8086,16 @@ public class MarineApiProperties {
          * KHOA 조위 API 키 (Decoding)
          */
         private String keyDecoding;
+
+        /**
+         * KHOA 조위 API 호스트 (예: apis.data.go.kr)
+         */
+        private String host;
+
+        /**
+         * KHOA 조위 API 경로 (예: /1192136/surveyTideLevel)
+         */
+        private String tidePath;
     }
 
     @Getter
@@ -7878,479 +8105,18 @@ public class MarineApiProperties {
          * KMA 해양기상종합관측 API 키
          */
         private String key;
+
+        /**
+         * KMA 해양기상종합관측 API 호스트 (예: apihub.kma.go.kr)
+         */
+        private String host;
+
+        /**
+         * KMA 해양기상종합관측 API 경로 (예: /api/typ01/url/sea_obs.php)
+         */
+        private String seaObsPath;
     }
 }
-
-
-
-================================================================================
-File Path: .\src\main\java\com\ocean\piuda\environment\README.md
-================================================================================
-
-# 해양 환경 요약 API 모듈
-
-OC Community(OC Underwater) 앱에서 사용하는 해양 환경 요약 정보를 제공하는 REST API 모듈입니다.
-
-## 📋 목차
-
-- [개요](#개요)
-- [기능](#기능)
-- [API 엔드포인트](#api-엔드포인트)
-- [외부 API 연동](#외부-api-연동)
-- [데이터베이스 스키마](#데이터베이스-스키마)
-- [설정](#설정)
-- [사용 방법](#사용-방법)
-- [테스트](#테스트)
-
----
-
-## 개요
-
-이 모듈은 다음 3개의 외부 해양 관측 API를 통합하여 실시간 해양 환경 정보를 제공합니다:
-
-1. **NIFS RISA** - 국립수산과학원 실시간 해양수산환경 관측 (수온/염분/용존산소)
-2. **KHOA** - 국립해양조사원 조위 관측
-3. **KMA** - 기상청 해양기상종합관측 (파고/풍향/풍속)
-
-사용자가 제공한 좌표 또는 다이빙 포인트 ID를 기반으로 가장 가까운 관측소를 자동으로 매칭하여 통합 환경 정보를 반환합니다.
-
----
-
-## 기능
-
-### 주요 기능
-
-- ✅ 좌표 기반 환경 요약 조회
-- ✅ 다이빙 포인트 ID 기반 환경 요약 조회
-- ✅ Haversine 공식을 사용한 거리 기반 관측소 자동 매칭
-- ✅ 3개 외부 API 통합 (NIFS, KHOA, KMA)
-- ✅ 실시간 관측 데이터 조회
-- ✅ 관측소 정보 및 거리 정보 포함
-
-### 제공 정보
-
-- **수온/염분/용존산소**: NIFS RISA 중층 데이터 우선 사용
-- **파고/풍향/풍속**: KMA 해양기상 관측 데이터
-- **조위**: KHOA 조위 관측 데이터
-- **관측소 정보**: 각 소스별 가장 가까운 관측소 및 거리
-
----
-
-## API 엔드포인트
-
-### 환경 요약 조회
-
-**엔드포인트**: `GET /api/environment/summary`
-
-#### Query Parameters
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| `lat` | Double | 조건부 | 위도 (한국 해역: 약 33 ~ 38도) |
-| `lon` | Double | 조건부 | 경도 (한국 해역: 약 124 ~ 132도) |
-| `pointId` | Long | 조건부 | 다이빙 포인트 ID |
-
-**참고**: `pointId`가 제공되면 `lat`/`lon`은 무시됩니다. `pointId`가 없으면 `lat`과 `lon`이 모두 필요합니다.
-
-#### 응답 예시
-
-```json
-{
-  "location": {
-    "lat": 36.3500,
-    "lon": 129.7833,
-    "nearestStations": {
-      "nifs": {
-        "id": "fjdfc",
-        "name": "평택 조위",
-        "distanceKm": 250.6
-      },
-      "kma": {
-        "id": "22106",
-        "name": "포항",
-        "distanceKm": 0.5
-      },
-      "khoa": {
-        "id": "DT_0009",
-        "name": "포항",
-        "distanceKm": 2.1
-      }
-    }
-  },
-  "timestamp": "2025-11-30T12:00:00+09:00",
-  "water": {
-    "midLayerTemp": 18.3,
-    "surfaceTemp": 17.9,
-    "salinity": null,
-    "dissolvedOxygen": null
-  },
-  "wave": {
-    "significantWaveHeight": 3.4,
-    "windDirectionDeg": 304,
-    "windSpeedMs": 14.0
-  },
-  "tide": {
-    "tideLevelCm": 87.0,
-    "tideObservedAt": "2025-11-30T11:50:00+09:00"
-  },
-  "meta": {
-    "rawSources": ["NIFS_RISA", "KMA_SEA_OBS", "KHOA_SURVEY_TIDE"],
-    "note": "실시간 관측자료는 품질 검증 전 데이터일 수 있음"
-  }
-}
-```
-
-**참고**: 
-- KMA 관측소는 **B 타입 (BUOY)**을 사용하면 풍향/풍속 데이터를 제공합니다.
-- C 타입 (파고BUOY) 관측소는 풍향/풍속 데이터가 없을 수 있습니다.
-- 예시 좌표는 포항 해역 (B 타입 관측소 22106 근처)입니다.
-
-#### 사용 예시
-
-**좌표 기반 조회 (포항 해역 - B 타입 관측소 사용):**
-```bash
-# 포항 해역 (B 타입 관측소 22106 근처)
-curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833"
-```
-
-**포인트 ID 기반 조회:**
-```bash
-curl -X GET "http://localhost:8080/api/environment/summary?pointId=1"
-```
-
----
-
-## 외부 API 연동
-
-### 1. NIFS RISA (국립수산과학원)
-
-- **URL**: `https://www.nifs.go.kr/OpenAPI_json`
-- **API Key**: `application.yml`의 `marine.nifs.key` 설정값 사용
-- **제공 데이터**: 수온, 염분, 용존산소
-- **수층 우선순위**: 중층(2) → 표층(1) → 저층(3)
-
-### 2. KHOA 조위 관측 (국립해양조사원)
-
-- **URL**: `https://apis.data.go.kr/1192136/surveyTideLevel`
-- **API Key**: `application.yml`의 `marine.khoa.key-encoding` 설정값 사용 (URL Encoding)
-- **제공 데이터**: 조위(cm), 관측시각
-
-### 3. KMA 해양기상종합관측 (기상청)
-
-- **URL**: `https://apihub.kma.go.kr/api/typ01/url/sea_obs.php`
-- **API Key**: `application.yml`의 `marine.kma.key` 설정값 사용
-- **제공 데이터**: 파고(WH), 풍향(WD), 풍속(WS), 해수면 온도(TW)
-- **관측소 타입**:
-  - **B 타입 (BUOY)**: 파고, 풍향, 풍속, 해수온 모두 제공 ✅
-  - **C 타입 (파고BUOY)**: 파고, 해수온만 제공 (풍향/풍속 없음)
-  - **권장**: 풍향/풍속 데이터가 필요한 경우 B 타입 관측소 사용
-
----
-
-## 데이터베이스 스키마
-
-### MarineStation (관측소)
-
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | BIGINT | PK, 자동증가 |
-| `external_source` | VARCHAR(50) | 외부 API 소스 (NIFS_RISA, KMA_SEA_OBS, KHOA_SURVEY_TIDE) |
-| `external_station_id` | VARCHAR(100) | 외부 API에서 사용하는 관측소 ID |
-| `name` | VARCHAR(200) | 관측소 이름 |
-| `lat` | DECIMAL(9,6) | 위도 |
-| `lon` | DECIMAL(9,6) | 경도 |
-| `is_active` | BOOLEAN | 활성화 여부 |
-| `created_at` | TIMESTAMP | 생성 시각 |
-| `modified_at` | TIMESTAMP | 수정 시각 |
-
-**인덱스**:
-- `idx_source_ext`: `(external_source, external_station_id)`
-- `idx_lat_lon`: `(lat, lon)`
-
-### MarineObservation (관측값)
-
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | BIGINT | PK, 자동증가 |
-| `station_id` | BIGINT | FK, 관측소 ID |
-| `observed_at` | TIMESTAMP WITH TIME ZONE | 관측 시각 |
-| `layer` | VARCHAR(50) | 수층 정보 |
-| `water_temp` | DECIMAL(5,2) | 수온 (℃) |
-| `salinity` | DECIMAL(5,2) | 염분 (psu) |
-| `dissolved_oxygen` | DECIMAL(5,2) | 용존산소 (mg/L) |
-| `wave_height` | DECIMAL(5,2) | 파고 (m) |
-| `wind_direction` | DECIMAL(5,2) | 풍향 (도) |
-| `wind_speed` | DECIMAL(5,2) | 풍속 (m/s) |
-| `tide_level` | DECIMAL(6,2) | 조위 (cm) |
-| `raw_payload` | TEXT | 원본 API 응답 JSON |
-| `created_at` | TIMESTAMP | 생성 시각 |
-| `modified_at` | TIMESTAMP | 수정 시각 |
-
-**인덱스**:
-- `idx_station_observed`: `(station_id, observed_at)`
-
-### DivePoint (다이빙 포인트)
-
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `id` | BIGINT | PK, 자동증가 |
-| `name` | VARCHAR(200) | 포인트 이름 |
-| `lat` | DECIMAL(9,6) | 위도 |
-| `lon` | DECIMAL(9,6) | 경도 |
-| `region_name` | VARCHAR(200) | 지역명 |
-| `description` | TEXT | 설명 |
-| `created_at` | TIMESTAMP | 생성 시각 |
-| `modified_at` | TIMESTAMP | 수정 시각 |
-
-**인덱스**:
-- `idx_dive_point_lat_lon`: `(lat, lon)`
-
----
-
-## 설정
-
-### application.yml 설정
-
-```yaml
-marine:
-  nifs:
-    key: qPwOeIrU-2511-VFADBV-1349
-  khoa:
-    key-encoding: "Mw1rP8Brftnpf8vM%2BR%2FA4E%2FA9lhDJDLGNHoe6hmcFPpqGvHF4HdQGXWYHsKSqw2%2Bz5BWuJGa1Db9jTqeHcWe0Q%3D%3D"
-    key-decoding: "Mw1rP8Brftnpf8vM+R/A4E/A9lhDJDLGNHoe6hmcFPpqGvHF4HdQGXWYHsKSqw2+z5BWuJGa1Db9jTqeHcWe0Q=="
-  kma:
-    key: WgCdt_1OQHOAnbf9TpBzWA
-```
-
-### WebClient 설정
-
-`MarineWebClientConfig`에서 해양 환경 API 호출용 WebClient를 설정합니다:
-- 타임아웃 설정
-- 최대 메모리 버퍼 크기: 10MB
-
----
-
-## 사용 방법
-
-### 1. 서버 실행
-
-```bash
-./gradlew bootRun
-```
-
-### 2. 관측소 데이터 초기화
-
-**중요**: API를 사용하기 전에 관측소 데이터를 데이터베이스에 저장해야 합니다.
-
-관측소 데이터는 다음 방법으로 초기화할 수 있습니다:
-
-1. **NIFS RISA 관측소 목록 조회 및 저장**
-   - `NifsRisaClient.fetchStations()` 호출
-   - 응답 데이터를 `MarineStation` 엔티티로 변환하여 저장
-
-2. **KMA 해양기상 관측소 목록 조회 및 저장**
-   - KMA API에서 관측소 목록 조회
-   - `MarineStation` 엔티티로 저장
-
-3. **KHOA 조위 관측소 목록 조회 및 저장**
-   - KHOA API에서 관측소 목록 조회
-   - `MarineStation` 엔티티로 저장
-
-**초기화 스크립트 예시** (별도 구현 필요):
-
-```java
-@Service
-@RequiredArgsConstructor
-public class MarineStationInitializer {
-    private final NifsRisaClient nifsRisaClient;
-    private final MarineStationRepository stationRepository;
-    
-    @Transactional
-    public void initializeStations() {
-        // NIFS 관측소 목록 조회 및 저장
-        List<NifsRisaResponse.NifsRisaItem> stations = 
-            nifsRisaClient.fetchStations().block();
-        
-        stations.forEach(item -> {
-            MarineStation station = MarineStation.builder()
-                .externalSource(StationSource.NIFS_RISA)
-                .externalStationId(item.getObsPostId())
-                .name(item.getObsPostNm())
-                .lat(item.getObsLat())
-                .lon(item.getObsLon())
-                .isActive(true)
-                .build();
-            stationRepository.save(station);
-        });
-    }
-}
-```
-
-### 3. API 호출
-
-**좌표 기반 조회 (포항 해역 - B 타입 관측소 사용):**
-```bash
-# 포항 해역 (B 타입 관측소 22106 근처) - 풍향/풍속 데이터 포함
-curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833"
-```
-
-**다른 B 타입 관측소 예시:**
-```bash
-# 덕적도 해역 (B 타입 관측소 22101)
-curl -X GET "http://localhost:8080/api/environment/summary?lat=37.2361&lon=126.0188"
-
-# 칠발도 해역 (B 타입 관측소 22102)
-curl -X GET "http://localhost:8080/api/environment/summary?lat=34.7933&lon=125.7769"
-```
-
-**포인트 ID 기반 조회:**
-```bash
-curl -X GET "http://localhost:8080/api/environment/summary?pointId=1"
-```
-
----
-
-## 테스트
-
-### 1. 단위 테스트
-
-각 클라이언트와 서비스의 단위 테스트를 작성할 수 있습니다:
-
-```java
-@SpringBootTest
-class EnvironmentSummaryServiceTest {
-    @Autowired
-    private EnvironmentSummaryService service;
-    
-    @Test
-    void testGetEnvironmentSummary() {
-        EnvironmentSummaryRequest request = EnvironmentSummaryRequest.builder()
-            .lat(36.3500)  // 포항 해역 위도 (B 타입 관측소 22106 근처)
-            .lon(129.7833)  // 포항 해역 경도 (B 타입 관측소 22106 근처)
-            .build();
-        
-        EnvironmentSummaryResponse response = 
-            service.getEnvironmentSummary(request);
-        
-        assertNotNull(response);
-        assertNotNull(response.getLocation());
-    }
-}
-```
-
-### 2. 통합 테스트
-
-실제 외부 API를 호출하는 통합 테스트:
-
-```bash
-# 1. 서버 실행
-./gradlew bootRun
-
-# 2. API 호출 테스트 (B 타입 관측소 사용 - 풍향/풍속 데이터 포함)
-curl -X GET "http://localhost:8080/api/environment/summary?lat=36.3500&lon=129.7833" \
-  -H "Content-Type: application/json"
-```
-
-### 3. 테스트 시나리오
-
-#### 성공 케이스
-- ✅ 유효한 좌표로 조회
-- ✅ 유효한 포인트 ID로 조회
-- ✅ 모든 외부 API가 정상 응답
-
-#### 실패 케이스
-- ❌ 좌표와 포인트 ID 모두 없음
-- ❌ 존재하지 않는 포인트 ID
-- ❌ 외부 API 호출 실패 (에러 처리 확인)
-- ❌ 관측소 데이터가 없는 경우
-
----
-
-## 주의사항
-
-1. **관측소 데이터 초기화 필수**: API를 사용하기 전에 관측소 데이터를 데이터베이스에 저장해야 합니다.
-
-2. **외부 API 의존성**: 이 모듈은 외부 API의 가용성에 의존합니다. 외부 API가 다운되거나 응답이 지연될 수 있습니다.
-
-3. **데이터 품질**: 실시간 관측 데이터는 품질 검증 전 데이터일 수 있으므로, 실제 사용 시 주의가 필요합니다.
-
-4. **비동기 처리**: 현재 구현은 `block()`을 사용하여 동기적으로 처리하지만, 향후 완전한 비동기 처리로 개선할 수 있습니다.
-
-5. **에러 처리**: 외부 API 호출 실패 시 해당 필드는 `null`로 반환됩니다. 클라이언트에서 이를 고려해야 합니다.
-
----
-
-## 향후 개선 사항
-
-- [ ] 완전한 비동기 처리 (Mono/Flux 활용)
-- [ ] 관측소 데이터 자동 동기화 스케줄러
-- [ ] 관측값 캐싱 (Redis 등)
-- [ ] 관측소 데이터 초기화 스크립트 자동화
-- [ ] 더 상세한 에러 메시지 및 상태 코드
-- [ ] API 응답 시간 모니터링
-
----
-
-## 관련 파일
-
-- **엔티티**: `domain/MarineStation.java`, `domain/MarineObservation.java`, `domain/DivePoint.java`
-- **클라이언트**: `client/NifsRisaClient.java`, `client/KhoaTideClient.java`, `client/KmaSeaObsClient.java`
-- **서비스**: `service/EnvironmentSummaryServiceImpl.java`
-- **컨트롤러**: `controller/EnvironmentSummaryController.java`
-- **설정**: `config/MarineWebClientConfig.java`, `properties/MarineApiProperties.java`
-
-
-
-================================================================================
-File Path: .\src\main\java\com\ocean\piuda\environment\repository\DivePointRepository.java
-================================================================================
-
-package com.ocean.piuda.environment.repository;
-
-import com.ocean.piuda.divePoint.entity.DivePoint;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.Optional;
-
-/**
- * 다이빙 포인트 Repository
- */
-public interface DivePointRepository extends JpaRepository<DivePoint, Long> {
-    Optional<DivePoint> findById(Long id);
-}
-
-
-
-================================================================================
-File Path: .\src\main\java\com\ocean\piuda\environment\repository\MarineObservationRepository.java
-================================================================================
-
-package com.ocean.piuda.environment.repository;
-
-import com.ocean.piuda.environment.domain.MarineObservation;
-import com.ocean.piuda.environment.domain.MarineStation;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.time.ZonedDateTime;
-import java.util.Optional;
-
-/**
- * 해양 관측값 Repository
- */
-public interface MarineObservationRepository extends JpaRepository<MarineObservation, Long> {
-
-    /**
-     * 관측소와 관측 시각으로 최신 관측값 조회
-     */
-    Optional<MarineObservation> findTopByStationOrderByObservedAtDesc(MarineStation station);
-
-    /**
-     * 관측소와 시간 범위로 관측값 조회
-     */
-    Optional<MarineObservation> findTopByStationAndObservedAtBetweenOrderByObservedAtDesc(
-            MarineStation station, ZonedDateTime start, ZonedDateTime end);
-}
-
 
 
 ================================================================================
@@ -8398,6 +8164,7 @@ package com.ocean.piuda.environment.service;
 
 import com.ocean.piuda.environment.dto.EnvironmentSummaryRequest;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
+import reactor.core.publisher.Mono;
 
 /**
  * 해양 환경 요약 서비스 인터페이스
@@ -8405,14 +8172,13 @@ import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
 public interface EnvironmentSummaryService {
 
     /**
-     * 해양 환경 요약 조회
+     * 해양 환경 요약 조회 (Reactive)
      *
      * @param request 요청 파라미터 (lat/lon 또는 pointId)
-     * @return 환경 요약 정보
+     * @return 환경 요약 정보 Mono
      */
-    EnvironmentSummaryResponse getEnvironmentSummary(EnvironmentSummaryRequest request);
+    Mono<EnvironmentSummaryResponse> getEnvironmentSummary(EnvironmentSummaryRequest request);
 }
-
 
 
 ================================================================================
@@ -8424,10 +8190,9 @@ package com.ocean.piuda.environment.service;
 import com.ocean.piuda.environment.client.KhoaTideClient;
 import com.ocean.piuda.environment.client.KmaSeaObsClient;
 import com.ocean.piuda.environment.client.NifsRisaClient;
-import com.ocean.piuda.environment.client.dto.KhoaTideResponse;
-import com.ocean.piuda.environment.client.dto.KmaSeaObsResponse;
-import com.ocean.piuda.environment.client.dto.NifsRisaResponse;
-import com.ocean.piuda.environment.domain.*;
+import com.ocean.piuda.divePoint.entity.DivePoint;
+import com.ocean.piuda.environment.domain.MarineStation;
+import com.ocean.piuda.environment.domain.StationSource;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryRequest;
 import com.ocean.piuda.environment.dto.EnvironmentSummaryResponse;
 import com.ocean.piuda.divePoint.repository.DivePointRepository;
@@ -8437,19 +8202,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
- * 해양 환경 요약 서비스 구현체
+ * 해양 환경 요약 서비스 구현체 (Reactive)
  */
 @Slf4j
 @Service
@@ -8463,12 +8230,75 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
     private final MarineStationRepository marineStationRepository;
     private final DivePointRepository divePointRepository;
 
-    private static final DateTimeFormatter NIFS_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
+    // [추가] 매직 넘버 추출: fallback으로 시도할 최대 관측소 수
+    private static final int MAX_FALLBACK_STATIONS = 9;
+
+    /**
+     * 한 요청 내에서 재사용할 관측소/좌표 컨텍스트
+     */
+    private record StationContext(
+            double lat,
+            double lon,
+            List<MarineStation> nifsStations,
+            List<MarineStation> kmaStations,
+            List<MarineStation> khoaStations,
+            MarineStation nifsNearest,
+            MarineStation kmaNearest,
+            MarineStation khoaNearest,
+            EnvironmentSummaryResponse.NearestStations nearestStations
+    ) {}
 
     @Override
-    public EnvironmentSummaryResponse getEnvironmentSummary(EnvironmentSummaryRequest request) {
-        // 1. 기준 좌표 확보
-        double lat, lon;
+    public Mono<EnvironmentSummaryResponse> getEnvironmentSummary(EnvironmentSummaryRequest request) {
+        // 1) DB 접근 / 관측소 리스트 조회 / 최근접 관측소 선택은 blocking → boundedElastic에서 수행
+        return Mono.fromCallable(() -> buildStationContext(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                // 2) 외부 API는 reactive로 병렬 호출
+                .flatMap(ctx -> {
+                    Mono<EnvironmentSummaryResponse.Water> waterMono =
+                            fetchWaterData(ctx.nifsNearest(), ctx.lat(), ctx.lon(), ctx.nifsStations());
+
+                    Mono<EnvironmentSummaryResponse.Wave> waveMono =
+                            fetchWaveData(ctx.kmaNearest(), ctx.lat(), ctx.lon(), ctx.kmaStations());
+
+                    Mono<EnvironmentSummaryResponse.Tide> tideMono =
+                            fetchTideData(ctx.khoaNearest());
+
+                    return Mono.zip(
+                            waterMono.defaultIfEmpty(EnvironmentSummaryResponse.Water.builder().build()),
+                            waveMono.defaultIfEmpty(EnvironmentSummaryResponse.Wave.builder().build()),
+                            tideMono.defaultIfEmpty(EnvironmentSummaryResponse.Tide.builder().build())
+                    ).map(tuple -> EnvironmentSummaryResponse.builder()
+                            .location(EnvironmentSummaryResponse.Location.builder()
+                                    .lat(ctx.lat())
+                                    .lon(ctx.lon())
+                                    .nearestStations(ctx.nearestStations())
+                                    .build())
+                            .timestamp(ZonedDateTime.now(ZONE_SEOUL))
+                            .water(tuple.getT1())
+                            .wave(tuple.getT2())
+                            .tide(tuple.getT3())
+                            .meta(EnvironmentSummaryResponse.Meta.builder()
+                                    .rawSources(List.of(
+                                            StationSource.NIFS_RISA.name(),
+                                            StationSource.KMA_SEA_OBS.name(),
+                                            StationSource.KHOA_SURVEY_TIDE.name()
+                                    ))
+                                    .note("실시간 관측자료는 품질 검증 전 데이터일 수 있음")
+                                    .build())
+                            .build());
+                });
+    }
+
+    /**
+     * 좌표/포인트 처리 + 관측소 리스트 조회 + 최근접 관측소 선택까지 한 번에 수행
+     */
+    private StationContext buildStationContext(EnvironmentSummaryRequest request) {
+        // 기준 좌표
+        double lat;
+        double lon;
+
         if (request.isPointIdBased()) {
             DivePoint point = divePointRepository.findById(request.pointId())
                     .orElseThrow(() -> new IllegalArgumentException("다이빙 포인트를 찾을 수 없습니다: " + request.pointId()));
@@ -8483,86 +8313,79 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
 
         log.info("환경 요약 조회 시작: lat={}, lon={}, pointId={}", lat, lon, request.pointId());
 
-        // 2. 가장 가까운 관측소 매칭
-        MarineStation nifsStation = findNearestStation(lat, lon, StationSource.NIFS_RISA);
-        MarineStation kmaStation = findNearestStation(lat, lon, StationSource.KMA_SEA_OBS);
-        MarineStation khoaStation = findNearestStation(lat, lon, StationSource.KHOA_SURVEY_TIDE);
+        // 관측소 리스트를 각 source별로 딱 한 번씩만 조회
+        List<MarineStation> nifsStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.NIFS_RISA);
+        List<MarineStation> kmaStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS);
+        List<MarineStation> khoaStations =
+                marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
 
-        if (nifsStation == null && kmaStation == null && khoaStation == null) {
+        MarineStation nifsNearest = findNearestStation(lat, lon, StationSource.NIFS_RISA, nifsStations, khoaStations);
+        MarineStation kmaNearest = findNearestStation(lat, lon, StationSource.KMA_SEA_OBS, kmaStations, null);
+        MarineStation khoaNearest = findNearestStation(lat, lon, StationSource.KHOA_SURVEY_TIDE, khoaStations, null);
+
+        if (nifsNearest == null && kmaNearest == null && khoaNearest == null) {
             log.warn("모든 관측소 데이터가 없습니다. 관측소 데이터를 초기화해야 합니다.");
         }
 
-        // 3. 각 API 호출 (비동기로 병렬 처리 가능하지만, 여기서는 순차 처리)
-        EnvironmentSummaryResponse.Water water = fetchWaterData(nifsStation, lat, lon);
-        EnvironmentSummaryResponse.Wave wave = fetchWaveData(kmaStation, lat, lon);
-        EnvironmentSummaryResponse.Tide tide = fetchTideData(khoaStation);
+        EnvironmentSummaryResponse.NearestStations nearestStations =
+                EnvironmentSummaryResponse.NearestStations.builder()
+                        .nifs(buildStationInfo(nifsNearest, lat, lon, khoaStations))
+                        .kma(buildStationInfo(kmaNearest, lat, lon, null))
+                        .khoa(buildStationInfo(khoaNearest, lat, lon, null))
+                        .build();
 
-        // 4. 최종 JSON 조립
-        return EnvironmentSummaryResponse.builder()
-                .location(EnvironmentSummaryResponse.Location.builder()
-                        .lat(lat)
-                        .lon(lon)
-                        .nearestStations(EnvironmentSummaryResponse.NearestStations.builder()
-                                .nifs(buildStationInfo(nifsStation, lat, lon))
-                                .kma(buildStationInfo(kmaStation, lat, lon))
-                                .khoa(buildStationInfo(khoaStation, lat, lon))
-                                .build())
-                        .build())
-                .timestamp(ZonedDateTime.now(ZoneId.of("Asia/Seoul")))
-                .water(water)
-                .wave(wave)
-                .tide(tide)
-                .meta(EnvironmentSummaryResponse.Meta.builder()
-                        .rawSources(List.of("NIFS_RISA", "KMA_SEA_OBS", "KHOA_SURVEY_TIDE"))
-                        .note("실시간 관측자료는 품질 검증 전 데이터일 수 있음")
-                        .build())
-                .build();
+        return new StationContext(
+                lat,
+                lon,
+                nifsStations,
+                kmaStations,
+                khoaStations,
+                nifsNearest,
+                kmaNearest,
+                khoaNearest,
+                nearestStations
+        );
     }
 
     /**
-     * 가장 가까운 관측소 찾기
-     * NIFS RISA의 경우 좌표가 없는 경우 KHOA 조위관측소 좌표를 참고하여 매칭
+     * 가장 가까운 관측소 찾기 (이미 조회한 리스트 활용)
      */
-    private MarineStation findNearestStation(double lat, double lon, StationSource source) {
-        List<MarineStation> stations = marineStationRepository.findByExternalSourceAndIsActiveTrue(source);
-
-        if (stations.isEmpty()) {
+    private MarineStation findNearestStation(double lat,
+                                             double lon,
+                                             StationSource source,
+                                             List<MarineStation> sourceStations,
+                                             List<MarineStation> khoaStationsForNifsFallback) {
+        if (sourceStations == null || sourceStations.isEmpty()) {
             log.warn("관측소 데이터가 없습니다: source={}, lat={}, lon={}", source, lat, lon);
             return null;
         }
 
-        // 위치 정보가 있는 관측소만 필터링 (0.0, 0.0 좌표 제외 - 임시 좌표)
-        List<MarineStation> stationsWithLocation = stations.stream()
+        // 유효한 좌표를 가진 관측소만
+        List<MarineStation> stationsWithLocation = sourceStations.stream()
                 .filter(station -> station.getLat() != null && station.getLon() != null)
                 .filter(station -> station.getLat() != 0.0 && station.getLon() != 0.0)
                 .toList();
 
-        // NIFS RISA의 경우 좌표가 없는 관측소가 있으면 KHOA 조위관측소 좌표를 참고하여 매칭
-        if (source == StationSource.NIFS_RISA && stationsWithLocation.isEmpty()) {
-            log.info("NIFS RISA 관측소에 좌표가 없어 KHOA 조위관측소 좌표를 참고하여 매칭 시도");
-            List<MarineStation> khoaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
-            List<MarineStation> khoaWithLocation = khoaStations.stream()
-                    .filter(station -> station.getLat() != null && station.getLon() != null)
-                    .filter(station -> station.getLat() != 0.0 && station.getLon() != 0.0)
-                    .toList();
+        // NIFS RISA 이고 좌표 있는 관측소가 없으면 KHOA 좌표를 참고해서 첫 관측소를 선택
+        if (source == StationSource.NIFS_RISA && stationsWithLocation.isEmpty()
+                && khoaStationsForNifsFallback != null && !khoaStationsForNifsFallback.isEmpty()) {
+            MarineStation nearestKhoa = khoaStationsForNifsFallback.stream()
+                    .filter(khoa -> khoa.getLat() != null && khoa.getLon() != null)
+                    .filter(khoa -> khoa.getLat() != 0.0 && khoa.getLon() != 0.0)
+                    .min(Comparator.comparingDouble(station ->
+                            DistanceCalculator.calculateDistance(lat, lon, station.getLat(), station.getLon())))
+                    .orElse(null);
 
-            if (!khoaWithLocation.isEmpty()) {
-                // 가장 가까운 KHOA 관측소 찾기
-                MarineStation nearestKhoa = khoaWithLocation.stream()
-                        .min(Comparator.comparingDouble(station ->
-                                DistanceCalculator.calculateDistance(lat, lon, station.getLat(), station.getLon())))
-                        .orElse(null);
-
-                if (nearestKhoa != null) {
-                    // NIFS 관측소는 좌표가 없으므로, 가장 가까운 KHOA 관측소를 기준으로 
-                    // 첫 번째 NIFS 관측소를 반환 (실제로는 모든 NIFS 관측소가 동일하게 처리됨)
-                    // 거리는 KHOA 관측소 기준으로 계산
-                    MarineStation nifsStation = stations.get(0);
-                    double distance = DistanceCalculator.calculateDistance(lat, lon, nearestKhoa.getLat(), nearestKhoa.getLon());
-                    log.info("NIFS RISA 관측소 매칭 (KHOA 좌표 참고): stationId={}, name={}, khoaStation={}, distance={}km",
-                            nifsStation.getExternalStationId(), nifsStation.getName(), nearestKhoa.getName(), Math.round(distance * 10.0) / 10.0);
-                    return nifsStation; // NIFS 관측소 반환 (관측소 ID는 유효하지만 좌표는 없음)
-                }
+            if (nearestKhoa != null) {
+                MarineStation nifsStation = sourceStations.get(0); // 좌표 없는 NIFS 중 첫 번째
+                double distance = DistanceCalculator.calculateDistance(
+                        lat, lon, nearestKhoa.getLat(), nearestKhoa.getLon());
+                log.info("NIFS RISA 관측소 매칭 (KHOA 좌표 참고): stationId={}, name={}, khoaStation={}, distance={}km",
+                        nifsStation.getExternalStationId(), nifsStation.getName(),
+                        nearestKhoa.getName(), Math.round(distance * 10.0) / 10.0);
+                return nifsStation;
             }
         }
 
@@ -8577,287 +8400,282 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
                 .orElse(null);
 
         if (nearest != null) {
-            double distance = DistanceCalculator.calculateDistance(lat, lon, nearest.getLat(), nearest.getLon());
-            log.debug("가장 가까운 관측소 찾음: source={}, stationId={}, name={}, distance={}km", 
-                    source, nearest.getExternalStationId(), nearest.getName(), Math.round(distance * 10.0) / 10.0);
+            double distance = DistanceCalculator.calculateDistance(
+                    lat, lon, nearest.getLat(), nearest.getLon());
+            log.debug("가장 가까운 관측소 찾음: source={}, stationId={}, name={}, distance={}km",
+                    source, nearest.getExternalStationId(), nearest.getName(),
+                    Math.round(distance * 10.0) / 10.0);
         }
 
         return nearest;
     }
 
     /**
-     * 수온/염분/용존산소 데이터 조회
-     * 관측소가 NIFS RISA API에서 제공하지 않으면 다음 가까운 관측소를 시도
-     * 
-     * @param station 첫 번째 관측소
-     * @param requestLat 요청한 위도
-     * @param requestLon 요청한 경도
+     * 수온/염분/용존산소 데이터 조회 (이미 조회한 NIFS 리스트로 fallback 수행)
      */
-    private EnvironmentSummaryResponse.Water fetchWaterData(MarineStation station, double requestLat, double requestLon) {
+    private Mono<EnvironmentSummaryResponse.Water> fetchWaterData(MarineStation station,
+                                                                  double requestLat,
+                                                                  double requestLon,
+                                                                  List<MarineStation> allNifsStations) {
         if (station == null) {
             log.warn("수온 데이터 조회 실패: 관측소가 null입니다");
-            return EnvironmentSummaryResponse.Water.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Water.builder().build());
         }
 
-        // 첫 번째 관측소 시도
-        EnvironmentSummaryResponse.Water result = fetchWaterDataFromStation(station);
-        
-        // 수온 데이터가 null인 경우 다음 가까운 관측소 시도
-        if (result.midLayerTemp() == null && result.surfaceTemp() == null) {
-            log.info("수온 데이터가 없어 다음 가까운 NIFS RISA 관측소를 시도합니다: stationId={}", station.getExternalStationId());
-            
-            // 요청 좌표 기준으로 다음 가까운 관측소 찾기
-            List<MarineStation> allNifsStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.NIFS_RISA);
-            List<MarineStation> stationsWithLocation = allNifsStations.stream()
-                    .filter(s -> s.getLat() != null && s.getLon() != null)
-                    .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .filter(s -> !s.getExternalStationId().equals(station.getExternalStationId())) // 현재 관측소 제외
-                    .toList();
-            
-            if (!stationsWithLocation.isEmpty()) {
-                // 요청 좌표 기준으로 거리순 정렬하여 다음 가까운 관측소 찾기
-                MarineStation nextStation = stationsWithLocation.stream()
-                        .min(Comparator.comparingDouble(s ->
-                                DistanceCalculator.calculateDistance(
-                                        requestLat, requestLon,
-                                        s.getLat(), s.getLon())))
-                        .orElse(null);
-                
-                if (nextStation != null) {
-                    double distance = DistanceCalculator.calculateDistance(
-                            requestLat, requestLon,
-                            nextStation.getLat(), nextStation.getLon());
-                    log.info("다음 가까운 NIFS RISA 관측소 시도: stationId={}, name={}, distance={}km",
-                            nextStation.getExternalStationId(), nextStation.getName(), Math.round(distance * 10.0) / 10.0);
-                    
-                    EnvironmentSummaryResponse.Water nextResult = fetchWaterDataFromStation(nextStation);
-                    
-                    // 다음 관측소에서 수온 데이터를 얻었으면 반환
-                    if (nextResult.midLayerTemp() != null || nextResult.surfaceTemp() != null) {
-                        log.info("다음 관측소에서 수온 데이터 획득: stationId={}, temp={}",
-                                nextStation.getExternalStationId(), nextResult.midLayerTemp());
-                        return nextResult;
-                    } else {
-                        log.warn("다음 관측소에서도 수온 데이터를 얻지 못했습니다: stationId={}", nextStation.getExternalStationId());
+        return fetchWaterDataFromStation(station)
+                .flatMap(firstResult -> {
+                    // 첫 관측소에 유효한 수온 데이터가 있으면 그대로 사용
+                    if (firstResult.midLayerTemp() != null || firstResult.surfaceTemp() != null) {
+                        return Mono.just(firstResult);
                     }
-                }
-            } else {
-                log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
-            }
-        }
-        
-        return result;
+
+                    log.info("수온 데이터가 없어 다음 가까운 NIFS RISA 관측소를 시도합니다: stationId={}",
+                            station.getExternalStationId());
+
+                    // 이미 조회한 NIFS 관측소 리스트에서 다음 가까운 관측소 찾기
+                    List<MarineStation> candidates = allNifsStations.stream()
+                            .filter(s -> s.getLat() != null && s.getLon() != null)
+                            .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
+                            .filter(s -> !Objects.equals(
+                                    s.getExternalStationId(), station.getExternalStationId()))
+                            .toList();
+
+                    if (candidates.isEmpty()) {
+                        log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    MarineStation nextStation = candidates.stream()
+                            .min(Comparator.comparingDouble(s ->
+                                    DistanceCalculator.calculateDistance(
+                                            requestLat, requestLon, s.getLat(), s.getLon())))
+                            .orElse(null);
+
+                    if (nextStation == null) {
+                        log.warn("다음 가까운 NIFS RISA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    double distance = DistanceCalculator.calculateDistance(
+                            requestLat, requestLon, nextStation.getLat(), nextStation.getLon());
+                    log.info("다음 가까운 NIFS RISA 관측소 시도: stationId={}, name={}, distance={}km",
+                            nextStation.getExternalStationId(), nextStation.getName(),
+                            Math.round(distance * 10.0) / 10.0);
+
+                    return fetchWaterDataFromStation(nextStation)
+                            .map(nextResult -> {
+                                if (nextResult.midLayerTemp() != null || nextResult.surfaceTemp() != null) {
+                                    log.info("다음 관측소에서 수온 데이터 획득: stationId={}, temp={}",
+                                            nextStation.getExternalStationId(), nextResult.midLayerTemp());
+                                    return nextResult;
+                                } else {
+                                    log.warn("다음 관측소에서도 수온 데이터를 얻지 못했습니다: stationId={}",
+                                            nextStation.getExternalStationId());
+                                    return firstResult;
+                                }
+                            });
+                });
     }
 
     /**
-     * 특정 관측소에서 수온/염분/용존산소 데이터 조회
+     * 특정 NIFS 관측소에서 수온/염분/용존산소 데이터 조회
      */
-    private EnvironmentSummaryResponse.Water fetchWaterDataFromStation(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Water> fetchWaterDataFromStation(MarineStation station) {
         String stationId = station.getExternalStationId();
         log.info("수온 데이터 조회 시작: stationId={}, name={}", stationId, station.getName());
 
-        try {
-            NifsRisaResponse.NifsRisaItem observation = nifsRisaClient
-                    .fetchLatestObservation(stationId)
-                    .block(); // 비동기 호출을 동기로 변환
+        return nifsRisaClient.fetchLatestObservation(stationId)
+                .map(observation -> {
+                    Double waterTemp = observation.getWaterTemp();
+                    log.info("수온 데이터 조회 성공: stationId={}, temp={}, layer={}",
+                            stationId, waterTemp, observation.getObsLayInt());
 
-            if (observation == null) {
-                log.warn("수온 데이터 조회 실패: observation이 null입니다. stationId={} (API에서 제공하지 않을 수 있음)", stationId);
-                return EnvironmentSummaryResponse.Water.builder().build();
-            }
-
-            Double waterTemp = observation.getWaterTemp();
-            log.info("수온 데이터 조회 성공: stationId={}, temp={}, layer={}", 
-                    stationId, waterTemp, observation.getObsLayInt());
-
-            return EnvironmentSummaryResponse.Water.builder()
-                    .midLayerTemp(waterTemp)
-                    .surfaceTemp(waterTemp) // 중층 데이터를 표층으로도 사용
-                    .salinity(observation.getSalinity()) // 현재 API에서 제공하지 않음
-                    .dissolvedOxygen(observation.getDissolvedOxygen()) // 현재 API에서 제공하지 않음
-                    .build();
-        } catch (Exception e) {
-            log.error("수온 데이터 조회 실패: stationId={}", stationId, e);
-            return EnvironmentSummaryResponse.Water.builder().build();
-        }
+                    return EnvironmentSummaryResponse.Water.builder()
+                            .midLayerTemp(waterTemp)
+                            .surfaceTemp(waterTemp) // 중층 데이터를 표층으로도 사용
+                            .salinity(observation.getSalinity())
+                            .dissolvedOxygen(observation.getDissolvedOxygen())
+                            .build();
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("수온 데이터 조회 실패: observation이 null입니다. stationId={} (API에서 제공하지 않을 수 있음)",
+                                        stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Water.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("수온 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Water.builder().build());
+                });
     }
 
     /**
      * 파고/풍향/풍속 데이터 조회
-     * 풍향/풍속이 null이면 최대 3번째 관측소까지 시도
-     * 
-     * @param station 첫 번째 관측소
-     * @param requestLat 요청한 위도
-     * @param requestLon 요청한 경도
+     * - 첫 관측소에서 파고만 있고 풍향/풍속이 없으면
+     * 미리 조회한 KMA 관측소 리스트를 이용해
+     * 최대 MAX_FALLBACK_STATIONS 개까지 다른 관측소에서 풍향/풍속을 보충
      */
-    private EnvironmentSummaryResponse.Wave fetchWaveData(MarineStation station, double requestLat, double requestLon) {
+    private Mono<EnvironmentSummaryResponse.Wave> fetchWaveData(MarineStation station,
+                                                                double requestLat,
+                                                                double requestLon,
+                                                                List<MarineStation> allKmaStations) {
         if (station == null) {
             log.warn("파고 데이터 조회 실패: 관측소가 null입니다");
-            return EnvironmentSummaryResponse.Wave.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Wave.builder().build());
         }
 
-        // 첫 번째 관측소 시도
-        EnvironmentSummaryResponse.Wave result = fetchWaveDataFromStation(station);
-        Double significantWaveHeight = result.significantWaveHeight(); // 첫 번째 관측소의 파고 저장
-        
-        // 풍향/풍속이 모두 null이고, 파고 데이터는 있는 경우 다음 가까운 관측소 시도 (최대 10개까지 또는 풍향/풍속 데이터를 찾을 때까지)
-        if (result.windDirectionDeg() == null && result.windSpeedMs() == null && significantWaveHeight != null) {
-            log.info("풍향/풍속 데이터가 없어 다음 가까운 KMA 관측소를 시도합니다: stationId={}", station.getExternalStationId());
-            
-            // 요청 좌표 기준으로 다음 가까운 관측소 찾기
-            List<MarineStation> allKmaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KMA_SEA_OBS);
-            List<MarineStation> stationsWithLocation = allKmaStations.stream()
-                    .filter(s -> s.getLat() != null && s.getLon() != null)
-                    .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .filter(s -> !s.getExternalStationId().equals(station.getExternalStationId())) // 현재 관측소 제외
-                    .sorted(Comparator.comparingDouble(s ->
-                            DistanceCalculator.calculateDistance(requestLat, requestLon, s.getLat(), s.getLon())))
-                    .toList();
-            
-            // 이미 시도한 관측소 목록
-            List<String> triedStationIds = new ArrayList<>();
-            triedStationIds.add(station.getExternalStationId());
-            
-            // 최대 9개 더 시도 (총 10개까지) 또는 풍향/풍속 데이터를 찾을 때까지
-            int maxAttempts = Math.min(9, stationsWithLocation.size());
-            for (int i = 0; i < maxAttempts; i++) {
-                MarineStation nextStation = stationsWithLocation.get(i);
-                
-                if (triedStationIds.contains(nextStation.getExternalStationId())) {
-                    continue;
-                }
-                
-                double distance = DistanceCalculator.calculateDistance(
-                        requestLat, requestLon,
-                        nextStation.getLat(), nextStation.getLon());
-                log.info("다음 가까운 KMA 관측소 시도 ({}/{}): stationId={}, name={}, distance={}km",
-                        i + 2, maxAttempts + 1, nextStation.getExternalStationId(), nextStation.getName(), Math.round(distance * 10.0) / 10.0);
-                
-                EnvironmentSummaryResponse.Wave nextResult = fetchWaveDataFromStation(nextStation);
-                triedStationIds.add(nextStation.getExternalStationId());
-                
-                // 다음 관측소에서 풍향/풍속 데이터를 얻었으면 병합
-                if (nextResult.windDirectionDeg() != null || nextResult.windSpeedMs() != null) {
-                    log.info("관측소에서 풍향/풍속 데이터 획득: stationId={}, wd={}, ws={}",
-                            nextStation.getExternalStationId(), nextResult.windDirectionDeg(), nextResult.windSpeedMs());
-                    return EnvironmentSummaryResponse.Wave.builder()
-                            .significantWaveHeight(significantWaveHeight) // 첫 번째 관측소의 파고 사용
-                            .windDirectionDeg(nextResult.windDirectionDeg())
-                            .windSpeedMs(nextResult.windSpeedMs())
-                            .build();
-                } else {
-                    log.warn("관측소에서 풍향/풍속 데이터를 얻지 못했습니다: stationId={}", nextStation.getExternalStationId());
-                }
-            }
-            
-            log.warn("{}개 관측소를 모두 시도했지만 풍향/풍속 데이터를 얻지 못했습니다.", maxAttempts + 1);
-        }
-        
-        return result;
+        return fetchWaveDataFromStation(station)
+                .flatMap(firstResult -> {
+                    Double significantWaveHeight = firstResult.significantWaveHeight();
+
+                    // 풍향/풍속이 있거나, 파고 자체도 없으면 더 시도하지 않음
+                    if ((firstResult.windDirectionDeg() != null || firstResult.windSpeedMs() != null)
+                            || significantWaveHeight == null) {
+                        return Mono.just(firstResult);
+                    }
+
+                    log.info("풍향/풍속 데이터가 없어 다음 가까운 KMA 관측소를 시도합니다: stationId={}",
+                            station.getExternalStationId());
+
+                    // 이미 조회한 KMA 관측소 리스트에서 fallback 후보 정렬
+                    List<MarineStation> candidates = allKmaStations.stream()
+                            .filter(s -> s.getLat() != null && s.getLon() != null)
+                            .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
+                            .filter(s -> !Objects.equals(
+                                    s.getExternalStationId(), station.getExternalStationId()))
+                            .sorted(Comparator.comparingDouble(s ->
+                                    DistanceCalculator.calculateDistance(
+                                            requestLat, requestLon, s.getLat(), s.getLon())))
+                            .limit(MAX_FALLBACK_STATIONS) // 1차 관측소 포함 총 10개가 되도록 제한
+                            .toList();
+
+                    if (candidates.isEmpty()) {
+                        log.warn("다음 가까운 KMA 관측소를 찾을 수 없습니다.");
+                        return Mono.just(firstResult);
+                    }
+
+                    return Flux.fromIterable(candidates)
+                            .concatMap(nextStation -> {
+                                double distance = DistanceCalculator.calculateDistance(
+                                        requestLat, requestLon, nextStation.getLat(), nextStation.getLon());
+                                log.info("다음 가까운 KMA 관측소 시도: stationId={}, name={}, distance={}km",
+                                        nextStation.getExternalStationId(), nextStation.getName(),
+                                        Math.round(distance * 10.0) / 10.0);
+
+                                return fetchWaveDataFromStation(nextStation)
+                                        .filter(wave -> wave.windDirectionDeg() != null
+                                                || wave.windSpeedMs() != null)
+                                        .doOnNext(wave -> log.info("관측소에서 풍향/풍속 데이터 획득: stationId={}, wd={}, ws={}",
+                                                nextStation.getExternalStationId(),
+                                                wave.windDirectionDeg(), wave.windSpeedMs()));
+                            })
+                            .next()
+                            .map(waveWithWind -> EnvironmentSummaryResponse.Wave.builder()
+                                    .significantWaveHeight(significantWaveHeight)
+                                    .windDirectionDeg(waveWithWind.windDirectionDeg())
+                                    .windSpeedMs(waveWithWind.windSpeedMs())
+                                    .build())
+                            .switchIfEmpty(Mono.fromRunnable(() ->
+                                            log.warn("여러 관측소를 시도했지만 풍향/풍속 데이터를 얻지 못했습니다."))
+                                    .then(Mono.just(firstResult)));
+                });
     }
 
     /**
-     * 특정 관측소에서 파고/풍향/풍속 데이터 조회
+     * 특정 KMA 관측소에서 파고/풍향/풍속 데이터 조회
      */
-    private EnvironmentSummaryResponse.Wave fetchWaveDataFromStation(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Wave> fetchWaveDataFromStation(MarineStation station) {
         String stationId = station.getExternalStationId();
         log.info("파고 데이터 조회 시작: stationId={}, name={}", stationId, station.getName());
 
-        try {
-            KmaSeaObsResponse.Item observation = kmaSeaObsClient
-                    .fetchLatestObservation(stationId)
-                    .block();
+        return kmaSeaObsClient.fetchLatestObservation(stationId)
+                .map(observation -> {
+                    log.info("파고 데이터 조회 성공: stationId={}, wh={}, wd={}, ws={}",
+                            stationId, observation.getWh(), observation.getWd(), observation.getWs());
 
-            if (observation == null) {
-                log.warn("파고 데이터 조회 실패: observation이 null입니다. stationId={}", stationId);
-                return EnvironmentSummaryResponse.Wave.builder().build();
-            }
-
-            log.info("파고 데이터 조회 성공: stationId={}, wh={}, wd={}, ws={}", 
-                    stationId, observation.getWh(), observation.getWd(), observation.getWs());
-
-            return EnvironmentSummaryResponse.Wave.builder()
-                    .significantWaveHeight(observation.getWh())
-                    .windDirectionDeg(observation.getWd())
-                    .windSpeedMs(observation.getWs())
-                    .build();
-        } catch (Exception e) {
-            log.error("파고 데이터 조회 실패: stationId={}", stationId, e);
-            return EnvironmentSummaryResponse.Wave.builder().build();
-        }
+                    return EnvironmentSummaryResponse.Wave.builder()
+                            .significantWaveHeight(observation.getWh())
+                            .windDirectionDeg(observation.getWd())
+                            .windSpeedMs(observation.getWs())
+                            .build();
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("파고 데이터 조회 실패: observation이 null입니다. stationId={}", stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Wave.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("파고 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Wave.builder().build());
+                });
     }
 
     /**
-     * 조위 데이터 조회
+     * 조위 데이터 조회 (Reactive)
      */
-    private EnvironmentSummaryResponse.Tide fetchTideData(MarineStation station) {
+    private Mono<EnvironmentSummaryResponse.Tide> fetchTideData(MarineStation station) {
         if (station == null) {
-            return EnvironmentSummaryResponse.Tide.builder().build();
+            return Mono.just(EnvironmentSummaryResponse.Tide.builder().build());
         }
 
-        try {
-            KhoaTideResponse.Item observation = khoaTideClient
-                    .fetchLatestTideLevel(station.getExternalStationId())
-                    .block();
+        String stationId = station.getExternalStationId();
 
-            if (observation == null) {
-                return EnvironmentSummaryResponse.Tide.builder().build();
-            }
+        return khoaTideClient.fetchLatestTideLevel(stationId)
+                .flatMap(observation -> {
+                    // 관측시각 파싱 (yyyyMMddHHmm)
+                    ZonedDateTime observedAt = null;
+                    if (observation.getObsDt() != null && observation.getObsDt().length() >= 12) {
+                        try {
+                            String dtStr = observation.getObsDt();
+                            LocalDate date = LocalDate.parse(dtStr.substring(0, 8),
+                                    DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            LocalTime time = LocalTime.parse(dtStr.substring(8, 12),
+                                    DateTimeFormatter.ofPattern("HHmm"));
+                            observedAt = ZonedDateTime.of(date, time, ZONE_SEOUL);
+                        } catch (Exception e) {
+                            log.warn("조위 관측시각 파싱 실패: {}", observation.getObsDt(), e);
+                        }
+                    }
 
-            // 관측시각 파싱 (yyyyMMddHHmm 형식)
-            ZonedDateTime observedAt = null;
-            if (observation.getObsDt() != null && observation.getObsDt().length() >= 12) {
-                try {
-                    String dtStr = observation.getObsDt();
-                    LocalDate date = LocalDate.parse(dtStr.substring(0, 8), DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    LocalTime time = LocalTime.parse(dtStr.substring(8, 12), DateTimeFormatter.ofPattern("HHmm"));
-                    observedAt = ZonedDateTime.of(date, time, ZoneId.of("Asia/Seoul"));
-                } catch (Exception e) {
-                    log.warn("조위 관측시각 파싱 실패: {}", observation.getObsDt(), e);
-                }
-            }
-
-            return EnvironmentSummaryResponse.Tide.builder()
-                    .tideLevelCm(observation.getTideLevel())
-                    .tideObservedAt(observedAt)
-                    .build();
-        } catch (Exception e) {
-            log.error("조위 데이터 조회 실패: stationId={}", station.getExternalStationId(), e);
-            return EnvironmentSummaryResponse.Tide.builder().build();
-        }
+                    return Mono.just(EnvironmentSummaryResponse.Tide.builder()
+                            .tideLevelCm(observation.getTideLevel())
+                            .tideObservedAt(observedAt)
+                            .build());
+                })
+                .switchIfEmpty(Mono.fromRunnable(() ->
+                                log.warn("조위 데이터 조회 실패: observation이 null입니다. stationId={}", stationId))
+                        .then(Mono.just(EnvironmentSummaryResponse.Tide.builder().build())))
+                .onErrorResume(e -> {
+                    log.error("조위 데이터 조회 실패: stationId={}", stationId, e);
+                    return Mono.just(EnvironmentSummaryResponse.Tide.builder().build());
+                });
     }
 
     /**
-     * 관측소 정보 빌드
+     * 관측소 정보 + 거리 정보 빌드
+     * - NIFS 좌표가 0.0,0.0인 경우 KHOA 관측소 좌표를 참고해서 거리 계산
      */
-    private EnvironmentSummaryResponse.StationInfo buildStationInfo(MarineStation station, double lat, double lon) {
+    private EnvironmentSummaryResponse.StationInfo buildStationInfo(MarineStation station,
+                                                                    double lat,
+                                                                    double lon,
+                                                                    List<MarineStation> khoaStations) {
         if (station == null) {
             return null;
         }
 
-        // NIFS RISA 관측소의 경우 좌표가 없으면 (0.0, 0.0)이므로, KHOA 조위관측소 좌표를 참고하여 거리 계산
         double stationLat = station.getLat();
         double stationLon = station.getLon();
-        
-        if (station.getExternalSource() == StationSource.NIFS_RISA && 
-            (stationLat == 0.0 || stationLon == 0.0)) {
-            // 가장 가까운 KHOA 조위관측소 좌표를 참고하여 거리 계산
-            List<MarineStation> khoaStations = marineStationRepository.findByExternalSourceAndIsActiveTrue(StationSource.KHOA_SURVEY_TIDE);
-            List<MarineStation> khoaWithLocation = khoaStations.stream()
+
+        if (station.getExternalSource() == StationSource.NIFS_RISA
+                && (stationLat == 0.0 || stationLon == 0.0)
+                && khoaStations != null && !khoaStations.isEmpty()) {
+
+            MarineStation nearestKhoa = khoaStations.stream()
                     .filter(s -> s.getLat() != null && s.getLon() != null)
                     .filter(s -> s.getLat() != 0.0 && s.getLon() != 0.0)
-                    .toList();
+                    .min(Comparator.comparingDouble(s ->
+                            DistanceCalculator.calculateDistance(lat, lon, s.getLat(), s.getLon())))
+                    .orElse(null);
 
-            if (!khoaWithLocation.isEmpty()) {
-                MarineStation nearestKhoa = khoaWithLocation.stream()
-                        .min(Comparator.comparingDouble(s ->
-                                DistanceCalculator.calculateDistance(lat, lon, s.getLat(), s.getLon())))
-                        .orElse(null);
-
-                if (nearestKhoa != null) {
-                    stationLat = nearestKhoa.getLat();
-                    stationLon = nearestKhoa.getLon();
-                }
+            if (nearestKhoa != null) {
+                stationLat = nearestKhoa.getLat();
+                stationLon = nearestKhoa.getLon();
             }
         }
 
@@ -8866,11 +8684,10 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
         return EnvironmentSummaryResponse.StationInfo.builder()
                 .id(station.getExternalStationId())
                 .name(station.getName())
-                .distanceKm(Math.round(distance * 10.0) / 10.0) // 소수점 첫째자리까지
+                .distanceKm(Math.round(distance * 10.0) / 10.0)
                 .build();
     }
 }
-
 
 
 ================================================================================
@@ -10911,6 +10728,151 @@ public enum MissionStatus {
     CLOSED
 }
 
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\mission\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.mission;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
 
 
 ================================================================================

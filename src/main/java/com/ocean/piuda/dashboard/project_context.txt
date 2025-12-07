@@ -1,0 +1,789 @@
+
+================================================================================
+File Path: .\controller\DashboardController.java
+================================================================================
+
+package com.ocean.piuda.dashboard.controller;
+
+import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
+import com.ocean.piuda.dashboard.service.DashboardQueryService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/dashboard")
+@RequiredArgsConstructor
+@Tag(name = "Dashboard API", description = "대시보드 작업 영역 및 통계 데이터 조회")
+public class DashboardController {
+
+    private final DashboardQueryService dashboardQueryService;
+
+    @GetMapping("/areas/{id}")
+    @Operation(summary = "작업 영역 상세 조회", description = "ID 기반으로 작업 영역의 상세 데이터(성장률, 수질 등)를 조회합니다.")
+    public ApiData<AreaDetailResponse> getAreaDetail(@PathVariable Long id) {
+        return ApiData.ok(dashboardQueryService.getAreaDetail(id));
+    }
+}
+
+
+================================================================================
+File Path: .\dto\response\AreaDetailResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.dashboard.entity.*;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+
+@Builder
+@Getter
+public class AreaDetailResponse {
+
+    private Long id;
+    private BasicInfo basic;
+
+    // Row-Oriented Lists (Standard REST)
+    private List<TransplantDto> transplants;
+    private List<GrowthLogDto> growthLogs;
+    private List<WaterLogDto> waterLogs;
+    private BiodiversityDto biodiversity;
+    private List<MediaDto> mediaLogs;
+
+    // --- Inner DTOs ---
+
+    @Builder @Getter
+    public static class BasicInfo {
+        private String name;
+        private LocalDate startDate;
+        private String habitat;
+        private Double depth;
+        private Double areaSize;
+        private String stage;
+        private Double lat;
+        private Double lon;
+    }
+
+    @Builder @Getter
+    public static class TransplantDto {
+        private String species;
+        private Integer count;
+        private Double area;
+    }
+
+    @Builder @Getter
+    public static class GrowthLogDto {
+        private LocalDate date;
+        private Double attachmentRate;
+        private Double survivalRate;
+        private Double growthLength;
+    }
+
+    @Builder @Getter
+    public static class WaterLogDto {
+        private LocalDate date;
+        private Double temperature;
+        private Double dissolvedOxygen;
+        private Double nutrient;
+    }
+
+    @Builder @Getter
+    public static class BiodiversityDto {
+        private Stat before;
+        private Stat after;
+
+        @Builder @Getter
+        public static class Stat {
+            private Integer fishCount;
+            private Integer invertCount;
+            private Double shannonIndex;
+        }
+    }
+
+    @Builder @Getter
+    public static class MediaDto {
+        private LocalDate date;
+        private String url;
+        private String caption;
+    }
+
+    // --- Converter ---
+    public static AreaDetailResponse fromEntity(ProjectArea entity) {
+        return AreaDetailResponse.builder()
+                .id(entity.getId())
+                .basic(BasicInfo.builder()
+                        .name(entity.getName())
+                        .startDate(entity.getStartDate())
+                        .habitat(entity.getHabitat() != null ? entity.getHabitat().getDescription() : null)
+                        .depth(entity.getDepth())
+                        .areaSize(entity.getAreaSize())
+                        .stage(entity.getStatus() != null ? entity.getStatus().getDescription() : null)
+                        .lat(entity.getLat())
+                        .lon(entity.getLon())
+                        .build())
+
+                .transplants(entity.getTransplants().stream()
+                        .map(t -> TransplantDto.builder()
+                                .species(t.getSpeciesName())
+                                .count(t.getCount())
+                                .area(t.getAreaSize())
+                                .build())
+                        .toList())
+
+                .growthLogs(entity.getGrowthLogs().stream()
+                        .sorted(Comparator.comparing(GrowthLog::getRecordDate))
+                        .map(g -> GrowthLogDto.builder()
+                                .date(g.getRecordDate())
+                                .attachmentRate(g.getAttachmentRate())
+                                .survivalRate(g.getSurvivalRate())
+                                .growthLength(g.getGrowthLength())
+                                .build())
+                        .toList())
+
+                .waterLogs(entity.getWaterLogs().stream()
+                        .sorted(Comparator.comparing(WaterLog::getRecordDate))
+                        .map(w -> WaterLogDto.builder()
+                                .date(w.getRecordDate())
+                                .temperature(w.getTemperature())
+                                .dissolvedOxygen(w.getDissolvedOxygen())
+                                .nutrient(w.getNutrient())
+                                .build())
+                        .toList())
+
+                .biodiversity(entity.getBiodiversity() != null ? BiodiversityDto.builder()
+                        .before(BiodiversityDto.Stat.builder()
+                                .fishCount(entity.getBiodiversity().getFishCountBefore())
+                                .invertCount(entity.getBiodiversity().getInvertCountBefore())
+                                .shannonIndex(entity.getBiodiversity().getShannonIndexBefore())
+                                .build())
+                        .after(BiodiversityDto.Stat.builder()
+                                .fishCount(entity.getBiodiversity().getFishCountAfter())
+                                .invertCount(entity.getBiodiversity().getInvertCountAfter())
+                                .shannonIndex(entity.getBiodiversity().getShannonIndexAfter())
+                                .build())
+                        .build() : null)
+
+                .mediaLogs(entity.getMediaLogs().stream()
+                        .sorted(Comparator.comparing(MediaLog::getRecordDate))
+                        .map(m -> MediaDto.builder()
+                                .date(m.getRecordDate())
+                                .url(m.getMediaUrl())
+                                .caption(m.getCaption())
+                                .build())
+                        .toList())
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\entity\BiodiversitySummary.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "biodiversity_summaries")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class BiodiversitySummary {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "area_id")
+    @Setter
+    private ProjectArea projectArea;
+
+    // 복원 전
+    private Integer fishCountBefore;
+    private Integer invertCountBefore;
+    private Double shannonIndexBefore;
+
+    // 복원 후
+    private Integer fishCountAfter;
+    private Integer invertCountAfter;
+    private Double shannonIndexAfter;
+}
+
+
+================================================================================
+File Path: .\entity\GrowthLog.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "growth_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class GrowthLog {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "area_id")
+    @Setter
+    private ProjectArea projectArea;
+
+    private LocalDate recordDate; // 기록 날짜 (YYYY-MM-DD)
+
+    private Double attachmentRate; // 착생률 (%)
+    private Double survivalRate;   // 생존률 (%)
+    private Double growthLength;   // 성장 길이 (mm)
+}
+
+
+================================================================================
+File Path: .\entity\MediaLog.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "media_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class MediaLog {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "area_id")
+    @Setter
+    private ProjectArea projectArea;
+
+    private LocalDate recordDate;
+    private String mediaUrl;
+    private String caption; // 설명 (선택)
+}
+
+
+================================================================================
+File Path: .\entity\ProjectArea.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "project_areas")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder
+public class ProjectArea extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "area_id")
+    private Long id;
+
+    @Column(nullable = false)
+    private String name; // 예: "작업 영역 1"
+
+    private String description; // 상세 설명
+
+    private LocalDate startDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private HabitatType habitat; // String -> HabitatType
+
+    private Double depth; // 수심 (m)
+
+    private Double areaSize; // 면적 (m2) - 숫자형으로 관리 권장
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ProjectStatus status;
+
+    // 좌표 (GeoSpatial 타입 도입 전에는 Double 사용)
+    private Double lat;
+    private Double lon;
+
+    // --- 하위 연관 관계 (Cascade 설정) ---
+
+    @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TransplantLog> transplants = new ArrayList<>();
+
+    @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<GrowthLog> growthLogs = new ArrayList<>();
+
+    @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<WaterLog> waterLogs = new ArrayList<>();
+
+    @OneToOne(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    private BiodiversitySummary biodiversity;
+
+    @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MediaLog> mediaLogs = new ArrayList<>();
+
+    // --- 연관관계 편의 메서드 ---
+    public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
+    public void addGrowth(GrowthLog log) { this.growthLogs.add(log); log.setProjectArea(this); }
+    public void addWater(WaterLog log) { this.waterLogs.add(log); log.setProjectArea(this); }
+    public void setBiodiversity(BiodiversitySummary bio) { this.biodiversity = bio; bio.setProjectArea(this); }
+    public void addMedia(MediaLog log) { this.mediaLogs.add(log); log.setProjectArea(this); }
+}
+
+
+================================================================================
+File Path: .\entity\TransplantLog.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "transplant_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class TransplantLog {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "area_id")
+    @Setter
+    private ProjectArea projectArea;
+
+    private String speciesName; // 감태, 다시마
+    private Integer count;      // 개체수
+    private Double areaSize;    // 이식 면적 (m2)
+}
+
+
+================================================================================
+File Path: .\entity\WaterLog.java
+================================================================================
+
+package com.ocean.piuda.dashboard.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "water_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class WaterLog {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "area_id")
+    @Setter
+    private ProjectArea projectArea;
+
+    private LocalDate recordDate;
+
+    private Double temperature;     // 수온
+    private Double dissolvedOxygen; // DO
+    private Double nutrient;        // 영양염류
+}
+
+
+================================================================================
+File Path: .\enums\HabitatType.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum HabitatType {
+    KELP_FOREST("켈프숲"),
+    SEAGRASS_BED("잘피밭"),
+    URCHIN_BARREN("성게 황폐지"),
+    ROCKY_REEF("암반리프"),
+    SOFT_BOTTOM("연질저서"),
+    ARTIFICIAL_STRUCTURE("인공구조물"),
+    OTHER("기타");
+
+    private final String description;
+}
+
+
+================================================================================
+File Path: .\enums\ProjectStatus.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ProjectStatus {
+    TRANSPLANT_COMPLETED("이식 완료"),
+    GROWING("성장 중"),
+    STABLE("안정화 구역"),
+    MONITORING("모니터링 중");
+
+    private final String description;
+}
+
+
+================================================================================
+File Path: .\initializer\DashboardDataInitializer.java
+================================================================================
+
+package com.ocean.piuda.dashboard.initializer;
+
+import com.ocean.piuda.dashboard.entity.*;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@Profile("!prod")
+public class DashboardDataInitializer implements CommandLineRunner {
+
+    private final ProjectAreaRepository projectAreaRepository;
+
+    @Override
+    @Transactional
+    public void run(String... args) throws Exception {
+        if (projectAreaRepository.count() > 0) {
+            return;
+        }
+
+        log.info("Dashboard 초기 데이터 적재 시작");
+        createPohangData();
+        // createUljinData(); // 필요 시 추가
+    }
+
+    private void createPohangData() {
+        // 기존 pohang-1 데이터
+        ProjectArea area = ProjectArea.builder()
+                .name("작업 영역 1")
+                .startDate(LocalDate.of(2025, 7, 15))
+                .habitat(HabitatType.ROCKY_REEF)
+                .depth(8.0)
+                .areaSize(2100.0)
+                .status(ProjectStatus.TRANSPLANT_COMPLETED)
+                .lat(36.0762)
+                .lon(129.4432)
+                .build();
+
+        // 이식 데이터
+        area.addTransplant(TransplantLog.builder().speciesName("감태").count(2100).areaSize(1100.0).build());
+        area.addTransplant(TransplantLog.builder().speciesName("다시마").count(700).areaSize(650.0).build());
+        area.addTransplant(TransplantLog.builder().speciesName("곰피").count(380).areaSize(350.0).build());
+
+        // 시계열 데이터 생성 유틸
+        LocalDate baseDate = LocalDate.of(2025, 1, 15);
+        List<Double> attach = List.of(60.0, 65.0, 71.0, 77.0, 80.0, 82.0);
+        List<Double> surviv = List.of(92.0, 90.0, 89.0, 88.0, 86.0, 85.0);
+        List<Double> growth = List.of(1.0, 1.2, 1.5, 1.8, 2.0, 2.3);
+
+        List<Double> wTemp = List.of(9.6, 10.0, 11.3, 13.7, 16.1);
+        List<Double> wDo = List.of(8.6, 8.4, 8.2, 8.0, 7.8);
+        List<Double> wNut = List.of(0.29, 0.26, 0.24, 0.22, 0.21);
+
+        for (int i = 0; i < 6; i++) {
+            LocalDate date = baseDate.plusMonths(i);
+            // Growth
+            area.addGrowth(GrowthLog.builder()
+                    .recordDate(date)
+                    .attachmentRate(attach.get(i))
+                    .survivalRate(surviv.get(i))
+                    .growthLength(growth.get(i))
+                    .build());
+
+            // Water (데이터가 5개뿐이라 체크)
+            if (i < 5) {
+                area.addWater(WaterLog.builder()
+                        .recordDate(date)
+                        .temperature(wTemp.get(i))
+                        .dissolvedOxygen(wDo.get(i))
+                        .nutrient(wNut.get(i))
+                        .build());
+            }
+        }
+
+        // 생물다양성
+        area.setBiodiversity(BiodiversitySummary.builder()
+                .fishCountBefore(5).fishCountAfter(11)
+                .invertCountBefore(10).invertCountAfter(18)
+                .shannonIndexBefore(1.12).shannonIndexAfter(1.78)
+                .build());
+
+        // 미디어 (가상 URL)
+        String imgUrl = "/images/underSea.jpg";
+        area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 7, 1)).mediaUrl(imgUrl).caption("2025.07").build());
+        area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 8, 1)).mediaUrl(imgUrl).caption("2025.08").build());
+
+        projectAreaRepository.save(area);
+        log.info("Pohang 데이터 생성 완료 (ID: {})", area.getId());
+    }
+}
+
+
+================================================================================
+File Path: .\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.dashboard;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\repository\ProjectAreaRepository.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository;
+
+import com.ocean.piuda.dashboard.entity.ProjectArea;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> {
+    // 기본 findById는 Lazy Loading 발생
+    // attributePaths에 정의된 필드들은 Eager Loading (Join Fetch) 처리
+    @EntityGraph(attributePaths = {
+            "transplants",
+            "growthLogs",
+            "waterLogs",
+            "biodiversity",
+            "mediaLogs"
+    })
+    Optional<ProjectArea> findById(Long id);
+}
+
+
+================================================================================
+File Path: .\service\DashboardQueryService.java
+================================================================================
+
+package com.ocean.piuda.dashboard.service;
+
+import com.ocean.piuda.dashboard.entity.ProjectArea;
+import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
+import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class DashboardQueryService {
+
+    private final ProjectAreaRepository projectAreaRepository;
+
+    public AreaDetailResponse getAreaDetail(Long id) {
+        ProjectArea area = projectAreaRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        // Entity -> DTO 변환 (Lazy Loading 발생, Transaction 내라 안전)
+        return AreaDetailResponse.fromEntity(area);
+    }
+}
+
