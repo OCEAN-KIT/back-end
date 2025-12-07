@@ -3,6 +3,7 @@ package com.ocean.piuda.environment.client.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class NifsRisaResponse {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @Slf4j // 내부 클래스에 직접 로그 어노테이션 적용
     public static class NifsRisaItem {
         @JsonProperty("sta_cde")
         private String staCde; // 관측소 코드 (기존 obs_post_id)
@@ -56,6 +58,10 @@ public class NifsRisaResponse {
         @JsonProperty("obs_tim")
         private String obsTim; // 관측시각
 
+        // 파싱된 값 캐싱용 (JSON 직렬화 제외)
+        private transient Integer obsLayIntCached;
+        private transient Double waterTempCached;
+
         // 관측소 위치 정보는 별도 API로 가져와야 할 수 있음
         // 임시로 null 처리
         public Double getObsLat() {
@@ -74,18 +80,51 @@ public class NifsRisaResponse {
             return staNamKor;
         }
 
+        /**
+         * 수층(Integer) 파싱 + 캐싱
+         */
         public Integer getObsLayInt() {
+            if (obsLayIntCached != null) {
+                return obsLayIntCached;
+            }
+
+            if (obsLay == null || obsLay.isBlank()) {
+                return null;
+            }
+
             try {
-                return Integer.parseInt(obsLay);
-            } catch (Exception e) {
+                obsLayIntCached = Integer.parseInt(obsLay.trim());
+                return obsLayIntCached;
+            } catch (NumberFormatException e) {
+                log.warn("수층(obs_lay) 파싱 실패: sta_cde={}, obs_lay={}", staCde, obsLay);
                 return null;
             }
         }
 
+        /**
+         * 수온(Double) 파싱 + 캐싱
+         * - 빈 값 / -99 / -99.0 등은 데이터 없음으로 처리
+         */
         public Double getWaterTemp() {
+            if (waterTempCached != null) {
+                return waterTempCached;
+            }
+
+            if (wtrTmp == null || wtrTmp.isBlank()) {
+                return null;
+            }
+
+            String value = wtrTmp.trim();
+            if ("-99".equals(value) || "-99.0".equals(value)) {
+                // 관측값 없음
+                return null;
+            }
+
             try {
-                return Double.parseDouble(wtrTmp);
-            } catch (Exception e) {
+                waterTempCached = Double.parseDouble(value);
+                return waterTempCached;
+            } catch (NumberFormatException e) {
+                log.warn("수온(wtr_tmp) 파싱 실패: sta_cde={}, wtr_tmp={}", staCde, wtrTmp);
                 return null;
             }
         }
@@ -100,4 +139,3 @@ public class NifsRisaResponse {
         }
     }
 }
-

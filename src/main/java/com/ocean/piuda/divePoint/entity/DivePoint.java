@@ -1,4 +1,4 @@
-package com.ocean.piuda.environment.domain;
+package com.ocean.piuda.divePoint.entity;
 
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
@@ -6,8 +6,8 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 /**
- * 다이빙 포인트 엔티티
- * Mission에서 참조하는 다이빙 지점 정보
+ * 오션캠퍼스 지정 다이빙 포인트로,
+ * 미션과 게시물 에서 참조한다
  */
 @Entity
 @Table(name = "dive_points", indexes = {
