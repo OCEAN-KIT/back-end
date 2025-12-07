@@ -1,19 +1,19 @@
 package com.ocean.piuda.admin.dashboard.dto;
 
-public record DashboardSummaryResponse(
+public record AdminDashboardSummaryResponse(
         Long totalSubmissions,
         Long pending,
         Long approved,
         Long rejected,
         Long deleted
 ) {
-    public static DashboardSummaryResponse of(
+    public static AdminDashboardSummaryResponse of(
             long total,
             long pending,
             long approved,
             long rejected,
             long deleted
     ) {
-        return new DashboardSummaryResponse(total, pending, approved, rejected, deleted);
+        return new AdminDashboardSummaryResponse(total, pending, approved, rejected, deleted);
     }
 }
