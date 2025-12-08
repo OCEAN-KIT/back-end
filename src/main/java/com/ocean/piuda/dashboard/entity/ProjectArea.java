@@ -3,10 +3,13 @@ package com.ocean.piuda.dashboard.entity;
 import com.ocean.piuda.dashboard.enums.HabitatType;
 import com.ocean.piuda.dashboard.enums.ProjectStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.global.util.GeometryUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.locationtech.jts.geom.Point;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +69,27 @@ public class ProjectArea extends BaseEntity {
     @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MediaLog> mediaLogs = new ArrayList<>();
+
+
+    @Column(columnDefinition = "geometry(Point, 4326)")
+    private Point location;
+    // DTO용 편의 메서드 (Getter)
+    public Double getLat() {
+        return this.location != null ? this.location.getY() : null;
+    }
+
+    public Double getLon() {
+        return this.location != null ? this.location.getX() : null;
+    }
+
+    // 데이터 세팅 편의 메서드 (Setter)
+    public void setLocation(Double lat, Double lon) {
+        if (lat != null && lon != null) {
+            this.location = GeometryUtils.createPoint(lon, lat);
+        } else {
+            this.location = null;
+        }
+    }
 
     // --- 연관관계 편의 메서드 ---
     public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
