@@ -6,26 +6,176 @@ File Path: .\controller\DashboardController.java
 package com.ocean.piuda.dashboard.controller;
 
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
 import com.ocean.piuda.dashboard.service.DashboardQueryService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@Tag(name = "Dashboard API", description = "대시보드 작업 영역 및 통계 데이터 조회")
+@Tag(name = "Dashboard API", description = "대시보드 작업 영역(PostGIS) 및 통계 데이터 조회")
 public class DashboardController {
 
     private final DashboardQueryService dashboardQueryService;
 
+    // 1. 상세 데이터 API
     @GetMapping("/areas/{id}")
     @Operation(summary = "작업 영역 상세 조회", description = "ID 기반으로 작업 영역의 상세 데이터(성장률, 수질 등)를 조회합니다.")
     public ApiData<AreaDetailResponse> getAreaDetail(@PathVariable Long id) {
         return ApiData.ok(dashboardQueryService.getAreaDetail(id));
     }
+
+    /**
+     * @deprecated
+     *   - 실제 화면 구현에서는 마커 클릭 시 ID 기반 단건 상세 조회만 사용하고 있어, 반경 기준 상세 리스트는 필요하지 않아 미사용 상태입니다.
+     *   - 설계 의도: 특정 좌표/반경 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회하는 분석/리포트 용도.
+     *   - 향후 관리자용 리포트/분석 화면 등에서 재활용 가능성을 고려해 일단 보존합니다.
+     */
+    @Deprecated
+    @GetMapping("/areas/nearby")
+    @Operation(
+            summary = "[Deprecated] 반경 기반 작업 영역 상세 검색",
+            description = """
+                설계 의도: 중심 좌표와 반경(km) 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회
+                                
+                실제 구현에서는 영역별 상세는 ID 기반 단건 조회로 충분하여, 
+                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
+                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
+                """,
+            deprecated = true
+    )
+    public ApiData<List<AreaDetailResponse>> getNearby(
+            @Parameter(description = "위도") @RequestParam Double lat,
+            @Parameter(description = "경도") @RequestParam Double lon,
+            @Parameter(description = "반경(km), 기본값 5.0") @RequestParam(defaultValue = "5.0") Double radius) {
+        return ApiData.ok(dashboardQueryService.getNearbyAreas(lat, lon, radius));
+    }
+
+    /**
+     * @deprecated
+     *   - 실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
+     *   - 설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
+     *   - 향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.
+     */
+    @Deprecated
+    @GetMapping("/areas/bbox")
+    @Operation(
+            summary = "[Deprecated] 뷰포트(BBox) 내 작업 영역 상세 검색",
+            description = """
+                설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
+                
+                실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 
+                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
+                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
+                """,
+            deprecated = true
+    )
+    public ApiData<List<AreaDetailResponse>> getBBox(
+            @RequestParam Double minLat, @RequestParam Double minLon,
+            @RequestParam Double maxLat, @RequestParam Double maxLon) {
+        return ApiData.ok(dashboardQueryService.getAreasInBBox(minLat, minLon, maxLat, maxLon));
+    }
+
+    /**
+     * @deprecated
+     *   - 실제 UX에서는 리스트/지도에는 요약 정보만 보여주고, 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않게 되었습니다.
+     *   - 초기 설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
+     *   - 다만 KNN 기반 상세 리스트가 필요한 별도 화면(예: 관리자 분석 페이지 등)이 생길 수 있어 보존합니다.
+     */
+    @Deprecated
+    @GetMapping("/areas/nearest")
+    @Operation(
+            summary = "[Deprecated] 가장 가까운 작업 영역 상세 검색",
+            description = """
+                설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
+               
+                실제 UX에서는 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않습니다.
+                잠재적 재활용(예: 관리자/분석 화면)을 위해 보존합니다.
+                """,
+            deprecated = true
+    )
+    public ApiData<List<AreaDetailResponse>> getNearest(
+            @RequestParam Double lat, @RequestParam Double lon,
+            @RequestParam(defaultValue = "3") Integer limit) {
+        return ApiData.ok(dashboardQueryService.getNearestAreas(lat, lon, limit));
+    }
+
+    @GetMapping("/stats/nearby")
+    @Operation(summary = "반경 내 통계 요약", description = "반경 내 프로젝트 수, 총 면적, 평균 수심 등을 집계합니다.")
+    public ApiData<AreaStatResponse> getStats(
+            @RequestParam Double lat, @RequestParam Double lon,
+            @RequestParam(defaultValue = "10.0") Double radius) {
+        return ApiData.ok(dashboardQueryService.getNearbyStats(lat, lon, radius));
+    }
+
+    // 2. 지도 마커 전용 API
+
+    @GetMapping("/markers/bbox")
+    @Operation(
+            summary = "지도 뷰포트 내 마커 목록",
+            description = """
+                현재 지도 화면(BBox)에 포함된 작업 영역의 '마커용 요약 정보'를 조회합니다.
+                - 상세 데이터(시계열, 수질, 생물다양성 등)는 포함하지 않습니다.
+                - 마커 클릭 시에는 /api/dashboard/areas/{id} API로 상세 정보를 조회하는 패턴을 권장합니다.
+                """
+    )
+    public ApiData<List<AreaMarkerResponse>> getMarkersInBBox(
+            @Parameter(description = "최소 위도 (south)") @RequestParam Double minLat,
+            @Parameter(description = "최소 경도 (west)") @RequestParam Double minLon,
+            @Parameter(description = "최대 위도 (north)") @RequestParam Double maxLat,
+            @Parameter(description = "최대 경도 (east)") @RequestParam Double maxLon
+    ) {
+        return ApiData.ok(
+                dashboardQueryService.getMarkersInBBox(minLat, minLon, maxLat, maxLon)
+        );
+    }
+
+    @GetMapping("/markers/nearby")
+    @Operation(
+            summary = "반경 내 마커 목록",
+            description = """
+                중심 좌표와 반경(km)으로 주변 작업 영역의 '마커용 요약 정보'를 조회합니다.
+                - 지도/리스트 표시용으로 설계된 경량 응답입니다.
+                - 상세 데이터가 필요하면 /api/dashboard/areas/{id} API를 함께 사용하세요.
+                """
+    )
+    public ApiData<List<AreaMarkerResponse>> getNearbyMarkers(
+            @Parameter(description = "위도") @RequestParam Double lat,
+            @Parameter(description = "경도") @RequestParam Double lon,
+            @Parameter(description = "반경(km), 기본값 5.0") @RequestParam(defaultValue = "5.0") Double radius
+    ) {
+        return ApiData.ok(
+                dashboardQueryService.getNearbyMarkers(lat, lon, radius)
+        );
+    }
+
+    @GetMapping("/markers/nearest")
+    @Operation(
+            summary = "가장 가까운 마커 목록 (KNN)",
+            description = """
+                내 위치에서 가장 가까운 N개의 작업 영역을 KNN(Nearest Neighbor) 순으로 조회합니다.
+                - 응답은 지도/리스트 표시용 '마커 요약 데이터'만 포함합니다.
+                - 마커 클릭 시 /api/dashboard/areas/{id}로 상세 정보를 조회하는 패턴을 권장합니다.
+                """
+    )
+    public ApiData<List<AreaMarkerResponse>> getNearestMarkers(
+            @Parameter(description = "위도") @RequestParam Double lat,
+            @Parameter(description = "경도") @RequestParam Double lon,
+            @Parameter(description = "가져올 마커 개수, 기본값 3") @RequestParam(defaultValue = "3") Integer limit
+    ) {
+        return ApiData.ok(
+                dashboardQueryService.getNearestMarkers(lat, lon, limit)
+        );
+    }
+
 }
 
 
@@ -50,14 +200,11 @@ public class AreaDetailResponse {
     private Long id;
     private BasicInfo basic;
 
-    // Row-Oriented Lists (Standard REST)
     private List<TransplantDto> transplants;
     private List<GrowthLogDto> growthLogs;
     private List<WaterLogDto> waterLogs;
     private BiodiversityDto biodiversity;
     private List<MediaDto> mediaLogs;
-
-    // --- Inner DTOs ---
 
     @Builder @Getter
     public static class BasicInfo {
@@ -71,50 +218,13 @@ public class AreaDetailResponse {
         private Double lon;
     }
 
-    @Builder @Getter
-    public static class TransplantDto {
-        private String species;
-        private Integer count;
-        private Double area;
-    }
+    // ... (TransplantDto, GrowthLogDto, WaterLogDto, BiodiversityDto, MediaDto 등 내부 클래스 기존과 동일)
+    @Builder @Getter public static class TransplantDto { String species; Integer count; Double area; }
+    @Builder @Getter public static class GrowthLogDto { LocalDate date; Double attachmentRate; Double survivalRate; Double growthLength; }
+    @Builder @Getter public static class WaterLogDto { LocalDate date; Double temperature; Double dissolvedOxygen; Double nutrient; }
+    @Builder @Getter public static class BiodiversityDto { Stat before; Stat after; @Builder @Getter public static class Stat { Integer fishCount; Integer invertCount; Double shannonIndex; } }
+    @Builder @Getter public static class MediaDto { LocalDate date; String url; String caption; }
 
-    @Builder @Getter
-    public static class GrowthLogDto {
-        private LocalDate date;
-        private Double attachmentRate;
-        private Double survivalRate;
-        private Double growthLength;
-    }
-
-    @Builder @Getter
-    public static class WaterLogDto {
-        private LocalDate date;
-        private Double temperature;
-        private Double dissolvedOxygen;
-        private Double nutrient;
-    }
-
-    @Builder @Getter
-    public static class BiodiversityDto {
-        private Stat before;
-        private Stat after;
-
-        @Builder @Getter
-        public static class Stat {
-            private Integer fishCount;
-            private Integer invertCount;
-            private Double shannonIndex;
-        }
-    }
-
-    @Builder @Getter
-    public static class MediaDto {
-        private LocalDate date;
-        private String url;
-        private String caption;
-    }
-
-    // --- Converter ---
     public static AreaDetailResponse fromEntity(ProjectArea entity) {
         return AreaDetailResponse.builder()
                 .id(entity.getId())
@@ -125,61 +235,87 @@ public class AreaDetailResponse {
                         .depth(entity.getDepth())
                         .areaSize(entity.getAreaSize())
                         .stage(entity.getStatus() != null ? entity.getStatus().getDescription() : null)
+                        // [수정] Entity의 캡슐화된 메서드 사용
                         .lat(entity.getLat())
                         .lon(entity.getLon())
                         .build())
 
                 .transplants(entity.getTransplants().stream()
-                        .map(t -> TransplantDto.builder()
-                                .species(t.getSpeciesName())
-                                .count(t.getCount())
-                                .area(t.getAreaSize())
-                                .build())
-                        .toList())
-
+                        .map(t -> TransplantDto.builder().species(t.getSpeciesName()).count(t.getCount()).area(t.getAreaSize()).build()).toList())
                 .growthLogs(entity.getGrowthLogs().stream()
                         .sorted(Comparator.comparing(GrowthLog::getRecordDate))
-                        .map(g -> GrowthLogDto.builder()
-                                .date(g.getRecordDate())
-                                .attachmentRate(g.getAttachmentRate())
-                                .survivalRate(g.getSurvivalRate())
-                                .growthLength(g.getGrowthLength())
-                                .build())
-                        .toList())
-
+                        .map(g -> GrowthLogDto.builder().date(g.getRecordDate()).attachmentRate(g.getAttachmentRate()).survivalRate(g.getSurvivalRate()).growthLength(g.getGrowthLength()).build()).toList())
                 .waterLogs(entity.getWaterLogs().stream()
                         .sorted(Comparator.comparing(WaterLog::getRecordDate))
-                        .map(w -> WaterLogDto.builder()
-                                .date(w.getRecordDate())
-                                .temperature(w.getTemperature())
-                                .dissolvedOxygen(w.getDissolvedOxygen())
-                                .nutrient(w.getNutrient())
-                                .build())
-                        .toList())
-
+                        .map(w -> WaterLogDto.builder().date(w.getRecordDate()).temperature(w.getTemperature()).dissolvedOxygen(w.getDissolvedOxygen()).nutrient(w.getNutrient()).build()).toList())
                 .biodiversity(entity.getBiodiversity() != null ? BiodiversityDto.builder()
-                        .before(BiodiversityDto.Stat.builder()
-                                .fishCount(entity.getBiodiversity().getFishCountBefore())
-                                .invertCount(entity.getBiodiversity().getInvertCountBefore())
-                                .shannonIndex(entity.getBiodiversity().getShannonIndexBefore())
-                                .build())
-                        .after(BiodiversityDto.Stat.builder()
-                                .fishCount(entity.getBiodiversity().getFishCountAfter())
-                                .invertCount(entity.getBiodiversity().getInvertCountAfter())
-                                .shannonIndex(entity.getBiodiversity().getShannonIndexAfter())
-                                .build())
+                        .before(BiodiversityDto.Stat.builder().fishCount(entity.getBiodiversity().getFishCountBefore()).invertCount(entity.getBiodiversity().getInvertCountBefore()).shannonIndex(entity.getBiodiversity().getShannonIndexBefore()).build())
+                        .after(BiodiversityDto.Stat.builder().fishCount(entity.getBiodiversity().getFishCountAfter()).invertCount(entity.getBiodiversity().getInvertCountAfter()).shannonIndex(entity.getBiodiversity().getShannonIndexAfter()).build())
                         .build() : null)
-
                 .mediaLogs(entity.getMediaLogs().stream()
                         .sorted(Comparator.comparing(MediaLog::getRecordDate))
-                        .map(m -> MediaDto.builder()
-                                .date(m.getRecordDate())
-                                .url(m.getMediaUrl())
-                                .caption(m.getCaption())
-                                .build())
-                        .toList())
+                        .map(m -> MediaDto.builder().date(m.getRecordDate()).url(m.getMediaUrl()).caption(m.getCaption()).build()).toList())
                 .build();
     }
+}
+
+
+================================================================================
+File Path: .\dto\response\AreaMarkerResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+/**
+ * 지도 마커용 요약 DTO
+ * - 상세 데이터 없이, 지도/리스트에 필요한 필드만 포함
+ */
+@Getter
+@Builder
+@AllArgsConstructor
+public class AreaMarkerResponse {
+
+    private Long id;
+    private String name;
+
+    private Double lat;
+    private Double lon;
+
+    private LocalDate startDate;
+    private Double depth;
+    private Double areaSize;
+
+    /** 서식지 한글 설명 (예: "암반리프") */
+    private String habitat;
+
+    /** 프로젝트 단계 한글 설명 (예: "이식 완료") */
+    private String stage;
+}
+
+
+================================================================================
+File Path: .\dto\response\AreaStatResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+@Builder
+@AllArgsConstructor
+public class AreaStatResponse {
+    private long totalCount;      // 영역 내 프로젝트 수
+    private double totalAreaSize; // 총 복원 면적 합계 (m2)
+    private double avgDepth;      // 평균 수심 (m)
 }
 
 
@@ -294,10 +430,13 @@ package com.ocean.piuda.dashboard.entity;
 import com.ocean.piuda.dashboard.enums.HabitatType;
 import com.ocean.piuda.dashboard.enums.ProjectStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.global.util.GeometryUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.locationtech.jts.geom.Point;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -357,6 +496,27 @@ public class ProjectArea extends BaseEntity {
     @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MediaLog> mediaLogs = new ArrayList<>();
+
+
+    @Column(columnDefinition = "geometry(Point, 4326)")
+    private Point location;
+    // DTO용 편의 메서드 (Getter)
+    public Double getLat() {
+        return this.location != null ? this.location.getY() : null;
+    }
+
+    public Double getLon() {
+        return this.location != null ? this.location.getX() : null;
+    }
+
+    // 데이터 세팅 편의 메서드 (Setter)
+    public void setLocation(Double lat, Double lon) {
+        if (lat != null && lon != null) {
+            this.location = GeometryUtils.createPoint(lon, lat);
+        } else {
+            this.location = null;
+        }
+    }
 
     // --- 연관관계 편의 메서드 ---
     public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
@@ -486,6 +646,7 @@ import com.ocean.piuda.dashboard.entity.*;
 import com.ocean.piuda.dashboard.enums.HabitatType;
 import com.ocean.piuda.dashboard.enums.ProjectStatus;
 import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
+import com.ocean.piuda.global.util.GeometryUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -513,11 +674,13 @@ public class DashboardDataInitializer implements CommandLineRunner {
 
         log.info("Dashboard 초기 데이터 적재 시작");
         createPohangData();
-        // createUljinData(); // 필요 시 추가
     }
 
     private void createPohangData() {
-        // 기존 pohang-1 데이터
+        // 좌표 정의
+        double lat = 36.0762;
+        double lon = 129.4432;
+
         ProjectArea area = ProjectArea.builder()
                 .name("작업 영역 1")
                 .startDate(LocalDate.of(2025, 7, 15))
@@ -525,8 +688,8 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .depth(8.0)
                 .areaSize(2100.0)
                 .status(ProjectStatus.TRANSPLANT_COMPLETED)
-                .lat(36.0762)
-                .lon(129.4432)
+                // [수정] Point 객체 생성 및 주입 (Lon, Lat 순서)
+                .location(GeometryUtils.createPoint(lon, lat))
                 .build();
 
         // 이식 데이터
@@ -534,7 +697,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addTransplant(TransplantLog.builder().speciesName("다시마").count(700).areaSize(650.0).build());
         area.addTransplant(TransplantLog.builder().speciesName("곰피").count(380).areaSize(350.0).build());
 
-        // 시계열 데이터 생성 유틸
+        // 시계열 데이터
         LocalDate baseDate = LocalDate.of(2025, 1, 15);
         List<Double> attach = List.of(60.0, 65.0, 71.0, 77.0, 80.0, 82.0);
         List<Double> surviv = List.of(92.0, 90.0, 89.0, 88.0, 86.0, 85.0);
@@ -546,7 +709,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
 
         for (int i = 0; i < 6; i++) {
             LocalDate date = baseDate.plusMonths(i);
-            // Growth
             area.addGrowth(GrowthLog.builder()
                     .recordDate(date)
                     .attachmentRate(attach.get(i))
@@ -554,7 +716,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
                     .growthLength(growth.get(i))
                     .build());
 
-            // Water (데이터가 5개뿐이라 체크)
             if (i < 5) {
                 area.addWater(WaterLog.builder()
                         .recordDate(date)
@@ -565,14 +726,12 @@ public class DashboardDataInitializer implements CommandLineRunner {
             }
         }
 
-        // 생물다양성
         area.setBiodiversity(BiodiversitySummary.builder()
                 .fishCountBefore(5).fishCountAfter(11)
                 .invertCountBefore(10).invertCountAfter(18)
                 .shannonIndexBefore(1.12).shannonIndexAfter(1.78)
                 .build());
 
-        // 미디어 (가상 URL)
         String imgUrl = "/images/underSea.jpg";
         area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 7, 1)).mediaUrl(imgUrl).caption("2025.07").build());
         area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 8, 1)).mediaUrl(imgUrl).caption("2025.08").build());
@@ -735,15 +894,211 @@ File Path: .\repository\ProjectAreaRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.dashboard.entity.ProjectArea;
-import org.springframework.data.jpa.repository.EntityGraph;
+import com.ocean.piuda.dashboard.repository.projection.AreaMarkerProjection;
+import com.ocean.piuda.dashboard.repository.projection.AreaStatProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> {
-    // 필요한 데이터는 Service의 DTO 변환 과정에서 Batch Size 설정에 의해 효율적으로 로딩됨 (N+1 문제 방지)
+
+    // 1. 상세 엔티티 조회용 공간쿼리 (Deprecated / 현재 미사용)
+    /**
+     * @deprecated
+     *   - 현재 서비스 플로우에서는 사용하지 않습니다.
+     *   - 잠재적 재활용(예: 관리자/분석 화면)을 위해 보존합니다.
+     */
+    @Deprecated
+    @Query(value = """
+        SELECT * FROM project_areas p
+        WHERE ST_DWithin(
+            CAST(p.location AS geography),
+            CAST(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326) AS geography),
+            :radiusInMeters
+        )
+        """, nativeQuery = true)
+    List<ProjectArea> findNearbyAreas(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("radiusInMeters") double radiusInMeters
+    );
+
+    /**
+     * @deprecated
+     *   - 현재 서비스 플로우에서는 사용하지 않습니다.
+     *   - 잠재적 재활용을 위해 보존합니다.
+     */
+    @Deprecated
+    @Query(value = """
+        SELECT * FROM project_areas p
+        WHERE p.location && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+        """, nativeQuery = true)
+    List<ProjectArea> findWithinBBox(
+            @Param("minLat") double minLat, @Param("minLon") double minLon,
+            @Param("maxLat") double maxLat, @Param("maxLon") double maxLon
+    );
+
+    /**
+     * @deprecated
+     *   - 현재 서비스 플로우에서는 사용하지 않습니다.
+     *   - 잠재적 재활용을 위해 보존합니다.
+     */
+    @Deprecated
+    @Query(value = """
+        SELECT * FROM project_areas p
+        ORDER BY p.location <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
+        LIMIT :limitCount
+        """, nativeQuery = true)
+    List<ProjectArea> findNearestAreas(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("limitCount") int limitCount
+    );
+
+    // 4. 반경 내 통계 (Aggregation) -> Interface Projection 반환
+    @Query(value = """
+        SELECT 
+            count(*)                      AS totalCount, 
+            COALESCE(sum(p.area_size), 0) AS totalAreaSize, 
+            COALESCE(avg(p.depth), 0)     AS avgDepth
+        FROM project_areas p
+        WHERE ST_DWithin(
+            CAST(p.location AS geography),
+            CAST(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326) AS geography),
+            :radiusInMeters
+        )
+        """, nativeQuery = true)
+    AreaStatProjection getNearbyStatistics(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("radiusInMeters") double radiusInMeters
+    );
+
+    // 5. 지도 마커용 경량 쿼리들
+
+    /**
+     * 지도 뷰포트(BBox) 내 마커 목록
+     * - 상세 데이터 없이, 마커/리스트 표시용 핵심 필드만 조회
+     */
+    @Query(value = """
+        SELECT 
+            p.area_id        AS id,
+            p.name           AS name,
+            ST_Y(p.location) AS lat,
+            ST_X(p.location) AS lon,
+            p.start_date     AS startDate,
+            p.depth          AS depth,
+            p.area_size      AS areaSize,
+            p.habitat        AS habitat,
+            p.status         AS status
+        FROM project_areas p
+        WHERE p.location && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+        """, nativeQuery = true)
+    List<AreaMarkerProjection> findMarkersWithinBBox(
+            @Param("minLat") double minLat,
+            @Param("minLon") double minLon,
+            @Param("maxLat") double maxLat,
+            @Param("maxLon") double maxLon
+    );
+
+    /**
+     * 중심 좌표와 반경(미터) 기준 마커 목록
+     * - 지도/리스트에서 주변 마커를 표시할 때 사용
+     */
+    @Query(value = """
+        SELECT 
+            p.area_id        AS id,
+            p.name           AS name,
+            ST_Y(p.location) AS lat,
+            ST_X(p.location) AS lon,
+            p.start_date     AS startDate,
+            p.depth          AS depth,
+            p.area_size      AS areaSize,
+            p.habitat        AS habitat,
+            p.status         AS status
+        FROM project_areas p
+        WHERE ST_DWithin(
+            CAST(p.location AS geography),
+            CAST(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326) AS geography),
+            :radiusInMeters
+        )
+        """, nativeQuery = true)
+    List<AreaMarkerProjection> findMarkersNearby(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("radiusInMeters") double radiusInMeters
+    );
+
+
+    /**
+     * KNN 기반 가장 가까운 N개 마커 목록
+     * - 거리순(가까운 순)으로 정렬된 마커 요약 데이터를 반환합니다.
+     */
+    @Query(value = """
+        SELECT 
+            p.area_id        AS id,
+            p.name           AS name,
+            ST_Y(p.location) AS lat,
+            ST_X(p.location) AS lon,
+            p.start_date     AS startDate,
+            p.depth          AS depth,
+            p.area_size      AS areaSize,
+            p.habitat        AS habitat,
+            p.status         AS status
+        FROM project_areas p
+        ORDER BY p.location <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
+        LIMIT :limitCount
+        """, nativeQuery = true)
+    List<AreaMarkerProjection> findNearestMarkers(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("limitCount") int limitCount
+    );
+}
+
+
+================================================================================
+File Path: .\repository\projection\AreaMarkerProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import java.time.LocalDate;
+
+/**
+ * 지도 마커 쿼리용 Projection
+ * - 네이티브 쿼리 SELECT 컬럼 alias 와 이름을 맞춰야 함
+ */
+public interface AreaMarkerProjection {
+    Long getId();
+    String getName();
+
+    Double getLat();
+    Double getLon();
+
+    LocalDate getStartDate();
+    Double getDepth();
+    Double getAreaSize();
+
+    String getHabitat(); // DB에 저장된 Enum String (예: "ROCKY_REEF")
+    String getStatus();  // DB에 저장된 Enum String (예: "TRANSPLANT_COMPLETED")
+}
+
+
+================================================================================
+File Path: .\repository\projection\AreaStatProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+public interface AreaStatProjection {
+    Long getTotalCount();
+    Double getTotalAreaSize();
+    Double getAvgDepth();
 }
 
 
@@ -753,14 +1108,22 @@ File Path: .\service\DashboardQueryService.java
 
 package com.ocean.piuda.dashboard.service;
 
-import com.ocean.piuda.dashboard.entity.ProjectArea;
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
+import com.ocean.piuda.dashboard.entity.ProjectArea;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectStatus;
 import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
+import com.ocean.piuda.dashboard.repository.projection.AreaMarkerProjection;
+import com.ocean.piuda.dashboard.repository.projection.AreaStatProjection;
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -769,12 +1132,155 @@ public class DashboardQueryService {
 
     private final ProjectAreaRepository projectAreaRepository;
 
+    // 1. 상세 조회
     public AreaDetailResponse getAreaDetail(Long id) {
         ProjectArea area = projectAreaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
-
-        // Entity -> DTO 변환 (Lazy Loading 발생, Transaction 내라 안전)
         return AreaDetailResponse.fromEntity(area);
     }
+
+    /**
+     * @deprecated
+     *   - 여러 작업 영역의 '상세 데이터'를 반경 기준으로 한 번에 조회하기 위한 메서드입니다.
+     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
+     */
+    @Deprecated
+    public List<AreaDetailResponse> getNearbyAreas(Double lat, Double lon, Double radiusKm) {
+        double radiusMeters = (radiusKm != null ? radiusKm : 5.0) * 1000;
+        return projectAreaRepository.findNearbyAreas(lat, lon, radiusMeters).stream()
+                .map(AreaDetailResponse::fromEntity)
+                .toList();
+    }
+
+    /**
+     * @deprecated
+     *   - 뷰포트 기준으로 여러 작업 영역의 '상세 데이터'를 모두 내려주는 메서드입니다.
+     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
+     */
+    @Deprecated
+    public List<AreaDetailResponse> getAreasInBBox(Double minLat, Double minLon, Double maxLat, Double maxLon) {
+        return projectAreaRepository.findWithinBBox(minLat, minLon, maxLat, maxLon).stream()
+                .map(AreaDetailResponse::fromEntity)
+                .toList();
+    }
+
+    /**
+     * @deprecated
+     *   - "가장 가까운 작업 영역 목록의 상세 데이터"를 조회하기 위한 메서드입니다.
+     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
+     */
+    @Deprecated
+    public List<AreaDetailResponse> getNearestAreas(Double lat, Double lon, Integer limit) {
+        int limitCount = (limit != null && limit > 0) ? limit : 3;
+        return projectAreaRepository.findNearestAreas(lat, lon, limitCount).stream()
+                .map(AreaDetailResponse::fromEntity)
+                .toList();
+    }
+
+    // 1-4. 통계 (Projection -> DTO)
+    public AreaStatResponse getNearbyStats(Double lat, Double lon, Double radiusKm) {
+        double radiusMeters = (radiusKm != null ? radiusKm : 10.0) * 1000;
+
+        AreaStatProjection proj = projectAreaRepository.getNearbyStatistics(lat, lon, radiusMeters);
+
+        return AreaStatResponse.builder()
+                .totalCount(proj.getTotalCount() != null ? proj.getTotalCount() : 0L)
+                .totalAreaSize(proj.getTotalAreaSize() != null ? proj.getTotalAreaSize() : 0.0)
+                .avgDepth(proj.getAvgDepth() != null ? proj.getAvgDepth() : 0.0)
+                .build();
+    }
+
+    // 2. 지도 마커용 경량 조회
+
+    /**
+     * 뷰포트(BBox) 내 마커 목록
+     * - 지도 뷰포트에 보이는 마커들만 요약 정보로 반환합니다.
+     * - 상세 데이터는 /areas/{id}로 별도 조회하는 패턴을 사용합니다.
+     */
+    public List<AreaMarkerResponse> getMarkersInBBox(
+            Double minLat, Double minLon,
+            Double maxLat, Double maxLon
+    ) {
+        List<AreaMarkerProjection> rows =
+                projectAreaRepository.findMarkersWithinBBox(minLat, minLon, maxLat, maxLon);
+
+        return rows.stream()
+                .map(this::toMarkerResponse)
+                .toList();
+    }
+
+    /**
+     * 반경 기반 마커 목록
+     * - 중심 좌표 + 반경 기준으로 주변 마커를 조회합니다.
+     * - 상세 데이터가 필요할 때는 getAreaDetail(id)와 조합해서 사용하세요.
+     */
+    public List<AreaMarkerResponse> getNearbyMarkers(
+            Double lat, Double lon,
+            Double radiusKm
+    ) {
+        double radiusMeters = (radiusKm != null ? radiusKm : 5.0) * 1000;
+
+        List<AreaMarkerProjection> rows =
+                projectAreaRepository.findMarkersNearby(lat, lon, radiusMeters);
+
+        return rows.stream()
+                .map(this::toMarkerResponse)
+                .toList();
+    }
+
+    /**
+     * KNN 기반 가장 가까운 N개 마커 목록
+     * - 주어진 좌표에서 가장 가까운 작업 영역들을 거리순으로 반환합니다.
+     * - 지도에서 "내 주변" 리스트/마커를 보여줄 때 유용합니다.
+     */
+    public List<AreaMarkerResponse> getNearestMarkers(
+            Double lat, Double lon,
+            Integer limit
+    ) {
+        int limitCount = (limit != null && limit > 0) ? limit : 3;
+
+        List<AreaMarkerProjection> rows =
+                projectAreaRepository.findNearestMarkers(lat, lon, limitCount);
+
+        return rows.stream()
+                .map(this::toMarkerResponse)
+                .toList();
+    }
+
+    // 내부 변환 로직
+    private AreaMarkerResponse toMarkerResponse(AreaMarkerProjection p) {
+        String habitatDesc = null;
+        if (p.getHabitat() != null) {
+            try {
+                habitatDesc = HabitatType.valueOf(p.getHabitat()).getDescription();
+            } catch (IllegalArgumentException e) {
+                // enum 매칭 실패 시, 원본 값을 그대로 사용
+                habitatDesc = p.getHabitat();
+            }
+        }
+
+        String stageDesc = null;
+        if (p.getStatus() != null) {
+            try {
+                stageDesc = ProjectStatus.valueOf(p.getStatus()).getDescription();
+            } catch (IllegalArgumentException e) {
+                stageDesc = p.getStatus();
+            }
+        }
+
+        return AreaMarkerResponse.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .lat(p.getLat())
+                .lon(p.getLon())
+                .startDate(p.getStartDate())
+                .depth(p.getDepth())
+                .areaSize(p.getAreaSize())
+                .habitat(habitatDesc)
+                .stage(stageDesc)
+                .build();
+    }
+
+
 }
 
