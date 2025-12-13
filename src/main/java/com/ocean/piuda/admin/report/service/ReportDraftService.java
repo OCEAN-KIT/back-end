@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.ocean.piuda.admin.report.dto.response.ReportPdfResponse;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,6 +34,8 @@ public class ReportDraftService {
     private final GeminiTextService geminiTextService;
     private final SubmissionRepository submissionRepository;
     private final ObjectMapper objectMapper;
+    private final ReportPdfService reportPdfService;
+
 
     @Value("${gemini.model.report:${gemini.model.text}}")
     private String reportModel;
@@ -94,7 +97,7 @@ public class ReportDraftService {
 
         String submissionsJson = toCompactJson(trimmed);
 
-        // ✅ 타입 1개만 출력하도록 프롬프트 구성
+        //  타입 1개만 출력하도록 프롬프트 구성
         String prompt = ReportPromptBuilder.build(submissionsJson, extraPrompt, reportType);
 
         GeminiResponse gemResp = geminiTextService.generateReportDraft(prompt);
@@ -102,7 +105,7 @@ public class ReportDraftService {
         GeminiMeta meta = gemResp.meta();
         String cleaned = cleanupJson(raw);
 
-        // ✅ JSON에서 요청한 키 1개만 파싱
+        //  JSON에서 요청한 키 1개만 파싱
         String content;
         try {
             JsonNode root = objectMapper.readTree(cleaned);
@@ -116,7 +119,7 @@ public class ReportDraftService {
         // 실제 사용된 ids (trimmed 기준)
         List<Long> usedIds = trimmed.stream().map(Submission::getSubmissionId).toList();
 
-        // ✅ 선택 타입에 맞는 필드만 채워서 반환
+        //  선택 타입에 맞는 필드만 채워서 반환
         ReportDraftResponse.ReportDraftResponseBuilder builder = ReportDraftResponse.builder()
                 .submissionIds(usedIds)
                 .missingIds(missingIds)
@@ -148,19 +151,19 @@ public class ReportDraftService {
     }
 
     /**
-     * ✅ 리포트 프롬프트용 Row 구성 정책
+     *  리포트 프롬프트용 Row 구성 정책
      * - null 값은 "키 자체를 넣지 않음"(omit null)
      * - 활동유형에 비적용인 지표(예: TRASH_COLLECTION의 healthGrade/growthCm 등)는 아예 제외
      */
     private Map<String, Object> toPromptRow(Submission s) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        // ✅ 식별: 현장명 + 제출일시만 사용 (submissionId 제거)
+        //  식별: 현장명 + 제출일시만 사용 (submissionId 제거)
         putIfNotBlank(m, "siteName", s.getSiteName());
         putIfNotNull(m, "submittedAt", s.getSubmittedAt() != null ? s.getSubmittedAt().toString() : null);
         putIfNotNull(m, "activityType", s.getActivityType() != null ? s.getActivityType().name() : null);
 
-        // ✅ basicEnv: recordDate/startTime/endTime 제외, 환경 수치만 유지 (null 키 제거)
+        //  basicEnv: recordDate/startTime/endTime 제외, 환경 수치만 유지 (null 키 제거)
         if (s.getBasicEnv() != null) {
             Map<String, Object> env = new LinkedHashMap<>();
             putIfNotNull(env, "waterTempC", s.getBasicEnv().getWaterTempC());
@@ -173,9 +176,9 @@ public class ReportDraftService {
             if (!env.isEmpty()) m.put("basicEnv", env);
         }
 
-        // ✅ participants 완전 제외
+        //  participants 완전 제외
 
-        // ✅ activity: 공통 필드 + (활동유형에 따라) 의미 있는 필드만 포함
+        //  activity: 공통 필드 + (활동유형에 따라) 의미 있는 필드만 포함
         if (s.getActivity() != null) {
             Map<String, Object> a = new LinkedHashMap<>();
             putIfNotNull(a, "type", s.getActivity().getType() != null ? s.getActivity().getType().name() : null);
@@ -183,7 +186,7 @@ public class ReportDraftService {
             putIfNotNull(a, "collectionAmount", s.getActivity().getCollectionAmount());
             putIfNotNull(a, "durationHours", s.getActivity().getDurationHours());
 
-            // ✅ healthGrade/growth/naturalReproduction/survival 등은
+            //  healthGrade/growth/naturalReproduction/survival 등은
             //    이식/연구/모니터링 계열에서만 의미가 있으므로 그때만 포함
             ActivityType type = s.getActivity().getType();
             if (type == ActivityType.TRANSPLANT || type == ActivityType.MONITORING || type == ActivityType.RESEARCH) {
@@ -259,4 +262,34 @@ public class ReportDraftService {
         LinkedHashSet<Long> set = new LinkedHashSet<>(ids);
         return new ArrayList<>(set);
     }
+
+    // 메서드 추가
+    public ReportPdfResponse generatePdfByIds(com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest request) {
+        ReportDraftResponse draft = generateByIds(request);
+        return toPdf(draft);
+    }
+
+    public ReportPdfResponse generatePdfByPeriod(com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest request) {
+        ReportDraftResponse draft = generateByPeriod(request);
+        return toPdf(draft);
+    }
+
+    private ReportPdfResponse toPdf(ReportDraftResponse draft) {
+        String content = switch (draft.reportType()) {
+            case INTERNAL_DRAFT -> draft.internalDraft();
+            case EXTERNAL_NEWSLETTER -> draft.externalNewsletter();
+            case EXTERNAL_INSTAGRAM -> draft.externalInstagram();
+            case EXTERNAL_PUBLICATION -> draft.externalPublication();
+        };
+
+        String title = "Report - " + draft.reportType().name();
+        byte[] pdfBytes = reportPdfService.renderMarkdownToPdf(content, title);
+
+        String fileName = "report_" + draft.reportType().name().toLowerCase() + "_" +
+                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                + ".pdf";
+
+        return new ReportPdfResponse(fileName, pdfBytes);
+    }
+
 }
