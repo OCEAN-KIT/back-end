@@ -1,0 +1,3665 @@
+
+================================================================================
+File Path: .\common\enums\ActivityType.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum ActivityType {
+    TRANSPLANT,          // 이식
+    TRASH_COLLECTION,    // 폐기물수거
+    RESEARCH,            // 연구
+    MONITORING,          // 모니터링
+    URCHIN_REMOVAL,
+    OTHER                // 기타
+}
+
+
+================================================================================
+File Path: .\common\enums\AuditAction.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum AuditAction {
+    SUBMITTED,  // 제출됨
+    APPROVED,   // 승인
+    REJECTED,   // 반려
+    DELETED,    // 삭제
+    COMMENT     // 코멘트
+}
+
+
+================================================================================
+File Path: .\common\enums\CurrentState.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum CurrentState {
+    LOW,     // 약
+    MEDIUM,  // 중
+    HIGH     // 강
+}
+
+
+================================================================================
+File Path: .\common\enums\ExportFormat.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum ExportFormat {
+    CSV,   // CSV 형식
+    XLSX   // Excel 형식
+}
+
+
+================================================================================
+File Path: .\common\enums\ExportStatus.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum ExportStatus {
+    PROCESSING,  // 처리 중
+    READY,       // 완료
+    FAILED       // 실패
+}
+
+
+================================================================================
+File Path: .\common\enums\HealthGrade.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum HealthGrade {
+    A, B, C, D
+}
+
+
+================================================================================
+File Path: .\common\enums\ParticipantRole.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum ParticipantRole {
+    CITIZEN_DIVER,    // 시민다이버
+    RESEARCHER,       // 연구자
+    LOCAL_MANAGER,    // 관계자
+    OTHER             // 기타
+}
+
+
+================================================================================
+File Path: .\common\enums\SubmissionStatus.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum SubmissionStatus {
+    PENDING,    // 검수 대기
+    APPROVED,   // 승인
+    REJECTED,   // 반려
+    DELETED     // 삭제
+}
+
+
+================================================================================
+File Path: .\common\enums\Weather.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+public enum Weather {
+    SUNNY,   // 맑음
+    CLOUDY,  // 흐림
+    RAINY,   // 비
+    WINDY,   // 바람
+    OTHER    // 기타
+}
+
+
+================================================================================
+File Path: .\dashboard\controller\AdminDashboardController.java
+================================================================================
+
+package com.ocean.piuda.admin.dashboard.controller;
+
+import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
+import com.ocean.piuda.admin.dashboard.service.AdminDashboardService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/admin/dashboard")
+@RequiredArgsConstructor
+@Tag(
+        name = "Admin Dashboard",
+        description = "관리자 대시보드 통계 API입니다. 전체 제출 현황 통계를 조회할 수 있습니다."
+)
+public class AdminDashboardController {
+
+    private final AdminDashboardService adminDashboardService;
+
+    /**
+     * 대시보드 통계 조회
+     */
+    @GetMapping("/summary")
+    @Operation(summary = "대시보드 통계 조회", description = "전체 제출 현황 통계를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<AdminDashboardSummaryResponse> getDashboardSummary() {
+        AdminDashboardSummaryResponse summary = adminDashboardService.getDashboardSummary();
+        return ApiData.ok(summary);
+    }
+}
+
+
+================================================================================
+File Path: .\dashboard\dto\AdminDashboardSummaryResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.dashboard.dto;
+
+public record AdminDashboardSummaryResponse(
+        Long totalSubmissions,
+        Long pending,
+        Long approved,
+        Long rejected,
+        Long deleted
+) {
+    public static AdminDashboardSummaryResponse of(
+            long total,
+            long pending,
+            long approved,
+            long rejected,
+            long deleted
+    ) {
+        return new AdminDashboardSummaryResponse(total, pending, approved, rejected, deleted);
+    }
+}
+
+
+================================================================================
+File Path: .\dashboard\service\AdminDashboardService.java
+================================================================================
+
+package com.ocean.piuda.admin.dashboard.service;
+
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Transactional(readOnly = true)
+@Service
+@RequiredArgsConstructor
+public class AdminDashboardService {
+
+    private final SubmissionRepository submissionRepository;
+
+    /**
+     * 대시보드 통계 조회
+     */
+    public AdminDashboardSummaryResponse getDashboardSummary() {
+        long total = submissionRepository.count();
+        long pending = submissionRepository.countByStatus(SubmissionStatus.PENDING);
+        long approved = submissionRepository.countByStatus(SubmissionStatus.APPROVED);
+        long rejected = submissionRepository.countByStatus(SubmissionStatus.REJECTED);
+        long deleted = submissionRepository.countByStatus(SubmissionStatus.DELETED);
+
+        return AdminDashboardSummaryResponse.of(total, pending, approved, rejected, deleted);
+    }
+}
+
+
+================================================================================
+File Path: .\export\controller\ExportController.java
+================================================================================
+
+package com.ocean.piuda.admin.export.controller;
+
+import com.ocean.piuda.admin.export.dto.request.ExportByIdsRequest;
+import com.ocean.piuda.admin.export.dto.request.ExportRequest;
+import com.ocean.piuda.admin.export.dto.response.ExportJobResponse;
+import com.ocean.piuda.admin.export.service.ExportService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/exports")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(
+        name = "Admin Export",
+        description = "제출 데이터 내보내기 API입니다. 승인된 데이터를 CSV 형식으로 내보내고 이력을 조회할 수 있습니다."
+)
+public class ExportController {
+
+    private final ExportService exportService;
+    private final TokenUserService tokenUserService;
+
+    @PostMapping("/download")
+    @Operation(summary = "데이터 내보내기 (CSV 다운로드)", description = "승인된 제출 데이터를 CSV 파일로 내보냅니다. 파일이 바로 다운로드됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "CSV 파일 다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류 (format 누락 등)"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ResponseEntity<byte[]> downloadExport(
+            @Valid @RequestBody ExportRequest request
+    ) {
+        byte[] csvBytes = exportService.generateExportFile(request);
+        String fileName = exportService.generateFileName(request.getFormat());
+        
+        try {
+            String requestedBy = tokenUserService.getCurrentUser().getEmail() != null 
+                    ? tokenUserService.getCurrentUser().getEmail() 
+                    : tokenUserService.getCurrentUser().getUsername();
+            exportService.saveExportHistory(request, requestedBy);
+        } catch (Exception e) {
+            log.warn("Export 이력 저장 실패: {}", e.getMessage());
+        }
+        
+        // Content-Type 설정 (CSV의 경우)
+        MediaType contentType = request.getFormat() == com.ocean.piuda.admin.common.enums.ExportFormat.CSV 
+                ? new MediaType("text", "csv", StandardCharsets.UTF_8)
+                : MediaType.APPLICATION_OCTET_STREAM;
+        
+        // Content-Disposition 헤더 설정 (한글 파일명 지원)
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build();
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(contentType);
+        headers.setContentDisposition(contentDisposition);
+        headers.setContentLength(csvBytes.length);
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+        
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBytes);
+    }
+
+    @GetMapping
+    @Operation(summary = "내보내기 이력 조회", description = "내보내기 작업 이력을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<List<ExportJobResponse>> getExportHistory() {
+        List<ExportJobResponse> history = exportService.getExportHistory();
+        return ApiData.ok(history);
+    }
+
+    @PostMapping("/download/by-ids")
+    @Operation(
+            summary = "데이터 내보내기 (IDs 기반 CSV 다운로드)",
+            description = "지정한 submission ids 목록을 CSV 파일로 내보냅니다. 승인된 데이터만 포함됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "CSV 파일 다운로드 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류 (format/ids 누락 등)"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ResponseEntity<byte[]> downloadExportByIds(
+            @Valid @RequestBody ExportByIdsRequest request
+    ) {
+        byte[] csvBytes = exportService.generateExportFileByIds(request);
+        String fileName = exportService.generateFileName(request.getFormat());
+
+        try {
+            String requestedBy = tokenUserService.getCurrentUser().getEmail() != null
+                    ? tokenUserService.getCurrentUser().getEmail()
+                    : tokenUserService.getCurrentUser().getUsername();
+            exportService.saveExportHistory(request, requestedBy);
+        } catch (Exception e) {
+            log.warn("Export(IDs) 이력 저장 실패: {}", e.getMessage());
+        }
+
+        MediaType contentType = request.getFormat() == com.ocean.piuda.admin.common.enums.ExportFormat.CSV
+                ? new MediaType("text", "csv", StandardCharsets.UTF_8)
+                : MediaType.APPLICATION_OCTET_STREAM;
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(contentType);
+        headers.setContentDisposition(contentDisposition);
+        headers.setContentLength(csvBytes.length);
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBytes);
+    }
+
+}
+
+
+================================================================================
+File Path: .\export\dto\request\ExportByIdsRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.export.dto.request;
+
+import com.ocean.piuda.admin.common.enums.ExportFormat;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportByIdsRequest {
+
+    @NotNull(message = "포맷은 필수입니다")
+    private ExportFormat format;
+
+    @NotEmpty(message = "ids는 1개 이상이어야 합니다")
+    private List<Long> ids;
+
+}
+
+
+================================================================================
+File Path: .\export\dto\request\ExportRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.export.dto.request;
+
+import com.ocean.piuda.admin.common.enums.ExportFormat;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportRequest {
+    
+    @NotNull(message = "포맷은 필수입니다")
+    private ExportFormat format;
+    
+    private ExportFilters filters;
+    
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExportFilters {
+        private LocalDate dateFrom;
+        private LocalDate dateTo;
+    }
+}
+
+
+================================================================================
+File Path: .\export\dto\response\ExportJobResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.export.dto.response;
+
+import com.ocean.piuda.admin.common.enums.ExportFormat;
+import com.ocean.piuda.admin.common.enums.ExportStatus;
+import com.ocean.piuda.admin.export.entity.ExportJob;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportJobResponse {
+    private Long jobId;
+    private String requestedBy;
+    private ExportFormat format;
+    private ExportStatus status;
+    private String downloadUrl;
+    private LocalDateTime createdAt;
+    private LocalDateTime completedAt;
+    private String filtersJson;
+
+    public static ExportJobResponse from(ExportJob exportJob) {
+        return ExportJobResponse.builder()
+                .jobId(exportJob.getJobId())
+                .requestedBy(exportJob.getRequestedBy())
+                .format(exportJob.getFormat())
+                .status(exportJob.getStatus())
+                .downloadUrl(exportJob.getDownloadUrl())
+                .createdAt(exportJob.getCreatedAt())
+                .completedAt(exportJob.getCompletedAt())
+                .filtersJson(exportJob.getFiltersJson())
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\export\entity\ExportJob.java
+================================================================================
+
+package com.ocean.piuda.admin.export.entity;
+
+import com.ocean.piuda.admin.common.enums.ExportFormat;
+import com.ocean.piuda.admin.common.enums.ExportStatus;
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "export_job")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class ExportJob extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "job_id")
+    private Long jobId;
+
+    @Column(name = "requested_by", nullable = false, length = 100)
+    private String requestedBy;
+
+    @Column(name = "filters_json", columnDefinition = "TEXT")
+    private String filtersJson;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ExportFormat format = ExportFormat.CSV;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ExportStatus status = ExportStatus.PROCESSING;
+
+    @Column(name = "download_url", length = 500)
+    private String downloadUrl;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+}
+
+
+================================================================================
+File Path: .\export\repository\ExportJobRepository.java
+================================================================================
+
+package com.ocean.piuda.admin.export.repository;
+
+import com.ocean.piuda.admin.export.entity.ExportJob;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ExportJobRepository extends JpaRepository<ExportJob, Long> {
+    List<ExportJob> findAllByOrderByCreatedAtDesc();
+
+}
+
+
+================================================================================
+File Path: .\export\service\ExportService.java
+================================================================================
+
+package com.ocean.piuda.admin.export.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ocean.piuda.admin.common.enums.ExportFormat;
+import com.ocean.piuda.admin.common.enums.ExportStatus;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.export.dto.request.ExportByIdsRequest;
+import com.ocean.piuda.admin.export.dto.request.ExportRequest;
+import com.ocean.piuda.admin.export.dto.response.ExportJobResponse;
+import com.ocean.piuda.admin.export.entity.ExportJob;
+import com.ocean.piuda.admin.export.repository.ExportJobRepository;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class ExportService {
+
+    private final ExportJobRepository exportJobRepository;
+    private final SubmissionRepository submissionRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Transactional(readOnly = true)
+    public byte[] generateExportFile(ExportRequest request) {
+        try {
+            List<Submission> submissions = getSubmissionsForExport(request);
+            return generateCSV(submissions);
+        } catch (Exception e) {
+            log.error("Export 파일 생성 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ExceptionType.EXPORT_FAILED);
+        }
+    }
+
+    @Transactional
+    public ExportJobResponse saveExportHistory(ExportRequest request, String requestedBy) {
+        try {
+            String filtersJson = request.getFilters() != null 
+                    ? objectMapper.writeValueAsString(request.getFilters())
+                    : "{}";
+
+            ExportJob exportJob = ExportJob.builder()
+                    .requestedBy(requestedBy)
+                    .format(request.getFormat())
+                    .status(ExportStatus.READY)
+                    .filtersJson(filtersJson)
+                    .completedAt(LocalDateTime.now())
+                    .build();
+
+            ExportJob saved = exportJobRepository.save(exportJob);
+            return ExportJobResponse.from(saved);
+        } catch (Exception e) {
+            log.error("Export 이력 저장 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ExceptionType.EXPORT_FAILED);
+        }
+    }
+
+    private List<Submission> getSubmissionsForExport(ExportRequest request) {
+        try {
+            ExportRequest.ExportFilters filters = request.getFilters();
+
+            LocalDateTime startDate = filters != null && filters.getDateFrom() != null 
+                    ? filters.getDateFrom().atStartOfDay() 
+                    : null;
+            LocalDateTime endDate = filters != null && filters.getDateTo() != null 
+                    ? filters.getDateTo().atTime(23, 59, 59) 
+                    : null;
+
+            return submissionRepository.findWithFilters(
+                    null,
+                    SubmissionStatus.APPROVED,
+                    null,
+                    startDate,
+                    endDate,
+                    org.springframework.data.domain.Pageable.unpaged()
+            ).getContent();
+
+        } catch (Exception e) {
+            log.error("제출 데이터 조회 실패: {}", e.getMessage(), e);
+            return submissionRepository.findAll().stream()
+                    .filter(s -> s.getStatus() == SubmissionStatus.APPROVED)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private byte[] generateCSV(List<Submission> submissions) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        // 1) UTF-8 BOM은 가장 먼저
+        baos.write(0xEF); baos.write(0xBB); baos.write(0xBF);
+
+        try (OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+            // 2) Excel 힌트 + CRLF
+            writer.write("sep=,\r\n");
+
+            // 3) 헤더 (CRLF)
+            writer.write("제출ID,현장명,활동유형,제출일,작성자,이메일,위도,경도,수심(m),수온(°C),시야(m),날씨,조류상태,참여인원,대표자명,역할,세부내용,수거량,활동후기,첨부파일수\r\n");
+
+            DateTimeFormatter dtf = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+            for (Submission submission : submissions) {
+                writer.write(submission.getSubmissionId() + ",");
+                writer.write(escapeCsv(submission.getSiteName()) + ",");
+                writer.write((submission.getActivityType() != null ? submission.getActivityType().name() : "") + ",");
+                writer.write((submission.getSubmittedAt() != null ? submission.getSubmittedAt().format(dtf) : "") + ",");
+                writer.write(escapeCsv(submission.getAuthorName()) + ",");
+                writer.write(escapeCsv(submission.getAuthorEmail() != null ? submission.getAuthorEmail() : "") + ",");
+
+                // 4) (핵심) 콤마를 항상 붙이도록 괄호 위치 수정
+                writer.write((submission.getLatitude()  != null ? submission.getLatitude().toString()  : "") + ",");
+                writer.write((submission.getLongitude() != null ? submission.getLongitude().toString() : "") + ",");
+
+                if (submission.getBasicEnv() != null) {
+                    writer.write((submission.getBasicEnv().getDepthM()      != null ? submission.getBasicEnv().getDepthM().toString()      : "") + ",");
+                    writer.write((submission.getBasicEnv().getWaterTempC()  != null ? submission.getBasicEnv().getWaterTempC().toString()  : "") + ",");
+                    writer.write((submission.getBasicEnv().getVisibilityM() != null ? submission.getBasicEnv().getVisibilityM().toString() : "") + ",");
+                    writer.write((submission.getBasicEnv().getWeather()     != null ? submission.getBasicEnv().getWeather().name()         : "") + ",");
+                    writer.write((submission.getBasicEnv().getCurrentState()!= null ? submission.getBasicEnv().getCurrentState().name()    : "") + ",");
+                } else {
+                    writer.write(",,,,,");
+                }
+
+                if (submission.getParticipants() != null) {
+                    writer.write((submission.getParticipants().getParticipantCount() != null ? submission.getParticipants().getParticipantCount().toString() : "") + ",");
+                    writer.write(escapeCsv(submission.getParticipants().getLeaderName() != null ? submission.getParticipants().getLeaderName() : "") + ",");
+                    writer.write((submission.getParticipants().getRole() != null ? submission.getParticipants().getRole().name() : "") + ",");
+                } else {
+                    writer.write(",,,");
+                }
+
+                if (submission.getActivity() != null) {
+                    writer.write(escapeCsv(submission.getActivity().getDetails() != null ? submission.getActivity().getDetails() : "") + ",");
+                    writer.write((submission.getActivity().getCollectionAmount() != null ? submission.getActivity().getCollectionAmount().toString() : "") + ",");
+                } else {
+                    writer.write(",,");
+                }
+
+                writer.write(escapeCsv(submission.getFeedbackText() != null ? submission.getFeedbackText() : "") + ",");
+                writer.write((submission.getAttachmentCount() != null ? submission.getAttachmentCount().toString() : ""));
+                writer.write("\r\n"); // 5) 각 행 끝은 CRLF
+            }
+
+            writer.flush();
+        }
+
+        return baos.toByteArray();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+
+    public String generateFileName(ExportFormat format) {
+        String extension = format == ExportFormat.CSV ? ".csv" : ".xlsx";
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        return String.format("submissions_export_%s%s", timestamp, extension);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExportJobResponse> getExportHistory() {
+        return exportJobRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(ExportJobResponse::from)
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional(readOnly = true)
+    public byte[] generateExportFileByIds(ExportByIdsRequest request) {
+        try {
+            List<Submission> submissions = getSubmissionsForExportByIds(request.getIds());
+
+            // 요청한 ids 순서대로 정렬
+            Map<Long, Integer> order = new HashMap<>();
+            for (int i = 0; i < request.getIds().size(); i++) {
+                order.put(request.getIds().get(i), i);
+            }
+            submissions.sort(Comparator.comparingInt(s -> order.getOrDefault(s.getSubmissionId(), Integer.MAX_VALUE)));
+
+            return generateCSV(submissions);
+        } catch (Exception e) {
+            log.error("Export(IDs) 파일 생성 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ExceptionType.EXPORT_FAILED);
+        }
+    }
+
+    @Transactional
+    public ExportJobResponse saveExportHistory(ExportByIdsRequest request, String requestedBy) {
+        try {
+            String filtersJson = objectMapper.writeValueAsString(
+                    Map.of("ids", request.getIds())
+            );
+
+            ExportJob exportJob = ExportJob.builder()
+                    .requestedBy(requestedBy)
+                    .format(request.getFormat())
+                    .status(ExportStatus.READY)
+                    .filtersJson(filtersJson)
+                    .completedAt(LocalDateTime.now())
+                    .build();
+
+            ExportJob saved = exportJobRepository.save(exportJob);
+            return ExportJobResponse.from(saved);
+        } catch (Exception e) {
+            log.error("Export(IDs) 이력 저장 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ExceptionType.EXPORT_FAILED);
+        }
+    }
+
+    private List<Submission> getSubmissionsForExportByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return submissionRepository.findAllByIdsAndStatusWithDetails(ids, SubmissionStatus.APPROVED);
+    }
+}
+
+
+================================================================================
+File Path: .\initializer\AdminUserInitializer.java
+================================================================================
+
+package com.ocean.piuda.admin.initializer;
+
+import com.ocean.piuda.security.jwt.enums.Role;
+import com.ocean.piuda.user.entity.User;
+import com.ocean.piuda.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@Profile("!prod") // 프로덕션 환경에서는 실행되지 않음
+@Order(0) // SubmissionDataInitializer보다 먼저 실행
+public class AdminUserInitializer implements CommandLineRunner {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    private static final String ADMIN_USERNAME = "admin@admin.com";
+    private static final String ADMIN_PASSWORD = "password";
+
+    @Override
+    @Transactional
+    public void run(String... args) {
+        // 이미 Admin 계정이 있으면 생성하지 않음
+        if (userRepository.findByUsername(ADMIN_USERNAME).isPresent()) {
+            log.info("Admin 계정이 이미 존재합니다. 초기화를 건너뜁니다.");
+            return;
+        }
+
+        log.info("Admin 계정 초기화 시작...");
+
+        // Admin 계정 생성
+        User adminUser = User.builder()
+                .username(ADMIN_USERNAME)
+                .password(passwordEncoder.encode(ADMIN_PASSWORD))
+                .role(Role.ADMIN)
+                .email(ADMIN_USERNAME)
+                .nickname("관리자")
+                .build();
+
+        userRepository.save(adminUser);
+        log.info("Admin 계정 생성 완료 - Username: {}, Role: {}", ADMIN_USERNAME, Role.ADMIN);
+    }
+}
+
+
+================================================================================
+File Path: .\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.admin;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\report\controller\ReportDraftController.java
+================================================================================
+
+package com.ocean.piuda.admin.report.controller;
+
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
+import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+import com.ocean.piuda.admin.report.service.ReportDraftService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/admin/reports/drafts")
+@RequiredArgsConstructor
+@Tag(name = "Admin Report Draft", description = "선택한 해양 활동 제출물로 리포트 초안을 Gemini로 생성합니다.")
+public class ReportDraftController {
+
+    private final ReportDraftService reportDraftService;
+
+    @PostMapping("/by-ids")
+    @Operation(
+            summary = "리포트 초안 생성 (IDs 기반)",
+            description = "선택한 submission ids(기본: APPROVED)를 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+    )
+    public ApiData<ReportDraftResponse> byIds(@RequestBody @Valid ReportDraftByIdsRequest request) {
+        return ApiData.ok(reportDraftService.generateByIds(request));
+    }
+
+    @PostMapping("/by-period")
+    @Operation(
+            summary = "리포트 초안 생성 (기간 기반)",
+            description = "dateFrom~dateTo 기간(기본: APPROVED)을 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+    )
+    public ApiData<ReportDraftResponse> byPeriod(@RequestBody @Valid ReportDraftByPeriodRequest request) {
+        return ApiData.ok(reportDraftService.generateByPeriod(request));
+    }
+}
+
+
+================================================================================
+File Path: .\report\dto\request\ReportDraftByIdsRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.request;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
+import java.util.List;
+
+@Builder
+public record ReportDraftByIdsRequest(
+        @NotEmpty(message = "ids는 1개 이상이어야 합니다")
+        List<Long> ids,
+
+        @NotNull(message = "reportType은 필수입니다")
+        ReportDraftType reportType,
+
+        String prompt
+) {}
+
+
+================================================================================
+File Path: .\report\dto\request\ReportDraftByPeriodRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.request;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
+import java.time.LocalDate;
+
+@Builder
+public record ReportDraftByPeriodRequest(
+        @NotNull(message = "dateFrom는 필수입니다")
+        LocalDate dateFrom,
+
+        @NotNull(message = "dateTo는 필수입니다")
+        LocalDate dateTo,
+
+        @NotNull(message = "reportType은 필수입니다")
+        ReportDraftType reportType,
+
+        String prompt
+) {}
+
+
+================================================================================
+File Path: .\report\dto\response\ReportDraftResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import lombok.Builder;
+
+import java.util.List;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Builder
+public record ReportDraftResponse(
+        List<Long> submissionIds,
+        List<Long> missingIds,
+
+        ReportDraftType reportType,
+
+        String internalDraft,
+        String externalNewsletter,
+        String externalInstagram,
+        String externalPublication,
+
+        GeminiMeta meta
+) {}
+
+
+================================================================================
+File Path: .\report\enums\ReportDraftType.java
+================================================================================
+
+package com.ocean.piuda.admin.report.enums;
+
+public enum ReportDraftType {
+    INTERNAL_DRAFT("internalDraft"),
+    EXTERNAL_NEWSLETTER("externalNewsletter"),
+    EXTERNAL_INSTAGRAM("externalInstagram"),
+    EXTERNAL_PUBLICATION("externalPublication");
+
+    private final String jsonKey;
+
+    ReportDraftType(String jsonKey) {
+        this.jsonKey = jsonKey;
+    }
+
+    public String jsonKey() {
+        return jsonKey;
+    }
+}
+
+
+================================================================================
+File Path: .\report\service\ReportDraftService.java
+================================================================================
+
+package com.ocean.piuda.admin.report.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
+import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import com.ocean.piuda.admin.report.util.ReportPromptBuilder;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.service.GeminiTextService;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReportDraftService {
+
+    private final GeminiTextService geminiTextService;
+    private final SubmissionRepository submissionRepository;
+    private final ObjectMapper objectMapper;
+
+    @Value("${gemini.model.report:${gemini.model.text}}")
+    private String reportModel;
+
+    public ReportDraftResponse generateByIds(ReportDraftByIdsRequest request) {
+        List<Long> ids = distinctPreserveOrder(request.ids());
+        List<Submission> found =
+                submissionRepository.findAllByIdsAndStatusWithDetails(ids, SubmissionStatus.APPROVED);
+
+        // 요청 순서 보존 정렬
+        Map<Long, Integer> order = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) order.put(ids.get(i), i);
+        found.sort(Comparator.comparingInt(s -> order.getOrDefault(s.getSubmissionId(), Integer.MAX_VALUE)));
+
+        List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
+        List<Long> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
+
+        return generate(found, ids, missing, request.prompt(), request.reportType());
+    }
+
+    public ReportDraftResponse generateByPeriod(ReportDraftByPeriodRequest request) {
+        LocalDateTime start = request.dateFrom().atStartOfDay();
+        LocalDateTime end = request.dateTo().atTime(23, 59, 59);
+
+        List<Submission> found =
+                submissionRepository.findAllByStatusAndSubmittedAtBetweenWithDetails(
+                        SubmissionStatus.APPROVED, start, end
+                );
+
+        List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
+        return generate(found, foundIds, List.of(), request.prompt(), request.reportType());
+    }
+
+    private ReportDraftResponse generate(
+            List<Submission> submissions,
+            List<Long> submissionIds,
+            List<Long> missingIds,
+            String extraPrompt,
+            ReportDraftType reportType
+    ) {
+        if (submissions == null || submissions.isEmpty()) {
+            throw new BusinessException(
+                    ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
+                    Map.of(
+                            "reason", "선택된 기간/IDs에 해당하는 APPROVED submission이 없습니다.",
+                            "missingIds", missingIds
+                    )
+            );
+        }
+        if (reportType == null) {
+            throw new BusinessException(
+                    ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
+                    Map.of("reason", "reportType은 필수입니다.")
+            );
+        }
+
+        // 너무 많으면 프롬프트 폭증 방지 (필요시 조정)
+        List<Submission> trimmed = submissions.size() > 50 ? submissions.subList(0, 50) : submissions;
+
+        String submissionsJson = toCompactJson(trimmed);
+
+        // ✅ 타입 1개만 출력하도록 프롬프트 구성
+        String prompt = ReportPromptBuilder.build(submissionsJson, extraPrompt, reportType);
+
+        GeminiResponse gemResp = geminiTextService.generateReportDraft(prompt);
+        String raw = gemResp.content();
+        GeminiMeta meta = gemResp.meta();
+        String cleaned = cleanupJson(raw);
+
+        // ✅ JSON에서 요청한 키 1개만 파싱
+        String content = "";
+        try {
+            JsonNode root = objectMapper.readTree(cleaned);
+            content = root.path(reportType.jsonKey()).asText("");
+        } catch (Exception e) {
+            log.warn("Gemini report JSON parse failed. raw={}", raw, e);
+            // 파싱 실패 시 raw를 그대로 반환(운영상 디버깅)
+            content = raw == null ? "" : raw;
+        }
+
+        // 실제 사용된 ids (trimmed 기준)
+        List<Long> usedIds = trimmed.stream().map(Submission::getSubmissionId).toList();
+
+        // ✅ 선택 타입에 맞는 필드만 채워서 반환
+        ReportDraftResponse.ReportDraftResponseBuilder builder = ReportDraftResponse.builder()
+                .submissionIds(usedIds)
+                .missingIds(missingIds)
+                .reportType(reportType)
+                .meta(meta);
+
+        switch (reportType) {
+            case INTERNAL_DRAFT -> builder.internalDraft(content);
+            case EXTERNAL_NEWSLETTER -> builder.externalNewsletter(content);
+            case EXTERNAL_INSTAGRAM -> builder.externalInstagram(content);
+            case EXTERNAL_PUBLICATION -> builder.externalPublication(content);
+        }
+
+        return builder.build();
+    }
+
+    private String toCompactJson(List<Submission> submissions) {
+        try {
+            List<Map<String, Object>> rows = submissions.stream()
+                    .map(this::toPromptRow)
+                    .collect(Collectors.toList());
+            return objectMapper.writeValueAsString(rows);
+        } catch (Exception e) {
+            throw new BusinessException(
+                    ExceptionType.UNEXPECTED_SERVER_ERROR,
+                    Map.of("reason", "submissions JSON 변환 실패", "message", e.getMessage())
+            );
+        }
+    }
+
+    private Map<String, Object> toPromptRow(Submission s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+
+        // ✅ 식별: 현장명 + 제출일시만 사용 (submissionId 제거)
+        m.put("siteName", s.getSiteName());
+        m.put("submittedAt", s.getSubmittedAt() != null ? s.getSubmittedAt().toString() : null);
+        m.put("activityType", s.getActivityType() != null ? s.getActivityType().name() : null);
+
+        // ✅ basicEnv: recordDate/startTime/endTime 제외, 환경 수치만 유지
+        if (s.getBasicEnv() != null) {
+            Map<String, Object> env = new LinkedHashMap<>();
+            env.put("waterTempC", s.getBasicEnv().getWaterTempC());
+            env.put("visibilityM", s.getBasicEnv().getVisibilityM());
+            env.put("depthM", s.getBasicEnv().getDepthM());
+            env.put("currentState", s.getBasicEnv().getCurrentState() != null ? s.getBasicEnv().getCurrentState().name() : null);
+            env.put("weather", s.getBasicEnv().getWeather() != null ? s.getBasicEnv().getWeather().name() : null);
+            m.put("basicEnv", env);
+        }
+
+        // ✅ participants 완전 제외
+
+        // ✅ activity: naturalReproduction / survival 포함
+        if (s.getActivity() != null) {
+            Map<String, Object> a = new LinkedHashMap<>();
+            a.put("type", s.getActivity().getType() != null ? s.getActivity().getType().name() : null);
+            a.put("details", truncate(s.getActivity().getDetails(), 600));
+            a.put("collectionAmount", s.getActivity().getCollectionAmount());
+            a.put("durationHours", s.getActivity().getDurationHours());
+            a.put("healthGrade", s.getActivity().getHealthGrade() != null ? s.getActivity().getHealthGrade().name() : null);
+            a.put("growthCm", s.getActivity().getGrowthCm());
+
+            if (s.getActivity().getNaturalReproduction() != null) {
+                Map<String, Object> nat = new LinkedHashMap<>();
+                nat.put("radiusM", s.getActivity().getNaturalReproduction().getRadiusM());
+                nat.put("numerator", s.getActivity().getNaturalReproduction().getNumerator());
+                nat.put("denominator", s.getActivity().getNaturalReproduction().getDenominator());
+                a.put("naturalReproduction", nat);
+            }
+
+            if (s.getActivity().getSurvival() != null) {
+                Map<String, Object> surv = new LinkedHashMap<>();
+                surv.put("dieCount", s.getActivity().getSurvival().getDieCount());
+                surv.put("totalCount", s.getActivity().getSurvival().getTotalCount());
+                a.put("survival", surv);
+            }
+
+            m.put("activity", a);
+        }
+
+        m.put("feedbackText", truncate(s.getFeedbackText(), 600));
+        return m;
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.length() <= max) return t;
+        return t.substring(0, max) + "…";
+    }
+
+    private static String cleanupJson(String raw) {
+        if (raw == null) return "";
+        String t = raw.trim();
+        // 혹시 모델이 코드펜스를 붙였을 때 제거
+        t = t.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "");
+        t = t.replaceAll("\\s*```$", "");
+        return t.trim();
+    }
+
+    private static List<Long> distinctPreserveOrder(List<Long> ids) {
+        if (ids == null) return List.of();
+        LinkedHashSet<Long> set = new LinkedHashSet<>(ids);
+        return new ArrayList<>(set);
+    }
+}
+
+
+================================================================================
+File Path: .\report\util\ReportPromptBuilder.java
+================================================================================
+
+package com.ocean.piuda.admin.report.util;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+
+public class ReportPromptBuilder {
+
+    private ReportPromptBuilder() {}
+
+    public static String build(String submissionsJson, String extraPromptOrNull, ReportDraftType type) {
+        String extra = (extraPromptOrNull == null) ? "" : extraPromptOrNull.trim();
+        String key = type.jsonKey();
+
+        String guide = switch (type) {
+            case INTERNAL_DRAFT -> "- internalDraft: 기간/범위, 활동유형별 요약, 정량(수거량/이식수 등), 운영/이슈 중심.\n";
+            case EXTERNAL_NEWSLETTER -> "- externalNewsletter: 짧은 제목 + 2~4문단 + 하이라이트 bullet + CTA.\n";
+            case EXTERNAL_INSTAGRAM -> "- externalInstagram: 4~10줄 스토리텔링 + 핵심 bullet 2~4개 + 해시태그 8~15개.\n";
+            case EXTERNAL_PUBLICATION -> "- externalPublication: 제목/리드문/본문(소제목 가능) + 성과 요약.\n";
+        };
+
+        return """
+너는 해양 활동 기록 제출물(Submission)을 바탕으로 리포트 초안을 작성하는 전문 에디터다.
+
+[중요 원칙]
+- 아래에 제공된 JSON 데이터에 포함된 사실만 사용한다. 추측/날조 금지.
+- 데이터가 부족하면 "확인 필요" 또는 "기록 없음"으로 명시한다.
+- 외부홍보용(external*)에는 개인정보/민감정보를 포함하지 말 것:
+  - 이메일/연락처 금지
+  - 위도/경도 등 정확 좌표 금지(지역명 수준으로만)
+- 문서는 모두 한국어로 작성한다.
+- 결과는 반드시 "JSON만" 출력한다. 코드펜스( ``` ) 금지.
+- 아래에서 지정한 키 1개만 출력한다. 다른 키/설명/문장 절대 추가 금지.
+
+[데이터]
+%s
+
+[출력 JSON 스키마] (반드시 이 키 하나만)
+{ "%s": "요청된 유형의 마크다운 초안" }
+
+[작성 가이드]
+%s
+
+[추가 지시사항(있으면 반영)]
+%s
+""".formatted(submissionsJson, key, guide, extra.isBlank() ? "(없음)" : extra);
+    }
+}
+
+
+================================================================================
+File Path: .\submission\controller\SubmissionController.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.controller;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.dto.request.*;
+import com.ocean.piuda.admin.submission.dto.response.*;
+import com.ocean.piuda.admin.submission.service.SubmissionCommandService;
+import com.ocean.piuda.admin.submission.service.SubmissionQueryService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import com.ocean.piuda.global.api.dto.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/submissions")
+@RequiredArgsConstructor
+@Tag(
+        name = "Admin Submission",
+        description = "해양 활동 제출 데이터 관리 API입니다. 제출 데이터의 조회, 생성, 승인, 반려, 삭제 기능을 제공합니다."
+)
+public class SubmissionController {
+
+    private final SubmissionQueryService submissionQueryService;
+    private final SubmissionCommandService submissionCommandService;
+
+    /**
+     * 제출 데이터 생성
+     */
+    @PostMapping
+    @Operation(summary = "제출 데이터 생성", description = "Admin이 직접 제출 데이터를 생성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> createSubmission(
+            @RequestBody @Valid CreateSubmissionRequest request
+    ) {
+        SubmissionDetailResponse response = submissionCommandService.createSubmission(request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 제출 목록 조회
+     */
+    @GetMapping
+    @Operation(summary = "제출 목록 조회", description = "제출 목록을 페이지네이션과 함께 조회합니다. 검색, 필터링, 정렬을 지원합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<PageResponse<SubmissionListResponse>> getSubmissions(
+            @Parameter(description = "검색 키워드 (현장명, 작성자)") @RequestParam(required = false) String keyword,
+            @Parameter(description = "상태 필터 (PENDING, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
+            @Parameter(description = "활동 유형 필터 (TRANSPLANT, TRASH_COLLECTION, RESEARCH, MONITORING, OTHER)") @RequestParam(required = false) ActivityType activityType,
+            @Parameter(description = "시작 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @Parameter(description = "종료 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @Parameter(description = "페이지 번호 (기본값: 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (기본값: 20)") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "정렬 필드 (기본값: submittedAt)") @RequestParam(defaultValue = "submittedAt") String sortBy,
+            @Parameter(description = "정렬 방향 (ASC, DESC, 기본값: DESC)") @RequestParam(defaultValue = "DESC") String sortDir
+    ) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        PageResponse<SubmissionListResponse> result = submissionQueryService.getSubmissions(
+                keyword, status, activityType, startDate, endDate, pageable
+        );
+        
+        return ApiData.ok(result);
+    }
+
+    /**
+     * 제출 상세 조회
+     */
+    @GetMapping("/{submissionId}")
+    @Operation(summary = "제출 상세 조회", description = "특정 제출 데이터의 상세 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> getSubmissionDetail(
+            @Parameter(description = "제출 ID", required = true) @PathVariable Long submissionId) {
+        SubmissionDetailResponse response = submissionQueryService.getSubmissionDetail(submissionId);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 검수 로그 조회
+     */
+    @GetMapping("/{submissionId}/logs")
+    @Operation(summary = "검수 로그 조회", description = "특정 제출 데이터의 검수 이력을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<List<AuditLogResponse>> getSubmissionLogs(
+            @Parameter(description = "제출 ID", required = true) @PathVariable Long submissionId) {
+        List<AuditLogResponse> logs = submissionQueryService.getSubmissionLogs(submissionId);
+        return ApiData.ok(logs);
+    }
+
+    /**
+     * 단건 승인
+     */
+    @PostMapping("/{submissionId}/approve")
+    @Operation(summary = "단건 승인", description = "특정 제출 데이터를 승인합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "승인 성공"),
+            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 제출"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> approveSubmission(
+            @Parameter(description = "제출 ID", required = true) @PathVariable Long submissionId) {
+        SubmissionDetailResponse response = submissionCommandService.approveSubmission(submissionId);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 단건 반려
+     */
+    @PostMapping("/{submissionId}/reject")
+    @Operation(summary = "단건 반려", description = "특정 제출 데이터를 반려합니다. 반려 사유를 필수로 입력해야 합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "반려 성공"),
+            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 제출"),
+            @ApiResponse(responseCode = "422", description = "반려 사유가 공란"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> rejectSubmission(
+            @Parameter(description = "제출 ID", required = true) @PathVariable Long submissionId,
+            @RequestBody @Valid SingleRejectRequest request
+    ) {
+        SubmissionDetailResponse response = submissionCommandService.rejectSubmission(submissionId, request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 단건 삭제
+     */
+    @DeleteMapping("/{submissionId}")
+    @Operation(summary = "단건 삭제", description = "특정 제출 데이터를 영구 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ResponseEntity<Void> deleteSubmission(
+            @Parameter(description = "제출 ID", required = true) @PathVariable Long submissionId,
+            @RequestBody(required = false) SingleDeleteRequest request
+    ) {
+        if (request == null) {
+            request = new SingleDeleteRequest(null);
+        }
+        submissionCommandService.deleteSubmission(submissionId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 일괄 승인
+     */
+    @PostMapping("/bulk/approve")
+    @Operation(summary = "일괄 승인", description = "여러 제출 데이터를 한 번에 승인합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "일괄 승인 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<BulkApproveResponse> bulkApprove(
+            @RequestBody @Valid BulkApproveRequest request
+    ) {
+        BulkApproveResponse response = submissionCommandService.bulkApprove(request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 일괄 반려
+     */
+    @PostMapping("/bulk/reject")
+    @Operation(summary = "일괄 반려", description = "여러 제출 데이터를 한 번에 반려합니다. 반려 사유를 필수로 입력해야 합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "일괄 반려 완료"),
+            @ApiResponse(responseCode = "422", description = "반려 사유가 공란"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<BulkRejectResponse> bulkReject(
+            @RequestBody @Valid BulkRejectRequest request
+    ) {
+        BulkRejectResponse response = submissionCommandService.bulkReject(request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 일괄 삭제
+     */
+    @DeleteMapping("/bulk")
+    @Operation(summary = "일괄 삭제", description = "여러 제출 데이터를 한 번에 영구 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "일괄 삭제 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<BulkDeleteResponse> bulkDelete(
+            @RequestBody @Valid BulkDeleteRequest request
+    ) {
+        BulkDeleteResponse response = submissionCommandService.bulkDelete(request);
+        return ApiData.ok(response);
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\BulkApproveRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.List;
+
+public record BulkApproveRequest(
+        @NotEmpty(message = "승인할 제출 ID 목록은 필수입니다.")
+        List<Long> ids
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\BulkDeleteRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.List;
+
+public record BulkDeleteRequest(
+        @NotEmpty(message = "삭제할 제출 ID 목록은 필수입니다.")
+        List<Long> ids,
+        
+        String reason
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\BulkRejectRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
+
+public record BulkRejectRequest(
+        @NotEmpty(message = "반려할 제출 ID 목록은 필수입니다.")
+        List<Long> ids,
+        
+        @NotNull(message = "반려 사유는 필수입니다.")
+        @Valid
+        RejectReasonDto reason
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\CreateSubmissionRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.CurrentState;
+import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.common.enums.ParticipantRole;
+import com.ocean.piuda.admin.common.enums.Weather;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateSubmissionRequest {
+
+    @NotBlank(message = "현장명은 필수입니다")
+    private String siteName;
+
+    @NotNull(message = "활동유형은 필수입니다")
+    private ActivityType activityType;
+
+    private LocalDateTime submittedAt; // null이면 현재 시간 사용
+
+    @NotBlank(message = "작성자명은 필수입니다")
+    private String authorName;
+
+    private String authorEmail;
+
+    private String feedbackText;
+
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+
+    @Valid
+    private BasicEnvDto basicEnv;
+
+    @Valid
+    private ParticipantsDto participants;
+
+    @Valid
+    @NotNull(message = "활동 정보는 필수입니다")
+    private ActivityDto activity;
+
+    @Valid
+    private List<AttachmentDto> attachments;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BasicEnvDto {
+        private LocalDate recordDate;
+        private LocalTime startTime;
+        private LocalTime endTime;
+        private Float waterTempC;
+        private Float visibilityM;
+        private Float depthM;
+        private CurrentState currentState;
+        private Weather weather;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ParticipantsDto {
+        private String leaderName;
+        private Integer participantCount;
+        private ParticipantRole role;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ActivityDto {
+        @NotNull(message = "활동유형은 필수입니다")
+        private ActivityType type;
+        private String details;
+        private Float collectionAmount;
+        private Float durationHours;
+
+        // --- 추가된 필드 ---
+        private HealthGrade healthGrade;
+        private Float growthCm;
+        private NaturalReproductionDto naturalReproduction;
+        private SurvivalDto survival;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NaturalReproductionDto {
+        private Float radiusM;
+        private Float numerator;
+        private Float denominator;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SurvivalDto {
+        private Float dieCount;
+        private Float totalCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AttachmentDto {
+        private String fileName;
+        private String fileUrl;
+        private String mimeType;
+        private Integer fileSize;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\RejectReasonDto.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+public record RejectReasonDto(
+        String templateCode,
+        String message
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\SingleDeleteRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+public record SingleDeleteRequest(
+        String reason
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\request\SingleRejectRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.request;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+
+public record SingleRejectRequest(
+        @NotNull(message = "반려 사유는 필수입니다.")
+        @Valid
+        RejectReasonDto reason
+) {
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\ActivityResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.submission.entity.Activity;
+import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
+import com.ocean.piuda.admin.submission.entity.embeded.Survival;
+
+public record ActivityResponse(
+        ActivityType type,
+        String details,
+        Float collectionAmount,
+        Float durationHours,
+
+        // --- 추가된 필드 ---
+        HealthGrade healthGrade,
+        Float growthCm,
+        NaturalReproductionResponse naturalReproduction,
+        SurvivalResponse survival
+) {
+    public static ActivityResponse from(Activity activity) {
+        if (activity == null) return null;
+        return new ActivityResponse(
+                activity.getType(),
+                activity.getDetails(),
+                activity.getCollectionAmount(),
+                activity.getDurationHours(),
+
+                // 매핑 로직
+                activity.getHealthGrade(),
+                activity.getGrowthCm(),
+                NaturalReproductionResponse.from(activity.getNaturalReproduction()),
+                SurvivalResponse.from(activity.getSurvival())
+        );
+    }
+
+    // --- 내부 레코드 정의 ---
+    public record NaturalReproductionResponse(
+            Float radiusM,
+            Float numerator,
+            Float denominator
+    ) {
+        public static NaturalReproductionResponse from(NaturalReproduction vo) {
+            if (vo == null) return null;
+            return new NaturalReproductionResponse(vo.getRadiusM(), vo.getNumerator(), vo.getDenominator());
+        }
+    }
+
+    public record SurvivalResponse(
+            Float dieCount,
+            Float totalCount
+    ) {
+        public static SurvivalResponse from(Survival vo) {
+            if (vo == null) return null;
+            return new SurvivalResponse(vo.getDieCount(), vo.getTotalCount());
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\AttachmentResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.submission.entity.Attachment;
+
+import java.time.LocalDateTime;
+
+public record AttachmentResponse(
+        Long attachmentId,
+        String fileName,
+        String fileUrl,
+        String mimeType,
+        Integer fileSize,
+        LocalDateTime uploadedAt
+) {
+    public static AttachmentResponse from(Attachment attachment) {
+        if (attachment == null) return null;
+        return new AttachmentResponse(
+                attachment.getAttachmentId(),
+                attachment.getFileName(),
+                attachment.getFileUrl(),
+                attachment.getMimeType(),
+                attachment.getFileSize(),
+                attachment.getUploadedAt()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\AuditLogResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.AuditAction;
+import com.ocean.piuda.admin.submission.entity.AuditLog;
+
+import java.time.LocalDateTime;
+
+public record AuditLogResponse(
+        Long logId,
+        AuditAction action,
+        String performedBy,
+        String comment,
+        LocalDateTime createdAt
+) {
+    public static AuditLogResponse from(AuditLog auditLog) {
+        if (auditLog == null) return null;
+        return new AuditLogResponse(
+                auditLog.getLogId(),
+                auditLog.getAction(),
+                auditLog.getPerformedBy(),
+                auditLog.getComment(),
+                auditLog.getCreatedAt()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\BasicEnvResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.CurrentState;
+import com.ocean.piuda.admin.common.enums.Weather;
+import com.ocean.piuda.admin.submission.entity.BasicEnv;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+public record BasicEnvResponse(
+        LocalDate recordDate,
+        LocalTime startTime,
+        LocalTime endTime,
+        Float waterTempC,
+        Float visibilityM,
+        Float depthM,
+        CurrentState currentState,
+        Weather weather
+) {
+    public static BasicEnvResponse from(BasicEnv basicEnv) {
+        if (basicEnv == null) return null;
+        return new BasicEnvResponse(
+                basicEnv.getRecordDate(),
+                basicEnv.getStartTime(),
+                basicEnv.getEndTime(),
+                basicEnv.getWaterTempC(),
+                basicEnv.getVisibilityM(),
+                basicEnv.getDepthM(),
+                basicEnv.getCurrentState(),
+                basicEnv.getWeather()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\BulkApproveResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import java.util.List;
+
+public record BulkApproveResponse(
+        List<Long> approved,
+        List<Long> skipped
+) {}
+
+
+================================================================================
+File Path: .\submission\dto\response\BulkDeleteResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import java.util.List;
+
+public record BulkDeleteResponse(
+        List<Long> deleted,
+        List<Long> failed
+) {}
+
+
+================================================================================
+File Path: .\submission\dto\response\BulkRejectResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import java.util.List;
+
+public record BulkRejectResponse(
+        List<Long> rejected,
+        List<Long> conflicts
+) {}
+
+
+================================================================================
+File Path: .\submission\dto\response\ParticipantsResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.ParticipantRole;
+import com.ocean.piuda.admin.submission.entity.Participants;
+
+public record ParticipantsResponse(
+        String leaderName,
+        Integer participantCount,
+        ParticipantRole role
+) {
+    public static ParticipantsResponse from(Participants participants) {
+        if (participants == null) return null;
+        return new ParticipantsResponse(
+                participants.getLeaderName(),
+                participants.getParticipantCount(),
+                participants.getRole()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\SubmissionDetailResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.entity.Submission;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public record SubmissionDetailResponse(
+        Long submissionId,
+        String siteName,
+        ActivityType activityType,
+        LocalDateTime submittedAt,
+        SubmissionStatus status,
+        String authorName,
+        String authorEmail,
+        Integer attachmentCount,
+        String feedbackText,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        BasicEnvResponse basicEnv,
+        ParticipantsResponse participants,
+        ActivityResponse activity,
+        List<AttachmentResponse> attachments,
+        String rejectReason,
+        List<AuditLogResponse> auditLogs,
+        LocalDateTime createdAt,
+        LocalDateTime modifiedAt
+) {
+    public static SubmissionDetailResponse from(Submission submission) {
+        List<AttachmentResponse> attachments = null;
+        if (submission.getAttachments() != null) {
+            attachments = submission.getAttachments().stream()
+                    .map(AttachmentResponse::from)
+                    .collect(Collectors.toList());
+        }
+
+        List<AuditLogResponse> auditLogs = null;
+        if (submission.getAuditLogs() != null) {
+            auditLogs = submission.getAuditLogs().stream()
+                    .map(AuditLogResponse::from)
+                    .collect(Collectors.toList());
+        }
+
+        String rejectReason = null;
+        if (submission.getRejectReason() != null) {
+            rejectReason = submission.getRejectReason().getMessage();
+        }
+
+        return new SubmissionDetailResponse(
+                submission.getSubmissionId(),
+                submission.getSiteName(),
+                submission.getActivityType(),
+                submission.getSubmittedAt(),
+                submission.getStatus(),
+                submission.getAuthorName(),
+                submission.getAuthorEmail(),
+                submission.getAttachmentCount(),
+                submission.getFeedbackText(),
+                submission.getLatitude(),
+                submission.getLongitude(),
+                BasicEnvResponse.from(submission.getBasicEnv()),
+                ParticipantsResponse.from(submission.getParticipants()),
+                ActivityResponse.from(submission.getActivity()),
+                attachments,
+                rejectReason,
+                auditLogs,
+                submission.getCreatedAt(),
+                submission.getModifiedAt()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\dto\response\SubmissionListResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.dto.response;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.entity.Submission;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public record SubmissionListResponse(
+        Long submissionId,
+        String siteName,
+        ActivityType activityType,
+        LocalDateTime submittedAt,
+        SubmissionStatus status,
+        String authorName,
+        String authorEmail,
+        Integer attachmentCount
+) {
+    public static SubmissionListResponse from(Submission submission) {
+        return new SubmissionListResponse(
+                submission.getSubmissionId(),
+                submission.getSiteName(),
+                submission.getActivityType(),
+                submission.getSubmittedAt(),
+                submission.getStatus(),
+                submission.getAuthorName(),
+                submission.getAuthorEmail(),
+                submission.getAttachmentCount()
+        );
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\Activity.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
+import com.ocean.piuda.admin.submission.entity.embeded.Survival;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+@Entity
+@Table(name = "activity")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class Activity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "activity_id")
+    private Long activityId;
+
+    @OneToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ActivityType type;
+
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
+    @Column(name = "collection_amount")
+    @Builder.Default
+    private Float collectionAmount = 0f;
+
+    @Column(name = "duration_hours")
+    @Builder.Default
+    private Float durationHours = 0f;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "health_grade")
+    private HealthGrade healthGrade;
+
+    @Column(name = "growth_cm")
+    @Builder.Default
+    private Float growthCm = 0f;
+
+    @Embedded
+    private NaturalReproduction naturalReproduction;
+
+    @Embedded
+    private Survival survival;
+
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\Attachment.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "attachment")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class Attachment {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "attachment_id")
+    private Long attachmentId;
+
+    @ManyToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Column(name = "file_name", length = 255)
+    private String fileName;
+
+    @Column(name = "file_url", nullable = false, length = 500)
+    private String fileUrl;
+
+    @Column(name = "mime_type", length = 50)
+    private String mimeType;
+
+    @Column(name = "file_size")
+    private Integer fileSize;
+
+    @Column(name = "uploaded_at")
+    @Builder.Default
+    private LocalDateTime uploadedAt = LocalDateTime.now();
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\AuditLog.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import com.ocean.piuda.admin.common.enums.AuditAction;
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+@Entity
+@Table(name = "audit_log")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class AuditLog extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "log_id")
+    private Long logId;
+
+    @ManyToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuditAction action;
+
+    @Column(name = "performed_by", nullable = false, length = 100)
+    private String performedBy;
+
+    @Column(length = 500)
+    private String comment;
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\BasicEnv.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import com.ocean.piuda.admin.common.enums.CurrentState;
+import com.ocean.piuda.admin.common.enums.Weather;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+@Entity
+@Table(name = "basic_env")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class BasicEnv {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "env_id")
+    private Long envId;
+
+    @OneToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Column(name = "record_date", nullable = false)
+    private LocalDate recordDate;
+
+    @Column(name = "start_time")
+    private LocalTime startTime;
+
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
+    @Column(name = "water_temp_c")
+    private Float waterTempC;
+
+    @Column(name = "visibility_m")
+    private Float visibilityM;
+
+    @Column(name = "depth_m")
+    private Float depthM;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "current_state")
+    private CurrentState currentState;
+
+    @Enumerated(EnumType.STRING)
+    private Weather weather;
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\embeded\NaturalReproduction.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity.embeded;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Embeddable
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class NaturalReproduction {
+
+    @Column(name = "nat_radius_m")
+    private Float radiusM;      // 관측 반경
+
+    @Column(name = "nat_numerator")
+    private Float numerator;    // 자연번식 개체수
+
+    @Column(name = "nat_denominator")
+    private Float denominator;  // 기준 개체수
+}
+
+
+================================================================================
+File Path: .\submission\entity\embeded\Survival.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity.embeded;
+
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Embeddable
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Survival {
+
+    @Column(name = "surv_die_count")
+    private Float dieCount;     // 죽은 개체수
+
+    @Column(name = "surv_total_count")
+    private Float totalCount;   // 총 개체수
+}
+
+
+================================================================================
+File Path: .\submission\entity\Participants.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import com.ocean.piuda.admin.common.enums.ParticipantRole;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+@Entity
+@Table(name = "participants")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class Participants {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "participant_id")
+    private Long participantId;
+
+    @OneToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Column(name = "leader_name", length = 100)
+    private String leaderName;
+
+    @Column(name = "participant_count")
+    @Builder.Default
+    private Integer participantCount = 1;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ParticipantRole role = ParticipantRole.CITIZEN_DIVER;
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\RejectReason.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "reject_reason")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class RejectReason {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "reason_id")
+    private Long reasonId;
+
+    @OneToOne
+    @JoinColumn(name = "submission_id", nullable = false)
+    private Submission submission;
+
+    @Column(name = "template_code", length = 100)
+    private String templateCode;
+
+    @Column(nullable = false, length = 500)
+    private String message;
+
+    @Column(name = "rejected_by", nullable = false, length = 100)
+    private String rejectedBy;
+
+    @Column(name = "rejected_at")
+    @Builder.Default
+    private LocalDateTime rejectedAt = LocalDateTime.now();
+
+    public void updateSubmission(Submission submission) {
+        this.submission = submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\entity\Submission.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.entity;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.global.api.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Entity
+@Table(name = "submission")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class Submission extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "submission_id")
+    private Long submissionId;
+
+    @Column(name = "site_name", nullable = false, length = 200)
+    private String siteName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "activity_type", nullable = false)
+    private ActivityType activityType;
+
+    @Column(name = "submitted_at", nullable = false)
+    private java.time.LocalDateTime submittedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private SubmissionStatus status = SubmissionStatus.PENDING;
+
+    @Column(name = "author_name", nullable = false, length = 100)
+    private String authorName;
+
+    @Column(name = "author_email", length = 200)
+    private String authorEmail;
+
+    @Column(name = "attachment_count")
+    @Builder.Default
+    private Integer attachmentCount = 0;
+
+    @Column(name = "feedback_text", columnDefinition = "TEXT")
+    private String feedbackText;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal longitude;
+
+    // 관계 매핑
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private BasicEnv basicEnv;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Participants participants;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Activity activity;
+
+    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Attachment> attachments = new ArrayList<>();
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private RejectReason rejectReason;
+
+    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<AuditLog> auditLogs = new ArrayList<>();
+
+    // 비즈니스 메서드
+    public void updateStatus(SubmissionStatus status) {
+        this.status = status;
+    }
+
+    public void addAttachment(Attachment attachment) {
+        attachments.add(attachment);
+        attachment.updateSubmission(this);
+        this.attachmentCount = attachments.size();
+    }
+
+    public void addAuditLog(AuditLog auditLog) {
+        auditLogs.add(auditLog);
+        auditLog.updateSubmission(this);
+    }
+
+    public void setBasicEnv(BasicEnv basicEnv) {
+        this.basicEnv = basicEnv;
+        if (basicEnv != null) {
+            basicEnv.updateSubmission(this);
+        }
+    }
+
+    public void setParticipants(Participants participants) {
+        this.participants = participants;
+        if (participants != null) {
+            participants.updateSubmission(this);
+        }
+    }
+
+    public void setActivity(Activity activity) {
+        this.activity = activity;
+        if (activity != null) {
+            activity.updateSubmission(this);
+        }
+    }
+
+    public void setRejectReason(RejectReason rejectReason) {
+        this.rejectReason = rejectReason;
+        if (rejectReason != null) {
+            rejectReason.updateSubmission(this);
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\submission\initializer\SubmissionDataInitializer.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.initializer;
+
+import com.ocean.piuda.admin.common.enums.*;
+import com.ocean.piuda.admin.submission.entity.*;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@Profile("!prod") // 프로덕션 환경에서는 실행되지 않음
+@Order(1)
+public class SubmissionDataInitializer implements CommandLineRunner {
+
+    private final SubmissionRepository submissionRepository;
+
+    @Override
+    @Transactional
+    public void run(String... args) {
+        if (submissionRepository.count() > 0) {
+            log.info("Submission 데이터가 이미 존재합니다. 초기화를 건너뜁니다.");
+            return;
+        }
+
+        log.info("Admin Submission 테스트 데이터 초기화 시작...");
+
+        List<Submission> submissions = new ArrayList<>();
+
+        // 1. 검수 대기 중인 제출 (PENDING)
+        submissions.add(createSubmission(
+                1L,
+                "포항 해안가",
+                ActivityType.TRANSPLANT,
+                SubmissionStatus.PENDING,
+                "홍길동",
+                "hong@example.com",
+                3,
+                "깨끗해진 바다가 뿌듯합니다",
+                new BigDecimal("36.0322"),
+                new BigDecimal("129.3650"),
+                LocalDate.now().minusDays(2),
+                LocalTime.of(9, 0),
+                LocalTime.of(12, 30),
+                18.5f,
+                15.0f,
+                10.5f,
+                CurrentState.MEDIUM,
+                Weather.SUNNY,
+                "홍길동",
+                5,
+                ParticipantRole.CITIZEN_DIVER,
+                "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
+                50.0f,
+                3.5f,
+                "public/user_objects/2025-01-15/photo1.jpg"
+        ));
+
+        // 2. 승인된 제출 (APPROVED)
+        submissions.add(createSubmission(
+                2L,
+                "부산 송도해수욕장",
+                ActivityType.TRASH_COLLECTION,
+                SubmissionStatus.APPROVED,
+                "김철수",
+                "kim@example.com",
+                2,
+                "해변 청소 활동에 참여했습니다",
+                new BigDecimal("35.0784"),
+                new BigDecimal("129.0756"),
+                LocalDate.now().minusDays(5),
+                LocalTime.of(10, 0),
+                LocalTime.of(14, 0),
+                20.0f,
+                20.0f,
+                5.0f,
+                CurrentState.LOW,
+                Weather.SUNNY,
+                "김철수",
+                3,
+                ParticipantRole.CITIZEN_DIVER,
+                "플라스틱 병 30개, 캔 15개를 수거했습니다.",
+                45.0f,
+                4.0f,
+                "public/user_objects/2025-01-10/photo2.jpg"
+        ));
+
+        // 3. 반려된 제출 (REJECTED)
+        Submission rejectedSubmission = createSubmission(
+                3L,
+                "제주도 성산일출봉",
+                ActivityType.OTHER,
+                SubmissionStatus.REJECTED,
+                "이영희",
+                "lee@example.com",
+                1,
+                "제주도 바다 정화 활동",
+                new BigDecimal("33.4584"),
+                new BigDecimal("126.9426"),
+                LocalDate.now().minusDays(7),
+                LocalTime.of(8, 0),
+                LocalTime.of(11, 0),
+                22.0f,
+                25.0f,
+                8.0f,
+                CurrentState.LOW,
+                Weather.CLOUDY,
+                "이영희",
+                2,
+                ParticipantRole.RESEARCHER,
+                "해양 생물 관찰 및 정화 활동",
+                10.0f,
+                3.0f,
+                "public/user_objects/2025-01-08/photo3.jpg"
+        );
+        RejectReason rejectReason = RejectReason.builder()
+                .submission(rejectedSubmission)
+                .templateCode("PHOTO_INSUFFICIENT")
+                .message("사진이 부족합니다. 최소 3장 이상의 사진을 첨부해주세요.")
+                .rejectedBy("admin@oceancampus.kr")
+                .rejectedAt(LocalDateTime.now().minusDays(6))
+                .build();
+        rejectedSubmission.setRejectReason(rejectReason);
+        submissions.add(rejectedSubmission);
+
+        // 4. 검수 대기 중인 제출 (PENDING) - 추가
+        submissions.add(createSubmission(
+                4L,
+                "강원도 속초 해변",
+                ActivityType.TRANSPLANT,
+                SubmissionStatus.PENDING,
+                "박민수",
+                "park@example.com",
+                4,
+                "속초 바다 정화 활동에 참여했습니다",
+                new BigDecimal("38.2070"),
+                new BigDecimal("128.5918"),
+                LocalDate.now().minusDays(1),
+                LocalTime.of(13, 0),
+                LocalTime.of(17, 0),
+                16.0f,
+                12.0f,
+                15.0f,
+                CurrentState.HIGH,
+                Weather.WINDY,
+                "박민수",
+                4,
+                ParticipantRole.LOCAL_MANAGER,
+                "이식 80개 완료",
+                80.0f,
+                4.0f,
+                "public/user_objects/2025-01-16/photo4.jpg"
+        ));
+
+        // 5. 승인된 제출 (APPROVED) - 추가
+        submissions.add(createSubmission(
+                5L,
+                "전라남도 여수 해수욕장",
+                ActivityType.TRASH_COLLECTION,
+                SubmissionStatus.APPROVED,
+                "최지영",
+                "choi@example.com",
+                5,
+                "여수 바다가 아름답습니다",
+                new BigDecimal("34.7604"),
+                new BigDecimal("127.6622"),
+                LocalDate.now().minusDays(10),
+                LocalTime.of(9, 30),
+                LocalTime.of(13, 30),
+                19.0f,
+                18.0f,
+                7.0f,
+                CurrentState.MEDIUM,
+                Weather.SUNNY,
+                "최지영",
+                6,
+                ParticipantRole.CITIZEN_DIVER,
+                "쓰레기 100개 수거 완료",
+                100.0f,
+                4.0f,
+                "public/user_objects/2025-01-07/photo5.jpg"
+        ));
+
+        submissionRepository.saveAll(submissions);
+        log.info("{}개의 Submission 테스트 데이터 생성 완료", submissions.size());
+    }
+
+    private Submission createSubmission(
+            Long id,
+            String siteName,
+            ActivityType activityType,
+            SubmissionStatus status,
+            String authorName,
+            String authorEmail,
+            int attachmentCount,
+            String feedbackText,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            LocalDate recordDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            Float waterTempC,
+            Float visibilityM,
+            Float depthM,
+            CurrentState currentState,
+            Weather weather,
+            String leaderName,
+            int participantCount,
+            ParticipantRole role,
+            String activityDetails,
+            Float collectionAmount,
+            Float durationHours,
+            String fileUrl
+    ) {
+        LocalDateTime submittedAt = LocalDateTime.of(recordDate, startTime);
+
+        // BasicEnv 생성
+        BasicEnv basicEnv = BasicEnv.builder()
+                .recordDate(recordDate)
+                .startTime(startTime)
+                .endTime(endTime)
+                .waterTempC(waterTempC)
+                .visibilityM(visibilityM)
+                .depthM(depthM)
+                .currentState(currentState)
+                .weather(weather)
+                .build();
+
+        // Participants 생성
+        Participants participants = Participants.builder()
+                .leaderName(leaderName)
+                .participantCount(participantCount)
+                .role(role)
+                .build();
+
+        // Activity 생성
+        Activity activity = Activity.builder()
+                .type(activityType)
+                .details(activityDetails)
+                .collectionAmount(collectionAmount)
+                .durationHours(durationHours)
+                .build();
+
+        // Attachments 생성
+        List<Attachment> attachments = new ArrayList<>();
+        String baseUrl = fileUrl.substring(0, fileUrl.lastIndexOf("/") + 1);
+        for (int i = 1; i <= attachmentCount; i++) {
+            Attachment attachment = Attachment.builder()
+                    .fileName("photo" + i + ".jpg")
+                    .fileUrl(baseUrl + "photo" + i + ".jpg")
+                    .mimeType("image/jpeg")
+                    .fileSize(1024 * 500 * i) // 500KB * i
+                    .uploadedAt(submittedAt)
+                    .build();
+            attachments.add(attachment);
+        }
+
+        // Submission 생성
+        Submission submission = Submission.builder()
+                .siteName(siteName)
+                .activityType(activityType)
+                .submittedAt(submittedAt)
+                .status(status)
+                .authorName(authorName)
+                .authorEmail(authorEmail)
+                .attachmentCount(attachmentCount)
+                .feedbackText(feedbackText)
+                .latitude(latitude)
+                .longitude(longitude)
+                .build();
+
+        // 관계 설정
+        submission.setBasicEnv(basicEnv);
+        submission.setParticipants(participants);
+        submission.setActivity(activity);
+        attachments.forEach(submission::addAttachment);
+
+        // AuditLog 생성 (제출됨)
+        AuditLog submitLog = AuditLog.builder()
+                .submission(submission)
+                .action(AuditAction.SUBMITTED)
+                .performedBy("system")
+                .comment(null)
+                .createdAt(submittedAt)
+                .build();
+        submission.addAuditLog(submitLog);
+
+        // 승인/반려된 경우 AuditLog 추가
+        if (status == SubmissionStatus.APPROVED) {
+            AuditLog approveLog = AuditLog.builder()
+                    .submission(submission)
+                    .action(AuditAction.APPROVED)
+                    .performedBy("admin@oceancampus.kr")
+                    .comment(null)
+                    .createdAt(submittedAt.plusDays(1))
+                    .build();
+            submission.addAuditLog(approveLog);
+        } else if (status == SubmissionStatus.REJECTED) {
+            AuditLog rejectLog = AuditLog.builder()
+                    .submission(submission)
+                    .action(AuditAction.REJECTED)
+                    .performedBy("admin@oceancampus.kr")
+                    .comment("사진이 부족합니다. 최소 3장 이상의 사진을 첨부해주세요.")
+                    .createdAt(submittedAt.plusDays(1))
+                    .build();
+            submission.addAuditLog(rejectLog);
+        }
+
+        return submission;
+    }
+}
+
+
+================================================================================
+File Path: .\submission\repository\AuditLogRepository.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.repository;
+
+import com.ocean.piuda.admin.submission.entity.AuditLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
+    List<AuditLog> findBySubmissionSubmissionIdOrderByCreatedAtDesc(Long submissionId);
+}
+
+
+================================================================================
+File Path: .\submission\repository\SubmissionRepository.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.repository;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface SubmissionRepository extends JpaRepository<Submission, Long> {
+
+    long countByStatus(SubmissionStatus status);
+
+    @Query("""
+        SELECT DISTINCT s FROM Submission s
+        LEFT JOIN FETCH s.basicEnv
+        LEFT JOIN FETCH s.participants
+        LEFT JOIN FETCH s.activity
+        LEFT JOIN FETCH s.attachments
+        LEFT JOIN FETCH s.rejectReason
+        WHERE s.submissionId = :id
+        """)
+    Optional<Submission> findByIdWithDetails(@Param("id") Long id);
+    
+    @Query("""
+        SELECT DISTINCT s FROM Submission s
+        LEFT JOIN FETCH s.auditLogs
+        WHERE s.submissionId = :id
+        """)
+    Optional<Submission> findByIdWithAuditLogs(@Param("id") Long id);
+
+    @Query("""
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.participants
+    LEFT JOIN FETCH s.activity
+    WHERE (:keyword IS NULL OR :keyword = '' OR 
+           s.siteName LIKE %:keyword% OR 
+           s.authorName LIKE %:keyword%)
+      AND (:status IS NULL OR s.status = :status)
+      AND (:activityType IS NULL OR s.activityType = :activityType)
+      AND (cast(:startDate as timestamp) IS NULL OR s.submittedAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR s.submittedAt <= :endDate)
+    """)
+    Page<Submission> findWithFilters(
+            @Param("keyword") String keyword,
+            @Param("status") SubmissionStatus status,
+            @Param("activityType") ActivityType activityType,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT DISTINCT s FROM Submission s
+        LEFT JOIN FETCH s.basicEnv
+        LEFT JOIN FETCH s.participants
+        LEFT JOIN FETCH s.activity
+        LEFT JOIN FETCH s.attachments
+        WHERE s.status = :status
+          AND s.submissionId IN :ids
+        """)
+    List<Submission> findAllByIdsAndStatusWithDetails(
+            @Param("ids") List<Long> ids,
+            @Param("status") SubmissionStatus status
+    );
+
+    @Query("""
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.participants
+    LEFT JOIN FETCH s.activity
+    LEFT JOIN FETCH s.attachments
+    WHERE s.status = :status
+      AND s.submittedAt BETWEEN :start AND :end
+    ORDER BY s.submittedAt DESC
+    """)
+    List<Submission> findAllByStatusAndSubmittedAtBetweenWithDetails(
+            @Param("status") SubmissionStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+
+}
+
+
+
+================================================================================
+File Path: .\submission\service\SubmissionCommandService.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.service;
+
+import com.ocean.piuda.admin.submission.dto.response.*;
+import com.ocean.piuda.admin.common.enums.AuditAction;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.dto.request.*;
+import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
+import com.ocean.piuda.admin.submission.entity.Activity;
+import com.ocean.piuda.admin.submission.entity.Attachment;
+import com.ocean.piuda.admin.submission.entity.AuditLog;
+import com.ocean.piuda.admin.submission.entity.BasicEnv;
+import com.ocean.piuda.admin.submission.entity.Participants;
+import com.ocean.piuda.admin.submission.entity.RejectReason;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
+import com.ocean.piuda.admin.submission.entity.embeded.Survival;
+import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Transactional
+@Service
+@RequiredArgsConstructor
+public class SubmissionCommandService {
+
+    private final SubmissionRepository submissionRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final SubmissionQueryService submissionQueryService;
+
+    /**
+     * 제출 데이터 생성
+     */
+    public SubmissionDetailResponse createSubmission(CreateSubmissionRequest request) {
+        // 기본값 설정
+        LocalDateTime submittedAt = request.getSubmittedAt() != null
+                ? request.getSubmittedAt()
+                : LocalDateTime.now();
+
+        // Submission 생성
+        Submission submission = Submission.builder()
+                .siteName(request.getSiteName())
+                .activityType(request.getActivityType())
+                .submittedAt(submittedAt)
+                .status(SubmissionStatus.PENDING)
+                .authorName(request.getAuthorName())
+                .authorEmail(request.getAuthorEmail())
+                .feedbackText(request.getFeedbackText())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .attachmentCount(0)
+                .build();
+
+        // BasicEnv 생성
+        if (request.getBasicEnv() != null) {
+            CreateSubmissionRequest.BasicEnvDto envDto = request.getBasicEnv();
+            BasicEnv basicEnv = BasicEnv.builder()
+                    .recordDate(envDto.getRecordDate())
+                    .startTime(envDto.getStartTime())
+                    .endTime(envDto.getEndTime())
+                    .waterTempC(envDto.getWaterTempC())
+                    .visibilityM(envDto.getVisibilityM())
+                    .depthM(envDto.getDepthM())
+                    .currentState(envDto.getCurrentState())
+                    .weather(envDto.getWeather())
+                    .build();
+            submission.setBasicEnv(basicEnv);
+        }
+
+        // Participants 생성
+        if (request.getParticipants() != null) {
+            CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
+            Participants participants = Participants.builder()
+                    .leaderName(participantsDto.getLeaderName())
+                    .participantCount(participantsDto.getParticipantCount() != null
+                            ? participantsDto.getParticipantCount()
+                            : 1)
+                    .role(participantsDto.getRole() != null
+                            ? participantsDto.getRole()
+                            : com.ocean.piuda.admin.common.enums.ParticipantRole.CITIZEN_DIVER)
+                    .build();
+            submission.setParticipants(participants);
+        }
+
+        // Activity 생성 및 신규 필드 매핑
+        CreateSubmissionRequest.ActivityDto activityDto = request.getActivity();
+
+        // NaturalReproduction VO 빌드
+        NaturalReproduction naturalReproduction = null;
+        if (activityDto.getNaturalReproduction() != null) {
+            naturalReproduction = NaturalReproduction.builder()
+                    .radiusM(activityDto.getNaturalReproduction().getRadiusM() != null ? activityDto.getNaturalReproduction().getRadiusM() : 0f)
+                    .numerator(activityDto.getNaturalReproduction().getNumerator() != null ? activityDto.getNaturalReproduction().getNumerator() : 0f)
+                    .denominator(activityDto.getNaturalReproduction().getDenominator() != null ? activityDto.getNaturalReproduction().getDenominator() : 0f)
+                    .build();
+        }
+
+        // Survival VO 빌드
+        Survival survival = null;
+        if (activityDto.getSurvival() != null) {
+            survival = Survival.builder()
+                    .dieCount(activityDto.getSurvival().getDieCount() != null ? activityDto.getSurvival().getDieCount() : 0f)
+                    .totalCount(activityDto.getSurvival().getTotalCount() != null ? activityDto.getSurvival().getTotalCount() : 0f)
+                    .build();
+        }
+
+        Activity activity = Activity.builder()
+                .type(activityDto.getType())
+                .details(activityDto.getDetails())
+                .collectionAmount(activityDto.getCollectionAmount() != null
+                        ? activityDto.getCollectionAmount()
+                        : 0f)
+                .durationHours(activityDto.getDurationHours() != null
+                        ? activityDto.getDurationHours()
+                        : 0f)
+                // 추가된 필드 매핑
+                .healthGrade(activityDto.getHealthGrade())
+                .growthCm(activityDto.getGrowthCm() != null ? activityDto.getGrowthCm() : 0f)
+                .naturalReproduction(naturalReproduction)
+                .survival(survival)
+                .build();
+
+        submission.setActivity(activity);
+
+        // Attachments 생성
+        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
+            for (CreateSubmissionRequest.AttachmentDto attachmentDto : request.getAttachments()) {
+                Attachment attachment = Attachment.builder()
+                        .fileName(attachmentDto.getFileName())
+                        .fileUrl(attachmentDto.getFileUrl())
+                        .mimeType(attachmentDto.getMimeType())
+                        .fileSize(attachmentDto.getFileSize())
+                        .uploadedAt(submittedAt)
+                        .build();
+                submission.addAttachment(attachment);
+            }
+        }
+
+        // 저장
+        Submission saved = submissionRepository.save(submission);
+
+        // AuditLog 생성 (제출됨)
+        createAuditLog(saved, AuditAction.SUBMITTED, null);
+
+        return SubmissionDetailResponse.from(saved);
+    }
+
+    /**
+     * 단건 승인
+     */
+    public SubmissionDetailResponse approveSubmission(Long submissionId) {
+        Submission submission = submissionQueryService.getSubmissionById(submissionId);
+
+        if (submission.getStatus() == SubmissionStatus.APPROVED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_APPROVED);
+        }
+        if (submission.getStatus() == SubmissionStatus.DELETED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_DELETED);
+        }
+
+        submission.updateStatus(SubmissionStatus.APPROVED);
+        createAuditLog(submission, AuditAction.APPROVED, null);
+
+        return SubmissionDetailResponse.from(submission);
+    }
+
+    /**
+     * 단건 반려
+     */
+    public SubmissionDetailResponse rejectSubmission(Long submissionId, SingleRejectRequest request) {
+        Submission submission = submissionQueryService.getSubmissionById(submissionId);
+
+        if (submission.getStatus() == SubmissionStatus.REJECTED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_REJECTED);
+        }
+        if (submission.getStatus() == SubmissionStatus.DELETED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_DELETED);
+        }
+
+        if (request.reason() == null || request.reason().message() == null || request.reason().message().isBlank()) {
+            throw new BusinessException(ExceptionType.REJECT_REASON_REQUIRED);
+        }
+
+        submission.updateStatus(SubmissionStatus.REJECTED);
+
+        RejectReason rejectReason = RejectReason.builder()
+                .submission(submission)
+                .templateCode(request.reason().templateCode())
+                .message(request.reason().message())
+                .rejectedBy(getCurrentUsername())
+                .rejectedAt(LocalDateTime.now())
+                .build();
+        submission.setRejectReason(rejectReason);
+
+        createAuditLog(submission, AuditAction.REJECTED, request.reason().message());
+
+        return SubmissionDetailResponse.from(submission);
+    }
+
+    /**
+     * 단건 삭제
+     */
+    public void deleteSubmission(Long submissionId, SingleDeleteRequest request) {
+        Submission submission = submissionQueryService.getSubmissionById(submissionId);
+
+        if (submission.getStatus() == SubmissionStatus.DELETED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_DELETED);
+        }
+
+        createAuditLog(submission, AuditAction.DELETED, request.reason());
+        submissionRepository.delete(submission);
+    }
+
+    /**
+     * 일괄 승인
+     */
+    public BulkApproveResponse bulkApprove(BulkApproveRequest request) {
+        List<Long> approved = new ArrayList<>();
+        List<Long> skipped = new ArrayList<>();
+
+        for (Long id : request.ids()) {
+            try {
+                Submission submission = submissionRepository.findById(id).orElse(null);
+                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
+                    skipped.add(id);
+                    continue;
+                }
+                if (submission.getStatus() == SubmissionStatus.APPROVED) {
+                    skipped.add(id);
+                    continue;
+                }
+
+                submission.updateStatus(SubmissionStatus.APPROVED);
+                createAuditLog(submission, AuditAction.APPROVED, null);
+                approved.add(id);
+            } catch (Exception e) {
+                skipped.add(id);
+            }
+        }
+
+        return new BulkApproveResponse(approved, skipped);
+    }
+
+    /**
+     * 일괄 반려
+     */
+    public BulkRejectResponse bulkReject(BulkRejectRequest request) {
+        if (request.reason() == null || request.reason().message() == null || request.reason().message().isBlank()) {
+            throw new BusinessException(ExceptionType.REJECT_REASON_REQUIRED);
+        }
+
+        List<Long> rejected = new ArrayList<>();
+        List<Long> conflicts = new ArrayList<>();
+
+        for (Long id : request.ids()) {
+            try {
+                Submission submission = submissionRepository.findById(id).orElse(null);
+                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
+                    conflicts.add(id);
+                    continue;
+                }
+                if (submission.getStatus() == SubmissionStatus.REJECTED) {
+                    conflicts.add(id);
+                    continue;
+                }
+
+                submission.updateStatus(SubmissionStatus.REJECTED);
+
+                RejectReason rejectReason = RejectReason.builder()
+                        .submission(submission)
+                        .templateCode(request.reason().templateCode())
+                        .message(request.reason().message())
+                        .rejectedBy(getCurrentUsername())
+                        .rejectedAt(LocalDateTime.now())
+                        .build();
+                submission.setRejectReason(rejectReason);
+
+                createAuditLog(submission, AuditAction.REJECTED, request.reason().message());
+                rejected.add(id);
+            } catch (Exception e) {
+                conflicts.add(id);
+            }
+        }
+
+        return new BulkRejectResponse(rejected, conflicts);
+    }
+
+    /**
+     * 일괄 삭제
+     */
+    public BulkDeleteResponse bulkDelete(BulkDeleteRequest request) {
+        List<Long> deleted = new ArrayList<>();
+        List<Long> failed = new ArrayList<>();
+
+        for (Long id : request.ids()) {
+            try {
+                Submission submission = submissionRepository.findById(id).orElse(null);
+                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
+                    failed.add(id);
+                    continue;
+                }
+
+                createAuditLog(submission, AuditAction.DELETED, request.reason());
+                submissionRepository.delete(submission);
+                deleted.add(id);
+            } catch (Exception e) {
+                failed.add(id);
+            }
+        }
+
+        return new BulkDeleteResponse(deleted, failed);
+    }
+
+    private void createAuditLog(Submission submission, AuditAction action, String comment) {
+        AuditLog auditLog = AuditLog.builder()
+                .submission(submission)
+                .action(action)
+                .performedBy(getCurrentUsername())
+                .comment(comment)
+                .build();
+        auditLog.updateSubmission(submission);
+        auditLogRepository.save(auditLog);
+    }
+
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getName();
+        }
+        return "SYSTEM";
+    }
+
+}
+
+
+================================================================================
+File Path: .\submission\service\SubmissionQueryService.java
+================================================================================
+
+package com.ocean.piuda.admin.submission.service;
+
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.submission.dto.response.AuditLogResponse;
+import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
+import com.ocean.piuda.admin.submission.dto.response.SubmissionListResponse;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.global.api.dto.PageResponse;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Transactional(readOnly = true)
+@Service
+@RequiredArgsConstructor
+public class SubmissionQueryService {
+
+    private final SubmissionRepository submissionRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    /**
+     * 제출 목록 조회 (필터링, 검색, 정렬 포함)
+     */
+    public PageResponse<SubmissionListResponse> getSubmissions(
+            String keyword,
+            SubmissionStatus status,
+            ActivityType activityType,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable
+    ) {
+        Page<Submission> page = submissionRepository.findWithFilters(
+                keyword, status, activityType, startDate, endDate, pageable
+        );
+
+        Page<SubmissionListResponse> mapped = page.map(SubmissionListResponse::from);
+        return PageResponse.of(mapped);
+    }
+
+    /**
+     * 제출 상세 조회
+     */
+    public SubmissionDetailResponse getSubmissionDetail(Long submissionId) {
+        // attachments는 fetch join으로 조회 (auditLogs는 제외하여 MultipleBagFetchException 방지)
+        Submission submission = submissionRepository.findByIdWithDetails(submissionId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.SUBMISSION_NOT_FOUND));
+        
+        // auditLogs는 별도 Repository로 조회하여 초기화
+        List<com.ocean.piuda.admin.submission.entity.AuditLog> auditLogs = 
+                auditLogRepository.findBySubmissionSubmissionIdOrderByCreatedAtDesc(submissionId);
+        
+        // submission의 auditLogs 컬렉션 초기화
+        submission.getAuditLogs().clear();
+        submission.getAuditLogs().addAll(auditLogs);
+
+        return SubmissionDetailResponse.from(submission);
+    }
+
+    /**
+     * 검수 로그 조회
+     */
+    public List<AuditLogResponse> getSubmissionLogs(Long submissionId) {
+        return auditLogRepository.findBySubmissionSubmissionIdOrderByCreatedAtDesc(submissionId)
+                .stream()
+                .map(AuditLogResponse::from)
+                .toList();
+    }
+
+    /**
+     * Submission 엔티티 조회 (내부용)
+     */
+    public Submission getSubmissionById(Long submissionId) {
+        return submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.SUBMISSION_NOT_FOUND));
+    }
+}
+

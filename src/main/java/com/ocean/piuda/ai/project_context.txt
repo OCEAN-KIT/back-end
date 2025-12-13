@@ -1,0 +1,1280 @@
+
+================================================================================
+File Path: .\gemini\config\GeminiConfig.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.config;
+
+
+import com.google.genai.Client;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class GeminiConfig {
+
+    @Bean
+    public Client geminiClient(
+            @Value("${gemini.api.key}") String apiKey
+    ) {
+        return Client.builder()
+                .apiKey(apiKey)   // Developer API 키
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\gemini\controller\GeminiTextController.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.controller;
+
+import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.service.GeminiTextService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/ai/gemini")
+@RequiredArgsConstructor
+@Tag(name = "Gemini Text API", description = "Gemini 기반 자연어 처리 AI API")
+public class GeminiTextController {
+
+    private final GeminiTextService service;
+
+    @PostMapping("/text/complete")
+    @Operation(
+            summary = "프롬프트 처리",
+            description = """
+                    텍스트 프롬프트를 Gemini 모델로 보냅니다.
+                    """
+    )
+    public ApiData<GeminiResponse> complete(
+            @RequestBody @Valid GeminiRequest request
+    ) {
+        return ApiData.ok(service.complete(request));
+    }
+}
+
+
+================================================================================
+File Path: .\gemini\controller\GeminiVisionController.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.controller;
+
+import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.service.GeminiVisionService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/api/ai/gemini")
+@RequiredArgsConstructor
+@Tag(name = "Gemini Vision API", description = "Gemini 기반 단일 이미지 설명/분석 API")
+public class GeminiVisionController {
+
+    private final GeminiVisionService service;
+
+    @PostMapping(
+            value = "/vision/describe",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @Operation(
+            summary = "이미지 설명/분석",
+            description = """
+                    단일 이미지를 업로드하고, 프롬프트를 JSON 파트로 함께 전달하세요.
+                    - Multipart 파트: image(파일), request(JSON)
+                    - 20MB 초과 파일은 Files API 사용을 권장합니다.
+                    """
+    )
+    public ApiData<GeminiResponse> describe(
+            @Parameter(name = "image", required = true,
+                    content = @Content(mediaType = "image/*",
+                            schema = @Schema(type = "string", format = "binary")))
+            @RequestPart("image") MultipartFile image,
+            @Parameter(name = "request", required = false,
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = GeminiRequest.class)))
+            @RequestPart(name = "request", required = false) @Valid GeminiRequest request
+    ) {
+        GeminiRequest req = request == null ? GeminiRequest.builder().build() : request;
+        return ApiData.ok(service.describe(image, req));
+    }
+}
+
+
+================================================================================
+File Path: .\gemini\dto\request\GeminiRequest.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.dto.request;
+
+
+import jakarta.validation.constraints.*;
+import lombok.Builder;
+
+/**
+ * 단일 이미지 + 프롬프트로 설명/분석 요청
+ */
+@Builder
+public record GeminiRequest(
+        @Size(max = 2000, message = "prompt는 2000자 이하여야 합니다.")
+        String prompt
+) { }
+
+
+================================================================================
+File Path: .\gemini\dto\response\GeminiMeta.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.dto.response;
+
+import lombok.Builder;
+
+@Builder
+public record GeminiMeta(
+        String model,
+        Integer promptTokens,
+        Integer candidatesTokens,
+        Integer totalTokens
+) { }
+
+
+================================================================================
+File Path: .\gemini\dto\response\GeminiResponse.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.dto.response;
+
+
+import lombok.Builder;
+
+@Builder
+public record GeminiResponse(
+        String content,
+        GeminiMeta meta
+) { }
+
+
+================================================================================
+File Path: .\gemini\service\GeminiTextService.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.service;
+
+
+import com.google.genai.Client;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
+import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.util.GeminiSdkUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class GeminiTextService {
+
+    private final Client client;
+
+    @Value("${gemini.model.text}")
+    private String defaultTextModel;
+
+    @Value("${gemini.model.report:${gemini.model.text}}")
+    private String reportModel;
+
+    private static final String SYS_TEXT =
+            "너는 신뢰할 수 있는 AI 어시스턴트다. 사실과 논리를 중시하고, 모르는 것은 모른다고 말하라.";
+
+    private static final String SYS_REPORT =
+            "너는 해양 활동 기록 제출물 기반 리포트 초안 작성 AI다. " +
+                    "주어진 데이터에 없는 사실을 만들지 말고, 개인정보(이메일/연락처)/정확 좌표는 대외용에 절대 포함하지 말라. " +
+                    "반드시 지정된 JSON 스키마만 출력하라.";
+
+    public GeminiResponse complete(GeminiRequest req) {
+        return generate(defaultTextModel, SYS_TEXT, req.prompt());
+    }
+
+    public GeminiResponse generateReportDraft(String prompt) {
+        return generate(reportModel, SYS_REPORT, prompt);
+    }
+
+    private GeminiResponse generate(String model, String systemInstruction, String userPrompt) {
+
+        // role은 user/model만 허용 → user로만 content 구성
+        List<Content> contents = List.of(
+                Content.builder()
+                        .role("user")
+                        .parts(Part.fromText(userPrompt == null ? "" : userPrompt))
+                        .build()
+        );
+
+        // system은 config.systemInstruction으로
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(
+                        Content.builder()
+                                .role("user") // (여기도 user/model만 허용이라 user로 넣습니다)
+                                .parts(Part.fromText(systemInstruction))
+                                .build()
+                )
+                .temperature(0.2f)
+                .build();
+
+        // 재시도는 원하면 여기서 감싸면 됨(5xx만)
+        GenerateContentResponse resp = client.models.generateContent(model, contents, config);
+
+        String text = GeminiSdkUtil.extractText(resp);
+        GeminiMeta meta = GeminiSdkUtil.toMeta(model, resp);
+        return GeminiResponse.builder().content(text).meta(meta).build();
+    }
+}
+
+
+================================================================================
+File Path: .\gemini\service\GeminiVisionService.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.service;
+
+import com.google.genai.Client;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponse;
+import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.util.GeminiSdkUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class GeminiVisionService {
+
+    private final Client client;
+
+    @Value("${gemini.model.vision}")
+    private String defaultVisionModel;
+
+    private static final long MAX_INLINE_BYTES = 20L * 1024 * 1024;
+
+    public GeminiResponse describe(MultipartFile image, GeminiRequest req) {
+
+        byte[] bytes = readBytesWithLimit(image);
+        String mime = safeMime(image);
+
+        List<Content> contents =
+                GeminiSdkUtil.buildUserContents(bytes, mime, req.prompt());
+
+
+
+        GenerateContentResponse resp = client.models.generateContent(defaultVisionModel, contents, null);
+
+        String text = GeminiSdkUtil.extractText(resp);
+        GeminiMeta meta = GeminiSdkUtil.toMeta(defaultVisionModel, resp);
+        return GeminiResponse.builder().content(text).meta(meta).build();
+    }
+
+    private static byte[] readBytesWithLimit(MultipartFile image) {
+        if (image == null || image.isEmpty()) throw new IllegalArgumentException("image 파일이 필요합니다.");
+        if (image.getSize() > MAX_INLINE_BYTES) {
+            throw new IllegalArgumentException("이미지 용량이 너무 큽니다(<=20MB). Files API 사용 권장");
+        }
+        try { return image.getBytes(); }
+        catch (IOException e) { throw new IllegalStateException("이미지 바이트를 읽을 수 없습니다.", e); }
+    }
+
+    private static String safeMime(MultipartFile file) {
+        String c = file.getContentType();
+        return (c == null || c.isBlank()) ? MediaType.IMAGE_JPEG_VALUE : c;
+    }
+}
+
+
+================================================================================
+File Path: .\gemini\util\GeminiSdkUtil.java
+================================================================================
+
+package com.ocean.piuda.ai.gemini.util;
+
+
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+
+import java.util.List;
+import java.util.Objects;
+
+public class GeminiSdkUtil {
+
+    // 이미지 + 프롬프트
+    public static List<Content> buildUserContents(byte[] imageBytes, String mimeType, String promptOrNull) {
+        Part image = Part.fromBytes(imageBytes, mimeType);
+        if (promptOrNull == null || promptOrNull.isBlank()) {
+            return List.of(Content.fromParts(image));
+        }
+         return List.of(
+             Content.builder()
+                    .role("user")
+                    .parts(image, Part.fromText(promptOrNull))
+                    .build()
+         );
+    }
+
+
+
+    public static String extractText(GenerateContentResponse resp) {
+        try { return Objects.toString(resp.text(), ""); }
+        catch (Exception e) { return ""; }
+    }
+
+    public static GeminiMeta toMeta(String model, GenerateContentResponse resp) {
+        var usageOpt = resp.usageMetadata();
+        Integer pt = null, ct = null, tt = null;
+        if (usageOpt.isPresent()) {
+            var u = usageOpt.get();
+            pt = u.promptTokenCount().orElse(null);
+            ct = u.candidatesTokenCount().orElse(null);
+            tt = u.totalTokenCount().orElse(null);
+        }
+        return GeminiMeta.builder()
+                .model(model)
+                .promptTokens(pt)
+                .candidatesTokens(ct)
+                .totalTokens(tt)
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\groq\controller\GroqApiController.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.controller;
+
+import com.ocean.piuda.ai.groq.dto.request.EvaluateHarmfulnessRequest;
+import com.ocean.piuda.ai.groq.dto.request.GroqPromptRequest;
+import com.ocean.piuda.ai.groq.dto.response.EvaluateHarmfulnessResponse;
+import com.ocean.piuda.ai.groq.dto.response.GroqPromptResponse;
+import com.ocean.piuda.ai.groq.service.GroqApiService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/ai/groq")
+@RequiredArgsConstructor
+@Tag(name = "Groq AI API", description = "Groq 기반 자연어 처리 AI API")
+public class GroqApiController {
+
+    private final GroqApiService groqApiService;
+
+    @PostMapping("/complete")
+    @Operation(
+            summary = "프롬프트 처리",
+            description = """
+                    사용자 프롬프트를 Groq 모델에 전달해 응답을 생성합니다.
+                    - `useRealtime=true`면 실시간 웹 검색을 통한 최신 정보가 반영된 응답을 생성하며, 해당 응답의 출처는 `meta.executedTools`에만 담겨 반환됩니다.
+                    - 최신정보 반영이 필요 없는 처리는 `useRealtime` 을 명시하지 않으면 됩니다.
+                    """
+    )
+    public ApiData<GroqPromptResponse> complete(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "프롬프트/옵션(useRealtime)",
+                    required = true
+            )
+            @RequestBody @Valid GroqPromptRequest request
+    ) {
+        return ApiData.ok(groqApiService.complete(request));
+    }
+
+    @PostMapping("/harmfulness")
+    @Operation(
+            summary = "문장 유해성 평가",
+            description = """
+                    입력 문장의 유해성 정도를 0~10 사이 정수로 평가합니다.
+                    - 실시간 검색은 사용하지 않으며, 도구 호출을 차단합니다.
+                    """
+    )
+    public ApiData<EvaluateHarmfulnessResponse> evaluateHarmfulness(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "유해성 평가할 문장",
+                    required = true
+            )
+            @RequestBody @Valid EvaluateHarmfulnessRequest request
+    ) {
+        return ApiData.ok(groqApiService.evaluateHarmfulness(request));
+    }
+}
+
+
+================================================================================
+File Path: .\groq\dto\request\EvaluateHarmfulnessRequest.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
+
+
+@Builder
+public record EvaluateHarmfulnessRequest (
+        @NotBlank(message = "sentence는 비어 있을 수 없습니다.")
+        String sentence
+){ }
+
+
+================================================================================
+File Path: .\groq\dto\request\GroqPromptRequest.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.dto.request;
+
+import jakarta.validation.constraints.*;
+import lombok.Builder;
+
+@Builder
+public record GroqPromptRequest(
+
+        @NotBlank(message = "prompt는 비어 있을 수 없습니다.")
+        String prompt,          // 필수: 사용자 프롬프트
+
+        // 선택: 기본 false. true면 groq/compound + Web Search 사용
+        Boolean useRealtime
+
+) { }
+
+
+================================================================================
+File Path: .\groq\dto\response\EvaluateHarmfulnessResponse.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.dto.response;
+
+import lombok.Builder;
+
+
+@Builder
+public record EvaluateHarmfulnessResponse(
+        int degree,
+        GroqMeta meta
+
+) { }
+
+
+================================================================================
+File Path: .\groq\dto\response\GroqMeta.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.dto.response;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Builder;
+
+/**
+ * 모든 응답에 공통으로 담길 메타 정보
+ */
+@Builder
+public record GroqMeta(
+        String model,                         // 호출한 모델
+        Integer promptTokens,                 // usage.prompt_tokens
+        Integer completionTokens,             // usage.completion_tokens
+        Integer totalTokens,                  // usage.total_tokens
+        String requestId,                     // x-request-id
+        String rateLimitRequestsRemaining,    // x-ratelimit-remaining-requests
+        String rateLimitTokensRemaining,      // x-ratelimit-remaining-tokens (있을 때)
+        String rateLimitReset ,                // x-ratelimit-reset (있을 때)
+        JsonNode executedTools                  // ← choices[0].message.executed_tools 원본 JSON(있으면)
+
+) { }
+
+
+================================================================================
+File Path: .\groq\dto\response\GroqPromptResponse.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.dto.response;
+
+import lombok.Builder;
+
+@Builder
+public record GroqPromptResponse(
+        String content,   // 모델 응답 텍스트
+        GroqMeta meta
+) { }
+
+
+================================================================================
+File Path: .\groq\service\GroqApiService.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.ocean.piuda.ai.groq.dto.request.EvaluateHarmfulnessRequest;
+import com.ocean.piuda.ai.groq.dto.request.GroqPromptRequest;
+import com.ocean.piuda.ai.groq.dto.response.EvaluateHarmfulnessResponse;
+import com.ocean.piuda.ai.groq.dto.response.GroqMeta;
+import com.ocean.piuda.ai.groq.dto.response.GroqPromptResponse;
+import com.ocean.piuda.ai.groq.util.GroqApiUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Objects;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class GroqApiService {
+
+    private final RestTemplate restTemplate;
+    private final GroqApiUtil groqApiUtil;
+
+    @Value("${groq.api.key}")
+    private String apiKey;
+
+    /** 디폴트 모델 */
+    @Value("${groq.api.model}")
+    private String defaultModel;
+    private String REAL_TIME_MODEL= "groq/compound";
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+    /** 서버 고정 시스템 프롬프트(오프라인 모델용) */
+    private static final String SYS_OFFLINE =
+            "인터넷이나 최신 데이터에 직접 접근할 수 없다. 최신/실시간 정보를 요구받으면 "
+                    + "'실시간 정보에 접근 불가'라고 분명히 알리고, 비실시간 일반 지식만 답하라. "
+                    + "최종 답변 본문에는 절대 URL을 포함하지 말라.";
+
+    /** 서버 고정 시스템 프롬프트(compound 모델용) */
+    private static final String SYS_COMPOUND =
+            "최신 정보가 필요한 경우 내장 웹검색/브라우저 도구를 사용해 사실을 검증하라. "
+                    + "그러나 최종 답변 본문에는 URL을 포함하지 말고, 출처는 도구 실행 결과(executed_tools)에만 남겨라.";
+
+    /** 유해성 평가: 항상 오프라인(툴 차단) */
+    public EvaluateHarmfulnessResponse evaluateHarmfulness(EvaluateHarmfulnessRequest request) {
+        final String model = defaultModel; // 고정
+        final String userPrompt =
+                "Return only a number from 0 to 10 indicating the degree of harmfulness of the text. "
+                        + "Higher means more harmful. No explanations.\n\nText:\n"
+                        + String.valueOf(request.sentence());
+
+        ArrayNode messages = groqApiUtil.buildMessages(SYS_OFFLINE, userPrompt);
+        ObjectNode payload = groqApiUtil.buildRequestPayload(model, messages);
+
+        ResponseEntity<String> resp = groqApiUtil.postChat(payload);
+        String raw = resp.getBody();
+
+        int degree = -1;
+        try {
+            JsonNode rootNode = MAPPER.readTree(raw);
+            String content = rootNode.path("choices").path(0).path("message").path("content").asText("");
+            String digits = content.replaceAll("[^0-9]", "");
+            if (!digits.isEmpty()) degree = Integer.parseInt(digits);
+        } catch (Exception e) {
+            log.warn("Failed to parse harmfulness score", e);
+        }
+
+        GroqMeta meta = groqApiUtil.buildMeta(resp, raw, model);
+        return EvaluateHarmfulnessResponse.builder()
+                .degree(degree)
+                .meta(meta)
+                .build();
+    }
+
+    /** 일반 프롬프트: useRealtime=true면 compound, 아니면 오프라인 */
+    public GroqPromptResponse complete(GroqPromptRequest req) {
+        final boolean useRealtime = Boolean.TRUE.equals(req.useRealtime());
+        final String model = groqApiUtil.resolveModel(useRealtime);
+        final String sysPrompt = groqApiUtil.resolveSystemPrompt(model);
+
+        ArrayNode messages = groqApiUtil.buildMessages(sysPrompt, String.valueOf(req.prompt()));
+        ObjectNode payload = groqApiUtil.buildRequestPayload(
+                model, messages
+        );
+
+        ResponseEntity<String> resp = groqApiUtil.postChat(payload);
+        String raw = resp.getBody();
+
+        String content = groqApiUtil.extractCleanContent(raw); // URL 제거
+        GroqMeta meta = groqApiUtil.buildMeta(resp, raw, model);
+
+        return GroqPromptResponse.builder()
+                .content(content)
+                .meta(meta)
+                .build();
+    }
+
+}
+
+
+================================================================================
+File Path: .\groq\util\GroqApiUtil.java
+================================================================================
+
+package com.ocean.piuda.ai.groq.util;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.ocean.piuda.ai.groq.dto.response.GroqMeta;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class GroqApiUtil {
+    private final RestTemplate restTemplate;
+
+    @Value("${groq.api.key}")
+    private String apiKey;
+
+    /** 디폴트 모델 (오프라인/기본) */
+    @Value("${groq.api.model}")
+    private String defaultModel;
+
+    /** 실시간 검색 모델 */
+    private static final String REAL_TIME_MODEL = "groq/compound";
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+    /** 서버 고정 시스템 프롬프트(오프라인 모델용) */
+    private static final String SYS_OFFLINE =
+            "인터넷이나 최신 데이터에 직접 접근할 수 없다. 최신/실시간 정보를 요구받으면 "
+                    + "'실시간 정보에 접근 불가'라고 분명히 알리고, 비실시간 일반 지식만 답하라. "
+                    + "최종 답변 본문에는 절대 URL을 포함하지 말라.";
+
+    /** 서버 고정 시스템 프롬프트(compound 모델용) */
+    private static final String SYS_COMPOUND =
+            "최신 정보가 필요한 경우 내장 웹검색/브라우저 도구를 사용해 사실을 검증하라. "
+                    + "그러나 최종 답변 본문에는 URL을 포함하지 말고, 출처는 도구 실행 결과(executed_tools)에만 남겨라.";
+
+    /* ============================== 유틸 ============================== */
+
+    public static boolean isCompound(String model) {
+        return model != null && model.startsWith("groq/compound");
+    }
+
+    public HttpHeaders buildHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        return headers;
+    }
+
+    public static String header(ResponseEntity<?> resp, String name) {
+        if (resp == null || resp.getHeaders() == null) return null;
+        List<String> v = resp.getHeaders().get(name);
+        if (v != null && !v.isEmpty()) return v.get(0);
+        return resp.getHeaders().entrySet().stream()
+                .filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase(name))
+                .map(e -> (e.getValue() != null && !e.getValue().isEmpty()) ? e.getValue().get(0) : null)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    /** 본문 내 URL 제거(마크다운 링크 및 맨몸 URL) */
+    public static String stripUrls(String text) {
+        if (text == null) return "";
+        // [text](url) -> text
+        text = text.replaceAll("\\[([^\\]]+)\\]\\((https?://[^)\\s]+)\\)", "$1");
+        // bare URL 제거
+        text = text.replaceAll("https?://\\S+", "");
+        // 잉여 공백 정리
+        return text.replaceAll("[ \\t]+\\n", "\n").trim();
+    }
+
+    /** 모델 선택 (useRealtime=true면 compound로 강제) */
+    public String resolveModel(boolean useRealtime) {
+        return useRealtime ? REAL_TIME_MODEL : defaultModel;
+    }
+
+    /** 서버 고정 시스템 프롬프트 */
+    public String resolveSystemPrompt(String model) {
+        return isCompound(model) ? SYS_COMPOUND : SYS_OFFLINE;
+    }
+
+    /** 공통: messages 생성 */
+    public ArrayNode buildMessages(String systemContent, String userContent) {
+        ArrayNode messages = MAPPER.createArrayNode();
+
+        ObjectNode sys = MAPPER.createObjectNode();
+        sys.put("role", "system");
+        sys.put("content", systemContent);
+        messages.add(sys);
+
+        ObjectNode user = MAPPER.createObjectNode();
+        user.put("role", "user");
+        user.put("content", userContent);
+        messages.add(user);
+
+        return messages;
+    }
+
+    /** 공통: 요청 payload 생성 */
+    public ObjectNode buildRequestPayload(String model, ArrayNode messages) {
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("model", model);
+        root.set("messages", messages);
+        if (!isCompound(model)) {
+            // 오프라인 모델은 툴 사용 차단
+            root.put("tool_choice", "none");
+        }
+        return root;
+    }
+
+    /** 공통: HTTP 호출 */
+    public ResponseEntity<String> postChat(ObjectNode payload) {
+        try {
+            return restTemplate.exchange(
+                    GROQ_CHAT_URL, HttpMethod.POST,
+                    new HttpEntity<>(payload.toString(), buildHeaders()),
+                    String.class
+            );
+        } catch (HttpClientErrorException e) {
+            throw new BusinessException(
+                    ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
+                    Map.of("status", e.getStatusCode().value(),
+                            "reason", "Groq 4xx",
+                            "body", e.getResponseBodyAsString())
+            );
+        } catch (HttpServerErrorException e) {
+            throw new BusinessException(
+                    ExceptionType.UNEXPECTED_SERVER_ERROR,
+                    Map.of("status", e.getStatusCode().value(),
+                            "reason", "Groq 5xx",
+                            "body", e.getResponseBodyAsString())
+            );
+        } catch (Exception e) {
+            throw new BusinessException(
+                    ExceptionType.UNEXPECTED_SERVER_ERROR,
+                    Map.of("reason", "Groq call failed",
+                            "message", e.getMessage())
+            );
+        }
+    }
+
+    /** 공통: content 추출(+URL 제거) */
+    public String extractCleanContent(String raw) {
+        try {
+            JsonNode rootNode = MAPPER.readTree(raw);
+            String content = rootNode.path("choices").path(0).path("message").path("content").asText("");
+            return stripUrls(content);
+        } catch (Exception e) {
+            log.warn("Failed to parse content from Groq response", e);
+            return "";
+        }
+    }
+
+    /** 공통: 메타 생성 (usage, executed_tools 포함) */
+    public GroqMeta buildMeta(ResponseEntity<String> resp, String raw, String modelUsed) {
+        Integer pt = null, ct = null, tt = null;
+        JsonNode executedTools = null;
+
+        try {
+            if (raw != null) {
+                JsonNode rootNode = MAPPER.readTree(raw);
+                JsonNode usage = rootNode.path("usage");
+                if (!usage.isMissingNode()) {
+                    pt = usage.path("prompt_tokens").isInt() ? usage.path("prompt_tokens").asInt() : null;
+                    ct = usage.path("completion_tokens").isInt() ? usage.path("completion_tokens").asInt() : null;
+                    tt = usage.path("total_tokens").isInt() ? usage.path("total_tokens").asInt() : null;
+                }
+                JsonNode executed = rootNode.path("choices").path(0).path("message").path("executed_tools");
+                if (executed.isArray() && executed.size() > 0) {
+                    executedTools = executed;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse usage/executed_tools", e);
+        }
+
+        String requestId = header(resp, "x-request-id");
+        String rlReqRemain = header(resp, "x-ratelimit-remaining-requests");
+        String rlTokRemain = header(resp, "x-ratelimit-remaining-tokens");
+        String rlReset     = header(resp, "x-ratelimit-reset");
+
+        return GroqMeta.builder()
+                .model(modelUsed)
+                .promptTokens(pt)
+                .completionTokens(ct)
+                .totalTokens(tt)
+                .requestId(requestId)
+                .rateLimitRequestsRemaining(rlReqRemain)
+                .rateLimitTokensRemaining(rlTokRemain)
+                .rateLimitReset(rlReset)
+                .executedTools(executedTools) 
+                .build();
+    }
+
+}
+
+
+================================================================================
+File Path: .\openAI\controller\OpenAIApiController.java
+================================================================================
+
+//package com.ocean.piuda.ai.openAI.controller;
+//
+//import com.ocean.piuda.ai.openAI.dto.request.OpenAIRequest;
+//import com.ocean.piuda.ai.openAI.service.OpenAIApiService;
+//import lombok.RequiredArgsConstructor;
+//import org.springframework.web.bind.annotation.PostMapping;
+//import org.springframework.web.bind.annotation.RequestBody;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RestController;
+//
+//import java.io.IOException;
+//
+//@RequiredArgsConstructor
+//@RestController
+//@RequestMapping("/api/ai/openai")
+//public class OpenAIApiController {
+//
+//    private final OpenAIApiService openAIService;
+//
+//
+//    // 프롬프트 직접
+//    @PostMapping("/complete")
+//    public String complete(@RequestBody OpenAIRequest.Basic openAIRequest) throws IOException {
+//        return openAIService.complete(openAIRequest);
+//    }
+//
+//
+//    // 글을 첨삭
+//    @PostMapping("/advice")
+//    public String enhanceWriting(@RequestBody OpenAIRequest.Basic openAIRequest) throws IOException {
+//        return openAIService.enhanceWriting(openAIRequest);
+//    }
+//
+//
+//    //글의 유해성 판단
+//    @PostMapping("/harmfulness")
+//    public String evaluateHarmfulness(@RequestBody String prompt) throws IOException {
+//        return openAIService.evaluateHarmfulness(prompt);
+//    }
+//
+//    // 여러 문장을 하나로 합쳐 글을 작성
+//    @PostMapping("/compose")
+//    public String composeText(@RequestBody  OpenAIRequest.TextCompose request) throws IOException {
+//        return openAIService.composeText(request);
+//    }
+//
+//
+//
+//
+//
+//
+//
+//}
+
+
+================================================================================
+File Path: .\openAI\dto\request\OpenAIRequest.java
+================================================================================
+
+package com.ocean.piuda.ai.openAI.dto.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+public class OpenAIRequest {
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChatMessage {
+        // "system" | "user" | "assistant"
+        private String role;
+        private String content;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Basic {
+        private String model;
+        private String prompt;                // 기존 호환용
+        private List<ChatMessage> messages;   // 신규 메시지 배열
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TextCompose {
+        private String model;
+        private List<String> sentences;
+    }
+}
+
+
+================================================================================
+File Path: .\openAI\service\OpenAIApiService.java
+================================================================================
+
+package com.ocean.piuda.ai.openAI.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.ocean.piuda.ai.openAI.dto.request.OpenAIRequest;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
+
+@Slf4j
+@Service
+public class OpenAIApiService {
+    @Value("${openai.api.key}")
+    private String apiKey;
+
+    private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private final OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .readTimeout(Duration.ofSeconds(60))
+            .writeTimeout(Duration.ofSeconds(30))
+            .build();
+
+    /** 재시도 없이 단 한 번만 호출하는 executeRequest */
+    private String executeRequest(ObjectNode json) throws IOException {
+        RequestBody body = RequestBody.create(JSON, MAPPER.writeValueAsBytes(json));
+
+        Request request = new Request.Builder()
+                .url(OPENAI_API_URL)
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                ResponseBody rb = response.body();
+                return rb != null ? rb.string() : "";
+            }
+            int code = response.code();
+            String respText = safeBody(response);
+            log.warn("OpenAI non-2xx: code={}, body={}", code, respText);
+            throw buildApiException(code, respText);
+        }
+    }
+
+    /** 에러 본문 안전 추출 */
+    private static String safeBody(Response response) {
+        try {
+            ResponseBody rb = response.body();
+            return rb != null ? rb.string() : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** OpenAI 형식의 에러 본문을 읽어 의미 있는 메시지로 래핑 */
+    private static IOException buildApiException(int code, String respText) {
+        try {
+            JsonNode node = MAPPER.readTree(respText == null ? "{}" : respText);
+            String msg = node.path("error").path("message").asText("");
+            String type = node.path("error").path("type").asText("");
+            String param = node.path("error").path("param").asText("");
+            String full = String.format("OpenAI API error %d: %s (type=%s, param=%s)", code, msg, type, param);
+            return new IOException(full);
+        } catch (Exception e) {
+            return new IOException("OpenAI API error " + code + ": " + respText);
+        }
+    }
+
+    /** 공통 페이로드 빌더 */
+    private static ObjectNode basePayload(String model, Integer maxTokens) {
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("model", model);
+        ArrayNode messages = MAPPER.createArrayNode();
+        root.set("messages", messages);
+        if (maxTokens != null && maxTokens > 0) root.put("max_tokens", maxTokens);
+        return root;
+    }
+
+    /** 메시지 노드 */
+    private static ObjectNode message(String role, String content) {
+        ObjectNode m = MAPPER.createObjectNode();
+        m.put("role", role);
+        m.put("content", content == null ? "" : content);
+        return m;
+    }
+
+    // ===================== 퍼블릭 API =====================
+
+    public String enhanceWriting(OpenAIRequest.Basic openAIRequest) throws IOException {
+        ObjectNode root = basePayload(openAIRequest.getModel(), 512);
+        ArrayNode messages = (ArrayNode) root.get("messages");
+        messages.add(message("system",
+                "You are a helpful assistant. Your task is to edit the user's text to improve clarity, grammar, and flow while maintaining the original meaning and tone. Do not change the context or style unless asked."));
+        messages.add(message("user", Optional.ofNullable(openAIRequest.getPrompt()).orElse("")));
+        log.info("Request Body: {}", root);
+        return executeRequest(root);
+    }
+
+    public String complete(OpenAIRequest.Basic openAIRequest) throws IOException {
+        ObjectNode root = basePayload(openAIRequest.getModel(), 512);
+        ArrayNode messages = (ArrayNode) root.get("messages");
+        messages.add(message("system", "You are a helpful assistant."));
+        messages.add(message("user", Optional.ofNullable(openAIRequest.getPrompt()).orElse("")));
+        log.info("Request Body: {}", root);
+        return executeRequest(root);
+    }
+
+    /** gpt-4o-mini 고정 사용 */
+    public String evaluateHarmfulness(String prompt) throws IOException {
+        ObjectNode root = basePayload("gpt-4o-mini", 32);
+        ArrayNode messages = (ArrayNode) root.get("messages");
+        messages.add(message("system",
+                "You are a content moderation assistant. Analyze the following text for any harmful, offensive, or inappropriate content. Rate the harmfulness on a scale from 0 to 10 without further explanation."));
+        messages.add(message("user", Optional.ofNullable(prompt).orElse("")));
+        log.info("Request Body for Harmfulness Evaluation: {}", root);
+        String responseBody = executeRequest(root);
+        return extractHarmfulnessRating(responseBody);
+    }
+
+    public String composeText(OpenAIRequest.TextCompose openAIRequest) throws IOException {
+        String prompt = String.join(" ", openAIRequest.getSentences()).trim();
+        ObjectNode root = basePayload(openAIRequest.getModel(), 512);
+        ArrayNode messages = (ArrayNode) root.get("messages");
+        messages.add(message("system",
+                "You are a writing assistant. Please assist in composing a coherent text from the following list of sentences. The final text should flow naturally and maintain the original meaning of the sentences."));
+        messages.add(message("user", prompt));
+        log.info("Compose Text Request Body: {}", root);
+        return executeRequest(root);
+    }
+
+    private String extractHarmfulnessRating(String responseBody) throws IOException {
+        JsonNode rootNode = MAPPER.readTree(responseBody);
+        String content = rootNode.path("choices").get(0).path("message").path("content").asText();
+        String ratingText = content.replaceAll("[^0-9]", "");
+        return ratingText.isEmpty() ? "0" : ratingText;
+    }
+}
+
+
+================================================================================
+File Path: .\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.ai;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
