@@ -72,5 +72,23 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("ids") List<Long> ids,
             @Param("status") SubmissionStatus status
     );
+
+    @Query("""
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.participants
+    LEFT JOIN FETCH s.activity
+    LEFT JOIN FETCH s.attachments
+    WHERE s.status = :status
+      AND s.submittedAt BETWEEN :start AND :end
+    ORDER BY s.submittedAt DESC
+    """)
+    List<Submission> findAllByStatusAndSubmittedAtBetweenWithDetails(
+            @Param("status") SubmissionStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+
 }
 
