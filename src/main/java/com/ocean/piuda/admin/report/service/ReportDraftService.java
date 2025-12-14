@@ -7,6 +7,7 @@ import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
 import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
 import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+import com.ocean.piuda.admin.report.dto.response.ReportPdfResponse;
 import com.ocean.piuda.admin.report.enums.ReportDraftType;
 import com.ocean.piuda.admin.report.util.ReportPromptBuilder;
 import com.ocean.piuda.admin.submission.entity.Submission;
@@ -20,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.ocean.piuda.admin.report.dto.response.ReportPdfResponse;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,7 +35,6 @@ public class ReportDraftService {
     private final SubmissionRepository submissionRepository;
     private final ObjectMapper objectMapper;
     private final ReportPdfService reportPdfService;
-
 
     @Value("${gemini.model.report:${gemini.model.text}}")
     private String reportModel;
@@ -53,7 +52,16 @@ public class ReportDraftService {
         List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
         List<Long> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
 
-        return generate(found, ids, missing, request.prompt(), request.reportType());
+        //  전부 미존재/미승인 이면 “리포트 대상 없음”으로 명확히
+        if (found.isEmpty()) {
+            throw new BusinessException(ExceptionType.REPORT_DRAFT_SOURCE_EMPTY, Map.of(
+                    "reason", "선택한 IDs 중 APPROVED submission이 없습니다.",
+                    "requestedIds", ids,
+                    "missingIds", missing
+            ));
+        }
+
+        return generate(found, foundIds, missing, request.prompt(), request.reportType());
     }
 
     public ReportDraftResponse generateByPeriod(ReportDraftByPeriodRequest request) {
@@ -64,6 +72,15 @@ public class ReportDraftService {
                 submissionRepository.findAllByStatusAndSubmittedAtBetweenWithDetails(
                         SubmissionStatus.APPROVED, start, end
                 );
+
+        //  기간에 데이터 없으면 별도 에러
+        if (found == null || found.isEmpty()) {
+            throw new BusinessException(ExceptionType.REPORT_DRAFT_SOURCE_EMPTY, Map.of(
+                    "reason", "선택한 기간에 해당하는 APPROVED submission이 없습니다.",
+                    "dateFrom", request.dateFrom(),
+                    "dateTo", request.dateTo()
+            ));
+        }
 
         List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
         return generate(found, foundIds, List.of(), request.prompt(), request.reportType());
@@ -76,15 +93,6 @@ public class ReportDraftService {
             String extraPrompt,
             ReportDraftType reportType
     ) {
-        if (submissions == null || submissions.isEmpty()) {
-            throw new BusinessException(
-                    ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
-                    Map.of(
-                            "reason", "선택된 기간/IDs에 해당하는 APPROVED submission이 없습니다.",
-                            "missingIds", missingIds
-                    )
-            );
-        }
         if (reportType == null) {
             throw new BusinessException(
                     ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
@@ -97,7 +105,6 @@ public class ReportDraftService {
 
         String submissionsJson = toCompactJson(trimmed);
 
-        //  타입 1개만 출력하도록 프롬프트 구성
         String prompt = ReportPromptBuilder.build(submissionsJson, extraPrompt, reportType);
 
         GeminiResponse gemResp = geminiTextService.generateReportDraft(prompt);
@@ -105,21 +112,17 @@ public class ReportDraftService {
         GeminiMeta meta = gemResp.meta();
         String cleaned = cleanupJson(raw);
 
-        //  JSON에서 요청한 키 1개만 파싱
         String content;
         try {
             JsonNode root = objectMapper.readTree(cleaned);
             content = root.path(reportType.jsonKey()).asText("");
         } catch (Exception e) {
             log.warn("Gemini report JSON parse failed. raw={}", raw, e);
-            // 파싱 실패 시 raw를 그대로 반환(운영상 디버깅)
             content = raw == null ? "" : raw;
         }
 
-        // 실제 사용된 ids (trimmed 기준)
         List<Long> usedIds = trimmed.stream().map(Submission::getSubmissionId).toList();
 
-        //  선택 타입에 맞는 필드만 채워서 반환
         ReportDraftResponse.ReportDraftResponseBuilder builder = ReportDraftResponse.builder()
                 .submissionIds(usedIds)
                 .missingIds(missingIds)
@@ -150,20 +153,13 @@ public class ReportDraftService {
         }
     }
 
-    /**
-     *  리포트 프롬프트용 Row 구성 정책
-     * - null 값은 "키 자체를 넣지 않음"(omit null)
-     * - 활동유형에 비적용인 지표(예: TRASH_COLLECTION의 healthGrade/growthCm 등)는 아예 제외
-     */
     private Map<String, Object> toPromptRow(Submission s) {
         Map<String, Object> m = new LinkedHashMap<>();
 
-        //  식별: 현장명 + 제출일시만 사용 (submissionId 제거)
         putIfNotBlank(m, "siteName", s.getSiteName());
         putIfNotNull(m, "submittedAt", s.getSubmittedAt() != null ? s.getSubmittedAt().toString() : null);
         putIfNotNull(m, "activityType", s.getActivityType() != null ? s.getActivityType().name() : null);
 
-        //  basicEnv: recordDate/startTime/endTime 제외, 환경 수치만 유지 (null 키 제거)
         if (s.getBasicEnv() != null) {
             Map<String, Object> env = new LinkedHashMap<>();
             putIfNotNull(env, "waterTempC", s.getBasicEnv().getWaterTempC());
@@ -176,9 +172,6 @@ public class ReportDraftService {
             if (!env.isEmpty()) m.put("basicEnv", env);
         }
 
-        //  participants 완전 제외
-
-        //  activity: 공통 필드 + (활동유형에 따라) 의미 있는 필드만 포함
         if (s.getActivity() != null) {
             Map<String, Object> a = new LinkedHashMap<>();
             putIfNotNull(a, "type", s.getActivity().getType() != null ? s.getActivity().getType().name() : null);
@@ -186,8 +179,6 @@ public class ReportDraftService {
             putIfNotNull(a, "collectionAmount", s.getActivity().getCollectionAmount());
             putIfNotNull(a, "durationHours", s.getActivity().getDurationHours());
 
-            //  healthGrade/growth/naturalReproduction/survival 등은
-            //    이식/연구/모니터링 계열에서만 의미가 있으므로 그때만 포함
             ActivityType type = s.getActivity().getType();
             if (type == ActivityType.TRANSPLANT || type == ActivityType.MONITORING || type == ActivityType.RESEARCH) {
                 putIfNotNull(a, "healthGrade", s.getActivity().getHealthGrade() != null ? s.getActivity().getHealthGrade().name() : null);
@@ -251,7 +242,6 @@ public class ReportDraftService {
     private static String cleanupJson(String raw) {
         if (raw == null) return "";
         String t = raw.trim();
-        // 혹시 모델이 코드펜스를 붙였을 때 제거
         t = t.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "");
         t = t.replaceAll("\\s*```$", "");
         return t.trim();
@@ -263,13 +253,12 @@ public class ReportDraftService {
         return new ArrayList<>(set);
     }
 
-    // 메서드 추가
-    public ReportPdfResponse generatePdfByIds(com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest request) {
+    public ReportPdfResponse generatePdfByIds(ReportDraftByIdsRequest request) {
         ReportDraftResponse draft = generateByIds(request);
         return toPdf(draft);
     }
 
-    public ReportPdfResponse generatePdfByPeriod(com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest request) {
+    public ReportPdfResponse generatePdfByPeriod(ReportDraftByPeriodRequest request) {
         ReportDraftResponse draft = generateByPeriod(request);
         return toPdf(draft);
     }
@@ -286,10 +275,9 @@ public class ReportDraftService {
         byte[] pdfBytes = reportPdfService.renderMarkdownToPdf(content, title);
 
         String fileName = "report_" + draft.reportType().name().toLowerCase() + "_" +
-                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                 + ".pdf";
 
         return new ReportPdfResponse(fileName, pdfBytes);
     }
-
 }

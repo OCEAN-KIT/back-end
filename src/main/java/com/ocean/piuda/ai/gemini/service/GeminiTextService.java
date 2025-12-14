@@ -1,6 +1,5 @@
 package com.ocean.piuda.ai.gemini.service;
 
-
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
@@ -10,12 +9,15 @@ import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
 import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
 import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
 import com.ocean.piuda.ai.gemini.util.GeminiSdkUtil;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +50,6 @@ public class GeminiTextService {
 
     private GeminiResponse generate(String model, String systemInstruction, String userPrompt) {
 
-        // role은 user/model만 허용 → user로만 content 구성
         List<Content> contents = List.of(
                 Content.builder()
                         .role("user")
@@ -56,22 +57,62 @@ public class GeminiTextService {
                         .build()
         );
 
-        // system은 config.systemInstruction으로
         GenerateContentConfig config = GenerateContentConfig.builder()
                 .systemInstruction(
                         Content.builder()
-                                .role("user") // (여기도 user/model만 허용이라 user로 넣습니다)
+                                .role("user")
                                 .parts(Part.fromText(systemInstruction))
                                 .build()
                 )
                 .temperature(0.2f)
                 .build();
 
-        // 재시도는 원하면 여기서 감싸면 됨(5xx만)
-        GenerateContentResponse resp = client.models.generateContent(model, contents, config);
+        try {
+            GenerateContentResponse resp = client.models.generateContent(model, contents, config);
 
-        String text = GeminiSdkUtil.extractText(resp);
-        GeminiMeta meta = GeminiSdkUtil.toMeta(model, resp);
-        return GeminiResponse.builder().content(text).meta(meta).build();
+            String text = GeminiSdkUtil.extractText(resp);
+            GeminiMeta meta = GeminiSdkUtil.toMeta(model, resp);
+            return GeminiResponse.builder().content(text).meta(meta).build();
+
+        } catch (Exception e) {
+            //  원문 메시지 그대로 전달
+            String rawMessage = (e.getMessage() == null ? "" : e.getMessage());
+
+            //  statusCode는 "추론" 말고, SDK 예외가 제공하는 값이 있으면 그걸 사용 (없으면 null)
+            Integer statusCode = extractStatusCodeIfPresent(e);
+
+            ExceptionType type =
+                    (statusCode != null && statusCode == 429)
+                            ? ExceptionType.AI_RATE_LIMIT
+                            : ExceptionType.AI_GEMINI_ERROR;
+
+            log.warn("Gemini error. type={}, statusCode={}, model={}, exClass={}, message={}",
+                    type.name(), statusCode, model, e.getClass().getName(), rawMessage);
+
+            throw new BusinessException(type, Map.of(
+                    "provider", "gemini",
+                    "model", model,
+                    "statusCode", statusCode,
+                    "message", rawMessage,
+                    "exceptionClass", e.getClass().getName()
+            ));
+        }
+    }
+
+    /**
+     * google-genai 라이브러리 버전별로 status code 접근 메서드명이 다를 수 있어서
+     * "추론"이 아닌 리플렉션 기반으로 '존재하면 가져오기'만 합니다.
+     */
+    private Integer extractStatusCodeIfPresent(Exception e) {
+        // 후보 메서드들: getCode(), getStatusCode(), statusCode() 등
+        for (String method : List.of("getCode", "getStatusCode", "statusCode")) {
+            try {
+                Object v = e.getClass().getMethod(method).invoke(e);
+                if (v instanceof Integer i) return i;
+                if (v instanceof Number n) return n.intValue();
+            } catch (Exception ignore) {
+            }
+        }
+        return null;
     }
 }
