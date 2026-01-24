@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.dashboard.enums.MediaCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,4 +24,7 @@ public class MediaLog {
     private LocalDate recordDate;
     private String mediaUrl;
     private String caption; // 설명 (선택)
+
+    @Enumerated(EnumType.STRING)
+    private MediaCategory category;
 }

@@ -5,10 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum HabitatType {
-    ROCKY("암반"),
-    MIXED("혼합"),
-    OTHER("기타");
+public enum RestorationRegion {
+    POHANG("포항"),
+    ULJIN("울진");
 
     private final String name;
 }

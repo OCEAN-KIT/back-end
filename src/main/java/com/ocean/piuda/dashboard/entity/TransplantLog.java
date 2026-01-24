@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,7 +19,13 @@ public class TransplantLog {
     @Setter
     private ProjectArea projectArea;
 
-    private String speciesName; // 감태, 다시마
+    @Enumerated(EnumType.STRING)
+    private TransplantMethod method;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id")
+    private Species species;
+
     private Integer count;      // 개체수
     private Double areaSize;    // 이식 면적 (m2)
 }

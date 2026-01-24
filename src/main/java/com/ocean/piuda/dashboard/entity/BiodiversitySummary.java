@@ -1,7 +1,12 @@
+/**
+ * 개편된 5개의 탭 구조에 맞춰 불필요한 "생물 다양성 요약 엔티티"는 사용하지 않습니다.
+ */
+/*
 package com.ocean.piuda.dashboard.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 
 @Entity
 @Table(name = "biodiversity_summaries")
@@ -28,3 +33,5 @@ public class BiodiversitySummary {
     private Integer invertCountAfter;
     private Double shannonIndexAfter;
 }
+
+ */

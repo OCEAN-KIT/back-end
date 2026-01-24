@@ -20,9 +20,16 @@ public class GrowthLog {
     @Setter
     private ProjectArea projectArea;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id")
+    private Species species;
+    private Boolean isRepresentative; // 구역의 대표 개체 여부
+
+
     private LocalDate recordDate; // 기록 날짜 (YYYY-MM-DD)
 
     private Double attachmentRate; // 착생률 (%)
     private Double survivalRate;   // 생존률 (%)
     private Double growthLength;   // 성장 길이 (mm)
+
 }

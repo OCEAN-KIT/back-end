@@ -6,10 +6,11 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ProjectStatus {
-    TRANSPLANT_COMPLETED("이식 완료"),
-    GROWING("성장 중"),
-    STABLE("안정화 구역"),
-    MONITORING("모니터링 중");
+    OBSERVATION("관측", "초기 상태 기록"),
+    SETTLEMENT("정착", "이식 단위 활착 확인"),
+    GROWTH("성장", "해조류 군집 확대 관찰"),
+    MANAGEMENT("관리", "지속 관찰 및 유지");
 
+    private final String name;
     private final String description;
 }

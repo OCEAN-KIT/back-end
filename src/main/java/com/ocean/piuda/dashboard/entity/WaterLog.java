@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.dashboard.enums.ConditionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,4 +26,14 @@ public class WaterLog {
     private Double temperature;     // 수온
     private Double dissolvedOxygen; // DO
     private Double nutrient;        // 영양염류
+
+
+    @Enumerated(EnumType.STRING)
+    private ConditionStatus.Environment visibility; // 시야
+    @Enumerated(EnumType.STRING)
+    private ConditionStatus.Environment current;    // 조류
+    @Enumerated(EnumType.STRING)
+    private ConditionStatus.Environment surge;     // 서지
+    @Enumerated(EnumType.STRING)
+    private ConditionStatus.Environment wave;      // 파도
 }

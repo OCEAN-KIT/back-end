@@ -1,14 +1,15 @@
 package com.ocean.piuda.dashboard.enums;
 
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum HabitatType {
-    ROCKY("암반"),
-    MIXED("혼합"),
-    OTHER("기타");
+public enum MediaCategory {
+    BEFORE("복원 전"),
+    AFTER("복원 후"),
+    TIMELINE("타임라인");
 
     private final String name;
 }
