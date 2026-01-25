@@ -29,5 +29,5 @@ public class AreaMarkerResponse {
     private String habitat;
 
     /** 프로젝트 단계 한글 설명 (예: "이식 완료") */
-    private String stage;
+    private String level;
 }

@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 @Repository
-public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> {
+public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> , JpaSpecificationExecutor<ProjectArea> {
 
     // 1. 상세 엔티티 조회용 공간쿼리 (Deprecated / 현재 미사용)
     /**
@@ -33,6 +33,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             @Param("lon") double lon,
             @Param("radiusInMeters") double radiusInMeters
     );
+
 
     /**
      * @deprecated
@@ -101,7 +102,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         WHERE p.location && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
         """, nativeQuery = true)
@@ -126,7 +127,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         WHERE ST_DWithin(
             CAST(p.location AS geography),
@@ -155,7 +156,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         ORDER BY p.location <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
         LIMIT :limitCount

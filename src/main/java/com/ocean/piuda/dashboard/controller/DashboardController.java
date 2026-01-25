@@ -3,6 +3,8 @@ package com.ocean.piuda.dashboard.controller;
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
 import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
 import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
+import com.ocean.piuda.dashboard.dto.response.IdResponse;
+import com.ocean.piuda.dashboard.service.DashboardCommandService;
 import com.ocean.piuda.dashboard.service.DashboardQueryService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +12,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import com.ocean.piuda.dashboard.dto.request.*;
+import jakarta.validation.Valid;
+import com.ocean.piuda.dashboard.dto.request.LogPageRequest;
+import com.ocean.piuda.dashboard.dto.response.*;
+import com.ocean.piuda.global.api.dto.PageResponse;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.ocean.piuda.dashboard.dto.request.AreaPageRequest;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -20,6 +33,269 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardQueryService dashboardQueryService;
+    private final DashboardCommandService dashboardCommandService;
+
+    /**
+     * ProjectArea
+     */
+    @PostMapping("/areas")
+    @Operation(summary = "작업 영역 생성")
+    public ApiData<IdResponse> createArea(@RequestBody @Valid CreateProjectAreaRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createArea(req)));
+    }
+
+    @PatchMapping("/areas/{id}")
+    @Operation(summary = "작업 영역 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchArea(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateProjectAreaRequest req
+    ) {
+        dashboardCommandService.updateArea(id, req);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+
+    @DeleteMapping("/areas/{id}")
+    @Operation(summary = "작업 영역 삭제")
+    public ApiData<IdResponse> deleteArea(@PathVariable Long id) {
+        dashboardCommandService.deleteArea(id);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+    /**
+     * TransplantLog
+     */
+
+    @GetMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 단건 조회")
+    public ApiData<TransplantLogResponse> getTransplantLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getTransplantLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/transplants")
+    @Operation(summary = "이식 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<TransplantLogResponse>> getTransplantLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getTransplantLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/transplants")
+    @Operation(summary = "이식 로그 생성")
+    public ApiData<IdResponse> createTransplant(@PathVariable Long areaId, @RequestBody @Valid CreateTransplantLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createTransplant(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchTransplant(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateTransplantLogRequest req
+    ) {
+        dashboardCommandService.updateTransplant(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 삭제")
+    public ApiData<IdResponse> deleteTransplant(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteTransplant(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    /**
+     * GrowthLog
+     */
+    @GetMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 단건 조회")
+    public ApiData<GrowthLogResponse> getGrowthLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getGrowthLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/growth-logs")
+    @Operation(summary = "성장 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<GrowthLogResponse>> getGrowthLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getGrowthLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/growth-logs")
+    @Operation(summary = "성장 로그 생성")
+    public ApiData<IdResponse> createGrowth(@PathVariable Long areaId, @RequestBody @Valid CreateGrowthLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createGrowth(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchGrowth(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateGrowthLogRequest req
+    ) {
+        dashboardCommandService.updateGrowth(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 삭제")
+    public ApiData<IdResponse> deleteGrowth(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteGrowth(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    /**
+     * WaterLog
+     */
+    @GetMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 단건 조회")
+    public ApiData<WaterLogResponse> getWaterLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getWaterLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/water-logs")
+    @Operation(summary = "환경 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<WaterLogResponse>> getWaterLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getWaterLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/water-logs")
+    @Operation(summary = "환경 로그 생성")
+    public ApiData<IdResponse> createWater(@PathVariable Long areaId, @RequestBody @Valid CreateWaterLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createWater(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchWater(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateWaterLogRequest req
+    ) {
+        dashboardCommandService.updateWater(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+
+    @DeleteMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 삭제")
+    public ApiData<IdResponse> deleteWater(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteWater(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+    /**
+     * MediaLog
+     */
+    @GetMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 단건 조회")
+    public ApiData<MediaLogResponse> getMediaLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getMediaLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/media-logs")
+    @Operation(summary = "미디어 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<MediaLogResponse>> getMediaLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getMediaLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/media-logs")
+    @Operation(summary = "미디어 로그 생성")
+    public ApiData<IdResponse> createMedia(@PathVariable Long areaId, @RequestBody @Valid CreateMediaLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createMedia(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchMedia(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateMediaLogRequest req
+    ) {
+        dashboardCommandService.updateMedia(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 삭제")
+    public ApiData<IdResponse> deleteMedia(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteMedia(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @GetMapping("/areas")
+    @Operation(
+            summary = "작업 영역 목록 조회(페이징) + 검색/필터",
+            description = """
+            관리자용 작업영역 전체 목록 조회 API입니다.
+            - region(포항/울진), level(프로젝트 단계), habitat, 기간(from~to), 키워드(name) 필터 지원
+            - page/size/sort 페이징 지원
+            """
+    )
+    public ApiData<PageResponse<ProjectAreaListItemResponse>> getAreas(
+            @RequestParam(required = false) RestorationRegion region,
+            @RequestParam(required = false) ProjectLevel level,
+            @RequestParam(required = false) HabitatType habitat,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String keyword,
+            @Valid AreaPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getAreas(region, level, habitat, from, to, keyword, pageReq));
+    }
+
+
+    /**
+     * 대시보드 조회
+     */
 
     // 1. 상세 데이터 API
     @GetMapping("/areas/{id}")
@@ -28,80 +304,6 @@ public class DashboardController {
         return ApiData.ok(dashboardQueryService.getAreaDetail(id));
     }
 
-    /**
-     * @deprecated
-     *   - 실제 화면 구현에서는 마커 클릭 시 ID 기반 단건 상세 조회만 사용하고 있어, 반경 기준 상세 리스트는 필요하지 않아 미사용 상태입니다.
-     *   - 설계 의도: 특정 좌표/반경 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회하는 분석/리포트 용도.
-     *   - 향후 관리자용 리포트/분석 화면 등에서 재활용 가능성을 고려해 일단 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/nearby")
-    @Operation(
-            summary = "[Deprecated] 반경 기반 작업 영역 상세 검색",
-            description = """
-                설계 의도: 중심 좌표와 반경(km) 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회
-                                
-                실제 구현에서는 영역별 상세는 ID 기반 단건 조회로 충분하여, 
-                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getNearby(
-            @Parameter(description = "위도") @RequestParam Double lat,
-            @Parameter(description = "경도") @RequestParam Double lon,
-            @Parameter(description = "반경(km), 기본값 5.0") @RequestParam(defaultValue = "5.0") Double radius) {
-        return ApiData.ok(dashboardQueryService.getNearbyAreas(lat, lon, radius));
-    }
-
-    /**
-     * @deprecated
-     *   - 실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-     *   - 설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
-     *   - 향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/bbox")
-    @Operation(
-            summary = "[Deprecated] 뷰포트(BBox) 내 작업 영역 상세 검색",
-            description = """
-                설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
-                
-                실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 
-                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getBBox(
-            @RequestParam Double minLat, @RequestParam Double minLon,
-            @RequestParam Double maxLat, @RequestParam Double maxLon) {
-        return ApiData.ok(dashboardQueryService.getAreasInBBox(minLat, minLon, maxLat, maxLon));
-    }
-
-    /**
-     * @deprecated
-     *   - 실제 UX에서는 리스트/지도에는 요약 정보만 보여주고, 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않게 되었습니다.
-     *   - 초기 설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
-     *   - 다만 KNN 기반 상세 리스트가 필요한 별도 화면(예: 관리자 분석 페이지 등)이 생길 수 있어 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/nearest")
-    @Operation(
-            summary = "[Deprecated] 가장 가까운 작업 영역 상세 검색",
-            description = """
-                설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
-               
-                실제 UX에서는 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않습니다.
-                잠재적 재활용(예: 관리자/분석 화면)을 위해 보존합니다.
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getNearest(
-            @RequestParam Double lat, @RequestParam Double lon,
-            @RequestParam(defaultValue = "3") Integer limit) {
-        return ApiData.ok(dashboardQueryService.getNearestAreas(lat, lon, limit));
-    }
 
     @GetMapping("/stats/nearby")
     @Operation(summary = "반경 내 통계 요약", description = "반경 내 프로젝트 수, 총 면적, 평균 수심 등을 집계합니다.")

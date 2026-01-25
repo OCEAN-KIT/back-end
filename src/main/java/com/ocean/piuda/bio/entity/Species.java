@@ -1,4 +1,4 @@
-package com.ocean.piuda.dashboard.entity;
+package com.ocean.piuda.bio.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -32,4 +32,8 @@ public class Species extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private BioGroup category;
 
+    public void update(String name, BioGroup category) {
+        if (name != null && !name.isBlank())  this.name = name;
+        if (category != null) this.category = category;
+    }
 }

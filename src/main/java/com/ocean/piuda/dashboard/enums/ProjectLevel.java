@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ProjectStatus {
+public enum ProjectLevel {
     OBSERVATION("관측", "초기 상태 기록"),
     SETTLEMENT("정착", "이식 단위 활착 확인"),
     GROWTH("성장", "해조류 군집 확대 관찰"),
