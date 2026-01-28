@@ -78,6 +78,13 @@ dependencies {
 	implementation 'org.hibernate.orm:hibernate-spatial'
 	implementation 'org.locationtech.jts:jts-core:1.19.0'
 
+	// Markdown -> HTML
+	implementation "com.vladsch.flexmark:flexmark-all:0.64.8"
+
+	// HTML -> PDF (PDFBox 기반)
+	implementation "com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10"
+	implementation "com.openhtmltopdf:openhtmltopdf-slf4j:1.0.10"
+
 }
 
 

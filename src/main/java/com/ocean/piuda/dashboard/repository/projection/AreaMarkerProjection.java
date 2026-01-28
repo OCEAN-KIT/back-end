@@ -18,5 +18,5 @@ public interface AreaMarkerProjection {
     Double getAreaSize();
 
     String getHabitat(); // DB에 저장된 Enum String (예: "ROCKY_REEF")
-    String getStatus();  // DB에 저장된 Enum String (예: "TRANSPLANT_COMPLETED")
+    String getLevel();  // DB에 저장된 Enum String (예: "TRANSPLANT_COMPLETED")
 }

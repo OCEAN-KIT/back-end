@@ -1,6 +1,5 @@
 package com.ocean.piuda.global.api.exception;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -38,8 +37,6 @@ public enum ExceptionType {
     NOT_REGISTERED_USER(FORBIDDEN , "U007","최종 회원 가입 되지 않은 사용자"),
     UNAUTHORIZED_USER(UNAUTHORIZED, "U005","로그인 되지 않은 사용자"),
 
-
-
     //store
     STORE_NOT_FOUND(NOT_FOUND, "S001", "존재하지 않는 가게"),
 
@@ -53,6 +50,13 @@ public enum ExceptionType {
     EXPORT_NOT_READY(UNPROCESSABLE_ENTITY, "AD007", "내보내기 파일이 아직 준비되지 않았습니다."),
     EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다."),
 
+    // report (admin)
+    REPORT_DRAFT_SOURCE_EMPTY(BAD_REQUEST, "AD009", "리포트 생성 대상으로 집계된 제출물이 0건입니다."),
+
+    // AI (Gemini)
+    AI_GEMINI_ERROR(BAD_GATEWAY, "AI001", "Gemini 호출 중 오류가 발생했습니다."),
+    AI_RATE_LIMIT(TOO_MANY_REQUESTS, "AI002", "Gemini 요청 한도 초과(잠시 후 재시도)"),
+
     //mission
     MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
     MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다."),
@@ -65,7 +69,7 @@ public enum ExceptionType {
     WATCH_DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "WATCH_DEVICE_NOT_FOUND", "등록된 워치 정보를 찾을 수 없습니다.")
     ;
 
-
     private final HttpStatus status;
     private final String code;
-    private final String message;}
+    private final String message;
+}
