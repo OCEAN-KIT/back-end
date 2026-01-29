@@ -3,6 +3,7 @@ package com.ocean.piuda.admin.submission.service;
 import com.ocean.piuda.admin.submission.dto.response.*;
 import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.AuditAction;
+import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
 import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
