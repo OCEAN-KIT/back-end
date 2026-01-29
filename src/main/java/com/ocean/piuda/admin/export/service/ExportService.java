@@ -153,7 +153,7 @@ public class ExportService {
                     writer.write(",,");
                 }
 
-                writer.write(escapeCsv(submission.getFeedbackText() != null ? submission.getFeedbackText() : "") + ",");
+                writer.write(escapeCsv(submission.getWorkDescription() != null ? submission.getWorkDescription() : "") + ",");
                 writer.write((submission.getAttachmentCount() != null ? submission.getAttachmentCount().toString() : ""));
                 writer.write("\r\n"); // 5) 각 행 끝은 CRLF
             }

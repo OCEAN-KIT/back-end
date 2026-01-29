@@ -109,6 +109,13 @@ dependencies {
 	implementation 'org.hibernate.orm:hibernate-spatial'
 	implementation 'org.locationtech.jts:jts-core:1.19.0'
 
+	// Markdown -> HTML
+	implementation "com.vladsch.flexmark:flexmark-all:0.64.8"
+
+	// HTML -> PDF (PDFBox 기반)
+	implementation "com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10"
+	implementation "com.openhtmltopdf:openhtmltopdf-slf4j:1.0.10"
+
 }
 
 
@@ -2602,6 +2609,927 @@ public class AdminUserInitializer implements CommandLineRunner {
 
 
 ================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.admin;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\controller\ReportDraftController.java
+================================================================================
+
+package com.ocean.piuda.admin.report.controller;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import java.nio.charset.StandardCharsets;
+
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
+import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+import com.ocean.piuda.admin.report.service.ReportDraftService;
+import com.ocean.piuda.global.api.dto.ApiData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/admin/reports/drafts")
+@RequiredArgsConstructor
+@Tag(name = "Admin Report Draft", description = "선택한 해양 활동 제출물로 리포트 초안을 Gemini로 생성합니다.")
+public class ReportDraftController {
+
+    private final ReportDraftService reportDraftService;
+
+    @PostMapping("/by-ids")
+    @Operation(
+            summary = "리포트 초안 생성 (IDs 기반)",
+            description = "선택한 submission ids(기본: APPROVED)를 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+    )
+    public ApiData<ReportDraftResponse> byIds(@RequestBody @Valid ReportDraftByIdsRequest request) {
+        return ApiData.ok(reportDraftService.generateByIds(request));
+    }
+
+    @PostMapping("/by-period")
+    @Operation(
+            summary = "리포트 초안 생성 (기간 기반)",
+            description = "dateFrom~dateTo 기간(기본: APPROVED)을 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+    )
+    public ApiData<ReportDraftResponse> byPeriod(@RequestBody @Valid ReportDraftByPeriodRequest request) {
+        return ApiData.ok(reportDraftService.generateByPeriod(request));
+    }
+
+    @PostMapping(
+            value = "/by-ids/pdf",
+            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
+    )
+    @Operation(summary = "리포트 PDF 생성 (IDs 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
+    public ResponseEntity<byte[]> byIdsPdf(@RequestBody @Valid ReportDraftByIdsRequest request) {
+        var pdf = reportDraftService.generatePdfByIds(request);
+
+        ContentDisposition cd = ContentDisposition.attachment()
+                .filename(pdf.fileName(), StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(cd);
+        headers.setContentLength(pdf.bytes().length);
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+
+        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
+    }
+
+    @PostMapping(
+            value = "/by-period/pdf",
+            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
+    )
+    @Operation(summary = "리포트 PDF 생성 (기간 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
+    public ResponseEntity<byte[]> byPeriodPdf(@RequestBody @Valid ReportDraftByPeriodRequest request) {
+        var pdf = reportDraftService.generatePdfByPeriod(request);
+
+        ContentDisposition cd = ContentDisposition.attachment()
+                .filename(pdf.fileName(), StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(cd);
+        headers.setContentLength(pdf.bytes().length);
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+
+        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
+    }
+
+}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\dto\request\ReportDraftByIdsRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.request;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
+import java.util.List;
+
+@Builder
+public record ReportDraftByIdsRequest(
+        @NotEmpty(message = "ids는 1개 이상이어야 합니다")
+        List<Long> ids,
+
+        @NotNull(message = "reportType은 필수입니다")
+        ReportDraftType reportType,
+
+        String prompt
+) {}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\dto\request\ReportDraftByPeriodRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.request;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
+import java.time.LocalDate;
+
+@Builder
+public record ReportDraftByPeriodRequest(
+        @NotNull(message = "dateFrom는 필수입니다")
+        LocalDate dateFrom,
+
+        @NotNull(message = "dateTo는 필수입니다")
+        LocalDate dateTo,
+
+        @NotNull(message = "reportType은 필수입니다")
+        ReportDraftType reportType,
+
+        String prompt
+) {}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\dto\response\ReportDraftResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import lombok.Builder;
+
+import java.util.List;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Builder
+public record ReportDraftResponse(
+        List<Long> submissionIds,
+        List<Long> missingIds,
+
+        ReportDraftType reportType,
+
+        String internalDraft,
+        String externalNewsletter,
+        String externalInstagram,
+        String externalPublication,
+
+        GeminiMeta meta
+) {}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\dto\response\ReportPdfResponse.java
+================================================================================
+
+package com.ocean.piuda.admin.report.dto.response;
+
+public record ReportPdfResponse(
+        String fileName,
+        byte[] bytes
+) {}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\enums\ReportDraftType.java
+================================================================================
+
+package com.ocean.piuda.admin.report.enums;
+
+public enum ReportDraftType {
+    INTERNAL_DRAFT("internalDraft"),
+    EXTERNAL_NEWSLETTER("externalNewsletter"),
+    EXTERNAL_INSTAGRAM("externalInstagram"),
+    EXTERNAL_PUBLICATION("externalPublication");
+
+    private final String jsonKey;
+
+    ReportDraftType(String jsonKey) {
+        this.jsonKey = jsonKey;
+    }
+
+    public String jsonKey() {
+        return jsonKey;
+    }
+}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\service\ReportDraftService.java
+================================================================================
+
+package com.ocean.piuda.admin.report.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
+import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
+import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+import com.ocean.piuda.admin.report.dto.response.ReportPdfResponse;
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+import com.ocean.piuda.admin.report.util.ReportPromptBuilder;
+import com.ocean.piuda.admin.submission.entity.Submission;
+import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
+import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
+import com.ocean.piuda.ai.gemini.service.GeminiTextService;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReportDraftService {
+
+    private final GeminiTextService geminiTextService;
+    private final SubmissionRepository submissionRepository;
+    private final ObjectMapper objectMapper;
+    private final ReportPdfService reportPdfService;
+
+    @Value("${gemini.model.report:${gemini.model.text}}")
+    private String reportModel;
+
+    public ReportDraftResponse generateByIds(ReportDraftByIdsRequest request) {
+        List<Long> ids = distinctPreserveOrder(request.ids());
+        List<Submission> found =
+                submissionRepository.findAllByIdsAndStatusWithDetails(ids, SubmissionStatus.APPROVED);
+
+        // 요청 순서 보존 정렬
+        Map<Long, Integer> order = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) order.put(ids.get(i), i);
+        found.sort(Comparator.comparingInt(s -> order.getOrDefault(s.getSubmissionId(), Integer.MAX_VALUE)));
+
+        List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
+        List<Long> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
+
+        //  전부 미존재/미승인 이면 “리포트 대상 없음”으로 명확히
+        if (found.isEmpty()) {
+            throw new BusinessException(ExceptionType.REPORT_DRAFT_SOURCE_EMPTY, Map.of(
+                    "reason", "선택한 IDs 중 APPROVED submission이 없습니다.",
+                    "requestedIds", ids,
+                    "missingIds", missing
+            ));
+        }
+
+        return generate(found, foundIds, missing, request.prompt(), request.reportType());
+    }
+
+    public ReportDraftResponse generateByPeriod(ReportDraftByPeriodRequest request) {
+        LocalDateTime start = request.dateFrom().atStartOfDay();
+        LocalDateTime end = request.dateTo().atTime(23, 59, 59);
+
+        List<Submission> found =
+                submissionRepository.findAllByStatusAndSubmittedAtBetweenWithDetails(
+                        SubmissionStatus.APPROVED, start, end
+                );
+
+        //  기간에 데이터 없으면 별도 에러
+        if (found == null || found.isEmpty()) {
+            throw new BusinessException(ExceptionType.REPORT_DRAFT_SOURCE_EMPTY, Map.of(
+                    "reason", "선택한 기간에 해당하는 APPROVED submission이 없습니다.",
+                    "dateFrom", request.dateFrom(),
+                    "dateTo", request.dateTo()
+            ));
+        }
+
+        List<Long> foundIds = found.stream().map(Submission::getSubmissionId).toList();
+        return generate(found, foundIds, List.of(), request.prompt(), request.reportType());
+    }
+
+    private ReportDraftResponse generate(
+            List<Submission> submissions,
+            List<Long> submissionIds,
+            List<Long> missingIds,
+            String extraPrompt,
+            ReportDraftType reportType
+    ) {
+        if (reportType == null) {
+            throw new BusinessException(
+                    ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR,
+                    Map.of("reason", "reportType은 필수입니다.")
+            );
+        }
+
+        // 너무 많으면 프롬프트 폭증 방지 (필요시 조정)
+        List<Submission> trimmed = submissions.size() > 50 ? submissions.subList(0, 50) : submissions;
+
+        String submissionsJson = toCompactJson(trimmed);
+
+        String prompt = ReportPromptBuilder.build(submissionsJson, extraPrompt, reportType);
+
+        GeminiResponse gemResp = geminiTextService.generateReportDraft(prompt);
+        String raw = gemResp.content();
+        GeminiMeta meta = gemResp.meta();
+        String cleaned = cleanupJson(raw);
+
+        String content;
+        try {
+            JsonNode root = objectMapper.readTree(cleaned);
+            content = root.path(reportType.jsonKey()).asText("");
+        } catch (Exception e) {
+            log.warn("Gemini report JSON parse failed. raw={}", raw, e);
+            content = raw == null ? "" : raw;
+        }
+
+        List<Long> usedIds = trimmed.stream().map(Submission::getSubmissionId).toList();
+
+        ReportDraftResponse.ReportDraftResponseBuilder builder = ReportDraftResponse.builder()
+                .submissionIds(usedIds)
+                .missingIds(missingIds)
+                .reportType(reportType)
+                .meta(meta);
+
+        switch (reportType) {
+            case INTERNAL_DRAFT -> builder.internalDraft(content);
+            case EXTERNAL_NEWSLETTER -> builder.externalNewsletter(content);
+            case EXTERNAL_INSTAGRAM -> builder.externalInstagram(content);
+            case EXTERNAL_PUBLICATION -> builder.externalPublication(content);
+        }
+
+        return builder.build();
+    }
+
+    private String toCompactJson(List<Submission> submissions) {
+        try {
+            List<Map<String, Object>> rows = submissions.stream()
+                    .map(this::toPromptRow)
+                    .collect(Collectors.toList());
+            return objectMapper.writeValueAsString(rows);
+        } catch (Exception e) {
+            throw new BusinessException(
+                    ExceptionType.UNEXPECTED_SERVER_ERROR,
+                    Map.of("reason", "submissions JSON 변환 실패", "message", e.getMessage())
+            );
+        }
+    }
+
+    private Map<String, Object> toPromptRow(Submission s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+
+        putIfNotBlank(m, "siteName", s.getSiteName());
+        putIfNotNull(m, "submittedAt", s.getSubmittedAt() != null ? s.getSubmittedAt().toString() : null);
+        putIfNotNull(m, "activityType", s.getActivityType() != null ? s.getActivityType().name() : null);
+
+        if (s.getBasicEnv() != null) {
+            Map<String, Object> env = new LinkedHashMap<>();
+            putIfNotNull(env, "waterTempC", s.getBasicEnv().getWaterTempC());
+            putIfNotNull(env, "visibilityM", s.getBasicEnv().getVisibilityM());
+            putIfNotNull(env, "depthM", s.getBasicEnv().getDepthM());
+            putIfNotNull(env, "currentState", s.getBasicEnv().getCurrentState() != null ? s.getBasicEnv().getCurrentState().name() : null);
+            putIfNotNull(env, "weather", s.getBasicEnv().getWeather() != null ? s.getBasicEnv().getWeather().name() : null);
+
+            removeNullsDeep(env);
+            if (!env.isEmpty()) m.put("basicEnv", env);
+        }
+
+        if (s.getActivity() != null) {
+            Map<String, Object> a = new LinkedHashMap<>();
+            putIfNotNull(a, "type", s.getActivity().getType() != null ? s.getActivity().getType().name() : null);
+            putIfNotBlank(a, "details", truncate(s.getActivity().getDetails(), 600));
+            putIfNotNull(a, "collectionAmount", s.getActivity().getCollectionAmount());
+            putIfNotNull(a, "durationHours", s.getActivity().getDurationHours());
+
+            ActivityType type = s.getActivity().getType();
+            if (type == ActivityType.TRANSPLANT || type == ActivityType.MONITORING || type == ActivityType.RESEARCH) {
+                putIfNotNull(a, "healthGrade", s.getActivity().getHealthGrade() != null ? s.getActivity().getHealthGrade().name() : null);
+                putIfNotNull(a, "growthCm", s.getActivity().getGrowthCm());
+
+                if (s.getActivity().getNaturalReproduction() != null) {
+                    Map<String, Object> nat = new LinkedHashMap<>();
+                    putIfNotNull(nat, "radiusM", s.getActivity().getNaturalReproduction().getRadiusM());
+                    putIfNotNull(nat, "numerator", s.getActivity().getNaturalReproduction().getNumerator());
+                    putIfNotNull(nat, "denominator", s.getActivity().getNaturalReproduction().getDenominator());
+                    removeNullsDeep(nat);
+                    if (!nat.isEmpty()) a.put("naturalReproduction", nat);
+                }
+
+                if (s.getActivity().getSurvival() != null) {
+                    Map<String, Object> surv = new LinkedHashMap<>();
+                    putIfNotNull(surv, "dieCount", s.getActivity().getSurvival().getDieCount());
+                    putIfNotNull(surv, "totalCount", s.getActivity().getSurvival().getTotalCount());
+                    removeNullsDeep(surv);
+                    if (!surv.isEmpty()) a.put("survival", surv);
+                }
+            }
+
+            removeNullsDeep(a);
+            if (!a.isEmpty()) m.put("activity", a);
+        }
+
+        putIfNotBlank(m, "feedbackText", truncate(s.getFeedbackText(), 600));
+
+        removeNullsDeep(m);
+        return m;
+    }
+
+    private static void putIfNotNull(Map<String, Object> m, String key, Object value) {
+        if (value != null) m.put(key, value);
+    }
+
+    private static void putIfNotBlank(Map<String, Object> m, String key, String value) {
+        if (value != null && !value.isBlank()) m.put(key, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void removeNullsDeep(Map<String, Object> m) {
+        if (m == null) return;
+        m.entrySet().removeIf(e -> e.getValue() == null);
+
+        for (Object v : m.values()) {
+            if (v instanceof Map<?, ?> mm) {
+                removeNullsDeep((Map<String, Object>) mm);
+            }
+        }
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.length() <= max) return t;
+        return t.substring(0, max) + "…";
+    }
+
+    private static String cleanupJson(String raw) {
+        if (raw == null) return "";
+        String t = raw.trim();
+        t = t.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "");
+        t = t.replaceAll("\\s*```$", "");
+        return t.trim();
+    }
+
+    private static List<Long> distinctPreserveOrder(List<Long> ids) {
+        if (ids == null) return List.of();
+        LinkedHashSet<Long> set = new LinkedHashSet<>(ids);
+        return new ArrayList<>(set);
+    }
+
+    public ReportPdfResponse generatePdfByIds(ReportDraftByIdsRequest request) {
+        ReportDraftResponse draft = generateByIds(request);
+        return toPdf(draft);
+    }
+
+    public ReportPdfResponse generatePdfByPeriod(ReportDraftByPeriodRequest request) {
+        ReportDraftResponse draft = generateByPeriod(request);
+        return toPdf(draft);
+    }
+
+    private ReportPdfResponse toPdf(ReportDraftResponse draft) {
+        String content = switch (draft.reportType()) {
+            case INTERNAL_DRAFT -> draft.internalDraft();
+            case EXTERNAL_NEWSLETTER -> draft.externalNewsletter();
+            case EXTERNAL_INSTAGRAM -> draft.externalInstagram();
+            case EXTERNAL_PUBLICATION -> draft.externalPublication();
+        };
+
+        String title = "Report - " + draft.reportType().name();
+        byte[] pdfBytes = reportPdfService.renderMarkdownToPdf(content, title);
+
+        String fileName = "report_" + draft.reportType().name().toLowerCase() + "_" +
+                LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                + ".pdf";
+
+        return new ReportPdfResponse(fileName, pdfBytes);
+    }
+}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\service\ReportPdfService.java
+================================================================================
+
+package com.ocean.piuda.admin.report.service;
+
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import com.openhtmltopdf.extend.FSSupplier;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReportPdfService {
+
+    private final Parser mdParser = Parser.builder().build();
+    private final HtmlRenderer htmlRenderer = HtmlRenderer.builder().build();
+
+    private static FSSupplier<InputStream> cp(String path) {
+        return () -> {
+            try {
+                return new ClassPathResource(path).getInputStream();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        };
+    }
+
+    public byte[] renderMarkdownToPdf(String markdown, String title) {
+        try {
+            String safeMarkdown = stripEmoji(markdown == null ? "" : markdown);
+            String safeTitle = stripEmoji(title);
+
+            String htmlBody = htmlRenderer.render(mdParser.parse(safeMarkdown));
+            String html = wrapHtml(htmlBody, safeTitle);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            builder.withHtmlContent(html, null);
+            builder.toStream(baos);
+
+            builder.useFont(cp("fonts/NotoSansKR-Regular.ttf"), "NotoSansKR", 400,
+                    PdfRendererBuilder.FontStyle.NORMAL, true);
+            builder.useFont(cp("fonts/NotoSansKR-Bold.ttf"), "NotoSansKR", 700,
+                    PdfRendererBuilder.FontStyle.NORMAL, true);
+
+            builder.run();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            log.error("PDF 렌더링 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("REPORT_PDF_RENDER_FAILED", e);
+        }
+    }
+
+    private String wrapHtml(String body, String title) {
+        String generatedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        return ("""
+    <!DOCTYPE html>
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+    <head>
+      <meta charset="UTF-8" />
+      <style>
+        @page { size: A4; margin: 18mm; }
+
+        body {
+          font-family: "NotoSansKR", sans-serif;
+          font-size: 11pt;
+          line-height: 1.6;
+          color: #111;
+        }
+
+        h1 { font-size: 20pt; margin: 0 0 10pt 0; font-weight: 700; }
+        h2 { font-size: 15pt; margin: 16pt 0 8pt 0; font-weight: 700; }
+        h3 { font-size: 13pt; margin: 14pt 0 6pt 0; font-weight: 700; }
+
+        p { margin: 6pt 0; }
+
+        /*  리스트 bullet 크기/모양 커스텀 (기본 마커 대신 ::before 사용) */
+        ul, ol {
+          margin: 6pt 0 6pt 0;
+          padding-left: 0;
+        }
+
+        ul { list-style: none; }
+        ul > li {
+          position: relative;
+          padding-left: 12pt;   /* bullet + 간격 */
+          margin: 2pt 0;
+        }
+        ul > li::before {
+          content: "•";
+          position: absolute;
+          left: 0;
+          top: 0;
+          font-size: 8.5pt;     /*  bullet 크기 */
+          line-height: 1.6;     /* 텍스트 라인과 맞춤 */
+        }
+
+        /* 중첩 ul은 더 작은 마커 */
+        ul ul > li { padding-left: 11pt; }
+        ul ul > li::before {
+          content: "◦";
+          font-size: 8pt;
+          line-height: 1.6;
+        }
+
+        /* 번호 목록은 기본 유지 */
+        ol { padding-left: 18pt; }
+        ol li { margin: 2pt 0; }
+
+        code, pre { font-family: monospace; font-size: 10pt; }
+        pre {
+          background: #f6f6f6;
+          padding: 10pt;
+          border-radius: 6pt;
+          white-space: pre-wrap;
+        }
+
+        table { width: 100%%; border-collapse: collapse; margin: 10pt 0; }
+        th, td { border: 1px solid #ddd; padding: 6pt; }
+        th { background: #f2f2f2; }
+
+        .meta { font-size: 9.5pt; color: #555; margin-bottom: 12pt; }
+      </style>
+      <title>%s</title>
+    </head>
+    <body>
+      <div class="meta">생성일시: %s</div>
+      %s
+    </body>
+    </html>
+    """).formatted(escapeHtml(title), generatedAt, body).strip();
+    }
+
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+    }
+
+    private static String stripEmoji(String s) {
+        if (s == null || s.isBlank()) return s;
+
+        StringBuilder out = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); ) {
+            int cp = s.codePointAt(i);
+            i += Character.charCount(cp);
+
+            if (isEmojiLike(cp)) {
+                // 필요하면 공백 하나로 치환하고 싶으면 아래 주석 해제
+                // out.append(' ');
+                continue;
+            }
+            out.appendCodePoint(cp);
+        }
+        return out.toString();
+    }
+
+    /**
+     * “대부분의” 이모지/이모지 조합을 제거하기 위한 범위 체크
+     * (표시 안 해도 되는 목적이면 이 정도가 실무에서 가장 무난합니다)
+     */
+    private static boolean isEmojiLike(int cp) {
+        // variation selectors (emoji 스타일 선택), ZWJ(결합자), keycap 결합자
+        if (cp == 0xFE0E || cp == 0xFE0F || cp == 0x200D || cp == 0x20E3) return true;
+
+        // skin tone modifiers
+        if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true;
+
+        // flags (regional indicator symbols)
+        if (cp >= 0x1F1E6 && cp <= 0x1F1FF) return true;
+
+        // Misc symbols / dingbats (♻️ ☀️ ✨ 같은 것들)
+        if (cp >= 0x2600 && cp <= 0x26FF) return true;
+        if (cp >= 0x2700 && cp <= 0x27BF) return true;
+
+        // Main emoji blocks
+        if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // pictographs
+        if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // emoticons
+        if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // transport
+        if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // alchemical
+        if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // geometric ext
+        if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // arrows-c
+        if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // supplemental
+        if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // chess etc
+        if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // extended-a
+
+        return false;
+    }
+
+}
+
+
+================================================================================
+File Path: .\src\main\java\com\ocean\piuda\admin\report\util\ReportPromptBuilder.java
+================================================================================
+
+package com.ocean.piuda.admin.report.util;
+
+import com.ocean.piuda.admin.report.enums.ReportDraftType;
+
+public class ReportPromptBuilder {
+
+    private ReportPromptBuilder() {}
+
+    public static String build(String submissionsJson, String extraPromptOrNull, ReportDraftType type) {
+        String extra = (extraPromptOrNull == null) ? "" : extraPromptOrNull.trim();
+        String key = type.jsonKey();
+
+        String guide = switch (type) {
+            case INTERNAL_DRAFT -> """
+- internalDraft: 기간/범위, 활동유형별 요약, 정량(수거량/이식수 등), 운영/이슈 중심.
+- (중요) 데이터에 없거나 활동유형에 비적용인 지표는 "기록 없음"으로 쓰지 말고 항목 자체를 생략한다.
+- 누락이 운영상 문제로 보이는 경우에만 "확인 필요"로 짧게 표시한다.
+""";
+            case EXTERNAL_NEWSLETTER -> """
+- externalNewsletter: 짧은 제목 + 2~4문단 + 하이라이트 bullet + CTA.
+""";
+            case EXTERNAL_INSTAGRAM -> """
+- externalInstagram: 4~10줄 스토리텔링 + 핵심 bullet 2~4개 + 해시태그 8~15개.
+""";
+            case EXTERNAL_PUBLICATION -> """
+- externalPublication: 제목/리드문/본문(소제목 가능) + 성과 요약.
+""";
+        };
+
+        return """
+너는 해양 활동 기록 제출물(Submission)을 바탕으로 리포트 초안을 작성하는 전문 에디터다.
+
+[중요 원칙]
+- 아래에 제공된 JSON 데이터에 포함된 사실만 사용한다. 추측/날조 금지.
+- 데이터가 부족하면 INTERNAL_DRAFT는 필요한 경우에만 "확인 필요"로 표시하고, 그 외 유형은 "확인 필요" 또는 "기록 없음"으로 명시한다.
+- 외부홍보용(external*)에는 개인정보/민감정보를 포함하지 말 것:
+  - 이메일/연락처 금지
+  - 위도/경도 등 정확 좌표 금지(지역명 수준으로만)
+- 문서는 모두 한국어로 작성한다.
+- 결과는 반드시 "JSON만" 출력한다. 코드펜스( ``` ) 금지.
+- 아래에서 지정한 키 1개만 출력한다. 다른 키/설명/문장 절대 추가 금지.
+
+[데이터]
+%s
+
+[출력 JSON 스키마] (반드시 이 키 하나만)
+{ "%s": "요청된 유형의 마크다운 초안" }
+
+[작성 가이드]
+%s
+
+[추가 지시사항(있으면 반영)]
+%s
+""".formatted(submissionsJson, key, guide, extra.isBlank() ? "(없음)" : extra);
+    }
+}
+
+
+================================================================================
 File Path: .\src\main\java\com\ocean\piuda\admin\submission\controller\SubmissionController.java
 ================================================================================
 
@@ -4370,6 +5298,24 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("ids") List<Long> ids,
             @Param("status") SubmissionStatus status
     );
+
+    @Query("""
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.participants
+    LEFT JOIN FETCH s.activity
+    LEFT JOIN FETCH s.attachments
+    WHERE s.status = :status
+      AND s.submittedAt BETWEEN :start AND :end
+    ORDER BY s.submittedAt DESC
+    """)
+    List<Submission> findAllByStatusAndSubmittedAtBetweenWithDetails(
+            @Param("status") SubmissionStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+
 }
 
 
@@ -4995,25 +5941,28 @@ File Path: .\src\main\java\com\ocean\piuda\ai\gemini\service\GeminiTextService.j
 
 package com.ocean.piuda.ai.gemini.service;
 
-
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import com.ocean.piuda.ai.gemini.dto.request.GeminiRequest;
 import com.ocean.piuda.ai.gemini.dto.response.GeminiMeta;
 import com.ocean.piuda.ai.gemini.dto.response.GeminiResponse;
 import com.ocean.piuda.ai.gemini.util.GeminiSdkUtil;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GeminiTextService {
 
     private final Client client;
@@ -5021,18 +5970,91 @@ public class GeminiTextService {
     @Value("${gemini.model.text}")
     private String defaultTextModel;
 
+    @Value("${gemini.model.report:${gemini.model.text}}")
+    private String reportModel;
 
     private static final String SYS_TEXT =
             "너는 신뢰할 수 있는 AI 어시스턴트다. 사실과 논리를 중시하고, 모르는 것은 모른다고 말하라.";
 
+    private static final String SYS_REPORT =
+            "너는 해양 활동 기록 제출물 기반 리포트 초안 작성 AI다. " +
+                    "주어진 데이터에 없는 사실을 만들지 말고, 개인정보(이메일/연락처)/정확 좌표는 대외용에 절대 포함하지 말라. " +
+                    "반드시 지정된 JSON 스키마만 출력하라.";
 
     public GeminiResponse complete(GeminiRequest req) {
-        String model = defaultTextModel;
-        GenerateContentResponse resp = client.models.generateContent(model, req.prompt(), null);
+        return generate(defaultTextModel, SYS_TEXT, req.prompt());
+    }
 
-        String text = GeminiSdkUtil.extractText(resp);
-        GeminiMeta meta = GeminiSdkUtil.toMeta(model, resp);
-        return GeminiResponse.builder().content(text).meta(meta).build();
+    public GeminiResponse generateReportDraft(String prompt) {
+        return generate(reportModel, SYS_REPORT, prompt);
+    }
+
+    private GeminiResponse generate(String model, String systemInstruction, String userPrompt) {
+
+        List<Content> contents = List.of(
+                Content.builder()
+                        .role("user")
+                        .parts(Part.fromText(userPrompt == null ? "" : userPrompt))
+                        .build()
+        );
+
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(
+                        Content.builder()
+                                .role("user")
+                                .parts(Part.fromText(systemInstruction))
+                                .build()
+                )
+                .temperature(0.2f)
+                .build();
+
+        try {
+            GenerateContentResponse resp = client.models.generateContent(model, contents, config);
+
+            String text = GeminiSdkUtil.extractText(resp);
+            GeminiMeta meta = GeminiSdkUtil.toMeta(model, resp);
+            return GeminiResponse.builder().content(text).meta(meta).build();
+
+        } catch (Exception e) {
+            //  원문 메시지 그대로 전달
+            String rawMessage = (e.getMessage() == null ? "" : e.getMessage());
+
+            //  statusCode는 "추론" 말고, SDK 예외가 제공하는 값이 있으면 그걸 사용 (없으면 null)
+            Integer statusCode = extractStatusCodeIfPresent(e);
+
+            ExceptionType type =
+                    (statusCode != null && statusCode == 429)
+                            ? ExceptionType.AI_RATE_LIMIT
+                            : ExceptionType.AI_GEMINI_ERROR;
+
+            log.warn("Gemini error. type={}, statusCode={}, model={}, exClass={}, message={}",
+                    type.name(), statusCode, model, e.getClass().getName(), rawMessage);
+
+            throw new BusinessException(type, Map.of(
+                    "provider", "gemini",
+                    "model", model,
+                    "statusCode", statusCode,
+                    "message", rawMessage,
+                    "exceptionClass", e.getClass().getName()
+            ));
+        }
+    }
+
+    /**
+     * google-genai 라이브러리 버전별로 status code 접근 메서드명이 다를 수 있어서
+     * "추론"이 아닌 리플렉션 기반으로 '존재하면 가져오기'만 합니다.
+     */
+    private Integer extractStatusCodeIfPresent(Exception e) {
+        // 후보 메서드들: getCode(), getStatusCode(), statusCode() 등
+        for (String method : List.of("getCode", "getStatusCode", "statusCode")) {
+            try {
+                Object v = e.getClass().getMethod(method).invoke(e);
+                if (v instanceof Integer i) return i;
+                if (v instanceof Number n) return n.intValue();
+            } catch (Exception ignore) {
+            }
+        }
+        return null;
     }
 }
 
@@ -5915,6 +6937,151 @@ public class OpenAIApiService {
 
 
 ================================================================================
+File Path: .\src\main\java\com\ocean\piuda\ai\ProjectExporter.java
+================================================================================
+
+package com.ocean.piuda.ai;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.stream.Stream;
+
+public class ProjectExporter {
+
+    // 결과 파일명
+    private static final String OUTPUT_FILE = "project_context.txt";
+
+    // 기본적으로 제외할 디렉토리/파일 (gitignore가 없거나 놓칠 경우 대비)
+    private static final Set<String> DEFAULT_IGRORES = new HashSet<>(Arrays.asList(
+            ".git", ".idea", ".gradle", "build", "target", "out", ".mvn", "wrapper", "gradlew", "gradlew.bat", OUTPUT_FILE
+    ));
+
+    // 텍스트 파일로 간주할 확장자 (바이너리 제외용)
+    private static final Set<String> TEXT_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "java", "xml", "yml", "yaml", "properties", "gradle", "sql", "md", "txt", "html", "css", "js", "json", "dockerfile"
+    ));
+
+    public static void main(String[] args) {
+        Path startPath = Paths.get(".");
+        Path outputPath = Paths.get(OUTPUT_FILE);
+        List<PathMatcher> gitIgnoreMatchers = loadGitIgnore(startPath);
+
+        try (java.io.BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
+            System.out.println(" 프로젝트 추출을 시작합니다... (Target: " + OUTPUT_FILE + ")");
+
+            Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, dir, gitIgnoreMatchers)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (shouldIgnore(startPath, file, gitIgnoreMatchers)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    if (isTextFile(file)) {
+                        writeFileContent(writer, file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            System.out.println("완료! '" + OUTPUT_FILE + "' 파일이 생성되었습니다.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // .gitignore 파일 로드 및 PathMatcher 변환
+    private static List<PathMatcher> loadGitIgnore(Path rootPath) {
+        List<PathMatcher> matchers = new ArrayList<>();
+        Path gitIgnorePath = rootPath.resolve(".gitignore");
+        FileSystem fs = FileSystems.getDefault();
+
+        if (Files.exists(gitIgnorePath)) {
+            try (Stream<String> lines = Files.lines(gitIgnorePath)) {
+                lines.map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .forEach(line -> {
+                            // 간단한 glob 패턴 변환 (폴더인 경우 /** 추가 등)
+                            String pattern = "glob:**/" + line;
+                            if (line.endsWith("/")) {
+                                pattern += "**";
+                            }
+                            try {
+                                matchers.add(fs.getPathMatcher(pattern));
+                            } catch (Exception e) {
+                                // 복잡한 정규식 패턴은 무시
+                            }
+                        });
+                System.out.println("ℹ .gitignore 파일을 발견하여 규칙을 적용합니다.");
+            } catch (IOException e) {
+                System.err.println("⚠ .gitignore 읽기 실패: " + e.getMessage());
+            }
+        }
+        return matchers;
+    }
+
+    // 제외 대상 확인 로직
+    private static boolean shouldIgnore(Path root, Path path, List<PathMatcher> gitIgnoreMatchers) {
+        String fileName = path.getFileName().toString();
+
+        // 1. 기본 제외 목록 확인
+        if (DEFAULT_IGRORES.contains(fileName)) return true;
+
+        // 2. .gitignore 규칙 확인
+        for (PathMatcher matcher : gitIgnoreMatchers) {
+            if (matcher.matches(path)) return true;
+        }
+
+        return false;
+    }
+
+    // 텍스트 파일 여부 확인 (확장자 기반)
+    private static boolean isTextFile(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.equals("dockerfile")) return true;
+
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot == -1) return false;
+
+        String ext = fileName.substring(lastDot + 1);
+        return TEXT_EXTENSIONS.contains(ext);
+    }
+
+    private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
+        try {
+            writer.write("\n" + "=".repeat(80) + "\n");
+            writer.write("File Path: " + file.toString() + "\n");
+            writer.write("=".repeat(80) + "\n\n");
+
+            // 파일 내용을 한 번에 읽어서 쓰기
+            Files.lines(file).forEach(line -> {
+                try {
+                    writer.write(line);
+                    writer.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            writer.write("\n");
+        } catch (Exception e) {
+            System.err.println(" 파일 읽기 실패 (" + file + "): " + e.getMessage());
+        }
+    }
+}
+
+
+================================================================================
 File Path: .\src\main\java\com\ocean\piuda\aws\config\AwsCredentialConfig.java
 ================================================================================
 
@@ -6745,7 +7912,7 @@ File Path: .\src\main\java\com\ocean\piuda\dashboard\entity\ProjectArea.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import com.ocean.piuda.global.util.GeometryUtils;
 import jakarta.persistence.*;
@@ -6961,7 +8128,7 @@ package com.ocean.piuda.dashboard.initializer;
 
 import com.ocean.piuda.dashboard.entity.*;
 import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
 import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
 import com.ocean.piuda.global.util.GeometryUtils;
 import lombok.RequiredArgsConstructor;
@@ -7430,7 +8597,7 @@ import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
 import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
 import com.ocean.piuda.dashboard.entity.ProjectArea;
 import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
 import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
 import com.ocean.piuda.dashboard.repository.projection.AreaMarkerProjection;
 import com.ocean.piuda.dashboard.repository.projection.AreaStatProjection;
@@ -11342,7 +12509,6 @@ File Path: .\src\main\java\com\ocean\piuda\global\api\exception\ExceptionType.ja
 
 package com.ocean.piuda.global.api.exception;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -11380,8 +12546,6 @@ public enum ExceptionType {
     NOT_REGISTERED_USER(FORBIDDEN , "U007","최종 회원 가입 되지 않은 사용자"),
     UNAUTHORIZED_USER(UNAUTHORIZED, "U005","로그인 되지 않은 사용자"),
 
-
-
     //store
     STORE_NOT_FOUND(NOT_FOUND, "S001", "존재하지 않는 가게"),
 
@@ -11395,6 +12559,13 @@ public enum ExceptionType {
     EXPORT_NOT_READY(UNPROCESSABLE_ENTITY, "AD007", "내보내기 파일이 아직 준비되지 않았습니다."),
     EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다."),
 
+    // report (admin)
+    REPORT_DRAFT_SOURCE_EMPTY(BAD_REQUEST, "AD009", "리포트 생성 대상으로 집계된 제출물이 0건입니다."),
+
+    // AI (Gemini)
+    AI_GEMINI_ERROR(BAD_GATEWAY, "AI001", "Gemini 호출 중 오류가 발생했습니다."),
+    AI_RATE_LIMIT(TOO_MANY_REQUESTS, "AI002", "Gemini 요청 한도 초과(잠시 후 재시도)"),
+
     //mission
     MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
     MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다."),
@@ -11407,10 +12578,10 @@ public enum ExceptionType {
     WATCH_DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "WATCH_DEVICE_NOT_FOUND", "등록된 워치 정보를 찾을 수 없습니다.")
     ;
 
-
     private final HttpStatus status;
     private final String code;
-    private final String message;}
+    private final String message;
+}
 
 
 ================================================================================
@@ -11419,56 +12590,149 @@ File Path: .\src\main\java\com\ocean\piuda\global\api\exception\GlobalExceptionH
 
 package com.ocean.piuda.global.api.exception;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ocean.piuda.global.api.dto.ApiData;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.spel.SpelEvaluationException;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
+  private final ObjectMapper objectMapper;
+
   @ExceptionHandler(BusinessException.class)
-  public ApiData<Void> handleApplicationException(BusinessException e) {
-    return ApiData.error(e.getExceptionType(), e.getDetails());
+  public Object handleApplicationException(
+          BusinessException e,
+          HttpServletRequest request,
+          HttpServletResponse response
+  ) {
+    ApiData<Void> body = ApiData.error(e.getExceptionType(), e.getDetails());
+
+    //  PDF Accept만 온 경우에도 JSON 바디를 강제로 내려줌(컨텐트 협상 우회)
+    if (wantsPdfOnly(request)) {
+      writeJson(response, e.getExceptionType().getStatus().value(), body);
+      return null;
+    }
+
+    return ResponseEntity
+            .status(e.getExceptionType().getStatus())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body);
   }
 
-
-
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public  ApiData<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+  public Object handleMethodArgumentNotValidException(
+          MethodArgumentNotValidException e,
+          HttpServletRequest request,
+          HttpServletResponse response
+  ) {
     Map<String, String> details = new HashMap<>();
     List<FieldError> fieldErrors = e.getFieldErrors();
     fieldErrors.forEach(fieldError -> details.put(fieldError.getField(), fieldError.getDefaultMessage()));
-    return ApiData.error(ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR, details);
 
+    ApiData<Void> body = ApiData.error(ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR, details);
+
+    if (wantsPdfOnly(request)) {
+      writeJson(response, ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR.getStatus().value(), body);
+      return null;
+    }
+
+    return ResponseEntity
+            .status(ExceptionType.NOT_VALID_REQUEST_FIELDS_ERROR.getStatus())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body);
   }
 
   /** @AuthenticationPrincipal(expression=...) 평가/캐스팅 실패 */
   @ExceptionHandler({ SpelEvaluationException.class, EvaluationException.class, ClassCastException.class, IllegalArgumentException.class })
-  @ResponseStatus(HttpStatus.UNAUTHORIZED)
-  public ApiData<Void> handleAuthPrincipalBinding(Exception e) {
-    return ApiData.error(ExceptionType.AUTH_PRINCIPAL_INVALID, Map.of("message",e.getMessage() ));
+  public Object handleAuthPrincipalBinding(
+          Exception e,
+          HttpServletRequest request,
+          HttpServletResponse response
+  ) {
+    ApiData<Void> body = ApiData.error(ExceptionType.AUTH_PRINCIPAL_INVALID, Map.of("message", e.getMessage()));
+
+    if (wantsPdfOnly(request)) {
+      writeJson(response, ExceptionType.AUTH_PRINCIPAL_INVALID.getStatus().value(), body);
+      return null;
+    }
+
+    return ResponseEntity
+            .status(ExceptionType.AUTH_PRINCIPAL_INVALID.getStatus())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body);
   }
-
-
 
   @ExceptionHandler(Exception.class)
-  public ApiData<Void> exception(Exception e) {
-    Map<String, Object> details = Map.of("message",  e.getMessage());
-    return ApiData.error(ExceptionType.UNEXPECTED_SERVER_ERROR,details);
+  public Object exception(
+          Exception e,
+          HttpServletRequest request,
+          HttpServletResponse response
+  ) {
+    log.error("Unhandled exception", e);
+    ApiData<Void> body = ApiData.error(ExceptionType.UNEXPECTED_SERVER_ERROR, Map.of("message", e.getMessage()));
+
+    if (wantsPdfOnly(request)) {
+      writeJson(response, ExceptionType.UNEXPECTED_SERVER_ERROR.getStatus().value(), body);
+      return null;
+    }
+
+    return ResponseEntity
+            .status(ExceptionType.UNEXPECTED_SERVER_ERROR.getStatus())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body);
   }
 
+  private boolean wantsPdfOnly(HttpServletRequest request) {
+    String accept = request.getHeader(HttpHeaders.ACCEPT);
+    if (accept == null) return false;
+
+    String a = accept.toLowerCase();
+    boolean acceptsPdf = a.contains("application/pdf");
+    boolean acceptsJson = a.contains("application/json") || a.contains("*/*");
+
+    // pdf는 받겠는데 json은 안 받는 케이스(= Swagger에서 흔함)
+    return acceptsPdf && !acceptsJson;
+  }
+
+  private void writeJson(HttpServletResponse response, int statusCode, ApiData<Void> body) {
+    if (response.isCommitted()) return;
+
+    try {
+      response.setStatus(statusCode);
+      response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+      String json = objectMapper.writeValueAsString(body);
+      byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+
+      response.setContentLength(bytes.length);
+      response.getOutputStream().write(bytes);
+      response.getOutputStream().flush();
+    } catch (IOException io) {
+      // 여기서 또 예외 던지면 더 꼬일 수 있어서 로그만
+      log.error("Failed to write JSON error response", io);
+    }
+  }
 }
 
 
@@ -13227,6 +14491,7 @@ public class SignUpRequestDto {
 
     public User toEntity() {
         return User.builder()
+                .username(username)
                 .username(username)
                 .password(password)
                 .role(Role.NOT_REGISTERED) // OAuth2 회원가입과 마찬가지로, 처음 기본 정보만으로는 완전한 회원가입 처리 시키진 않음

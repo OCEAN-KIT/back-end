@@ -38,20 +38,85 @@ public class SubmissionController {
     private final SubmissionCommandService submissionCommandService;
 
     /**
-     * 제출 데이터 생성
+     * 기록 임시저장 (DRAFT)
      */
-    @PostMapping
-    @Operation(summary = "제출 데이터 생성", description = "Admin이 직접 제출 데이터를 생성합니다.")
+    @PostMapping("/draft")
+    @Operation(
+            summary = "기록 임시저장",
+            description = "기록을 임시저장합니다. 상태는 DRAFT로 저장되며, 나중에 제출할 수 있습니다."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "200", description = "임시저장 성공"),
             @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
-    public ApiData<SubmissionDetailResponse> createSubmission(
+    public ApiData<SubmissionDetailResponse> saveDraft(
             @RequestBody @Valid CreateSubmissionRequest request
     ) {
-        SubmissionDetailResponse response = submissionCommandService.createSubmission(request);
+        SubmissionDetailResponse response = submissionCommandService.saveDraft(request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 기록 바로 제출 (SUBMITTED)
+     */
+    @PostMapping("/submit")
+    @Operation(
+            summary = "기록 바로 제출",
+            description = "기록을 바로 제출합니다. 상태는 SUBMITTED로 저장되며, 관리자 검수를 기다립니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "제출 성공"),
+            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> submitSubmission(
+            @RequestBody @Valid CreateSubmissionRequest request
+    ) {
+        SubmissionDetailResponse response = submissionCommandService.submitSubmission(request);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 임시저장된 기록 불러오기 (DRAFT 상태)
+     */
+    @GetMapping("/draft/{submissionId}")
+    @Operation(summary = "임시저장된 기록 불러오기", description = "임시저장(DRAFT)된 기록을 불러와서 수정할 수 있도록 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
+            @ApiResponse(responseCode = "400", description = "DRAFT 상태가 아닌 기록"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> getDraftSubmission(
+            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
+    ) {
+        SubmissionDetailResponse response = submissionQueryService.getDraftSubmission(submissionId);
+        return ApiData.ok(response);
+    }
+
+    /**
+     * 임시저장된 기록 제출 (DRAFT -> SUBMITTED)
+     */
+    @PostMapping("/{submissionId}/submit")
+    @Operation(
+            summary = "임시저장된 기록 제출",
+            description = "임시저장(DRAFT)된 기록을 제출(SUBMITTED)합니다. 불러온 기록을 수정한 후 이 API로 제출하세요."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "제출 성공"),
+            @ApiResponse(responseCode = "400", description = "제출 불가능한 상태"),
+            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+    })
+    public ApiData<SubmissionDetailResponse> submitDraftSubmission(
+            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
+    ) {
+        SubmissionDetailResponse response = submissionCommandService.submitDraftSubmission(submissionId);
         return ApiData.ok(response);
     }
 
@@ -67,7 +132,7 @@ public class SubmissionController {
     })
     public ApiData<PageResponse<SubmissionListResponse>> getSubmissions(
             @Parameter(description = "검색 키워드 (현장명, 작성자)") @RequestParam(required = false) String keyword,
-            @Parameter(description = "상태 필터 (PENDING, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
+            @Parameter(description = "상태 필터 (DRAFT, SUBMITTED, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
             @Parameter(description = "활동 유형 필터 (TRANSPLANT, TRASH_COLLECTION, RESEARCH, MONITORING, OTHER)") @RequestParam(required = false) ActivityType activityType,
             @Parameter(description = "시작 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @Parameter(description = "종료 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,

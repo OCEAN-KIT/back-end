@@ -1,13 +1,18 @@
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
+import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,16 +35,33 @@ public class Submission extends BaseEntity {
     private String siteName;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "structure_type", nullable = false)
+    @Builder.Default
+    private StructureType structureType = StructureType.OTHER;
+
+    @Column(name = "custom_structure_type", length = 200)
+    private String customStructureType;  // 구조물 유형 커스텀 텍스트 (OTHER일 때 사용)
+
+    @Column(name = "record_date", nullable = false)
+    @Builder.Default
+    private LocalDate recordDate = LocalDate.now();
+
+    @Column(name = "diving_round", nullable = false)
+    @Min(1)
+    @Max(5)
+    private Integer divingRound;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "activity_type", nullable = false)
     private ActivityType activityType;
 
-    @Column(name = "submitted_at", nullable = false)
-    private java.time.LocalDateTime submittedAt;
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;  // 제출 시점 (DRAFT일 때는 null)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private SubmissionStatus status = SubmissionStatus.PENDING;
+    private SubmissionStatus status = SubmissionStatus.DRAFT;
 
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
@@ -51,8 +73,11 @@ public class Submission extends BaseEntity {
     @Builder.Default
     private Integer attachmentCount = 0;
 
-    @Column(name = "feedback_text", columnDefinition = "TEXT")
-    private String feedbackText;
+    @Column(name = "work_description", columnDefinition = "TEXT")
+    private String workDescription;  // 작업 내용 (기존 feedbackText)
+
+    @Column(name = "admin_memo", columnDefinition = "TEXT")
+    private String adminMemo;  // 관리자 검수 메모
 
     @Column(precision = 9, scale = 6)
     private BigDecimal latitude;
@@ -67,6 +92,24 @@ public class Submission extends BaseEntity {
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Participants participants;
 
+    // 작업 유형별 Activity (조건부 1:1)
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ActivityTransplant activityTransplant;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ActivityGrazerRemoval activityGrazerRemoval;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ActivitySubstrateImprovement activitySubstrateImprovement;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ActivityMonitoring activityMonitoring;
+
+    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ActivityMarineCleanup activityMarineCleanup;
+
+    // 하위 호환성을 위한 기존 Activity (deprecated)
+    @Deprecated
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Activity activity;
 
@@ -84,6 +127,37 @@ public class Submission extends BaseEntity {
     // 비즈니스 메서드
     public void updateStatus(SubmissionStatus status) {
         this.status = status;
+    }
+
+    /**
+     * 제출 (DRAFT -> SUBMITTED)
+     */
+    public void submit() {
+        if (this.status != SubmissionStatus.DRAFT) {
+            throw new IllegalStateException("DRAFT 상태만 제출 가능합니다. 현재 상태: " + this.status);
+        }
+        this.status = SubmissionStatus.SUBMITTED;
+        this.submittedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 승인 (SUBMITTED -> APPROVED)
+     */
+    public void approve() {
+        if (this.status != SubmissionStatus.SUBMITTED) {
+            throw new IllegalStateException("SUBMITTED 상태만 승인 가능합니다. 현재 상태: " + this.status);
+        }
+        this.status = SubmissionStatus.APPROVED;
+    }
+
+    /**
+     * 반려 (SUBMITTED -> REJECTED)
+     */
+    public void reject() {
+        if (this.status != SubmissionStatus.SUBMITTED) {
+            throw new IllegalStateException("SUBMITTED 상태만 반려 가능합니다. 현재 상태: " + this.status);
+        }
+        this.status = SubmissionStatus.REJECTED;
     }
 
     public void addAttachment(Attachment attachment) {
@@ -122,6 +196,41 @@ public class Submission extends BaseEntity {
         this.rejectReason = rejectReason;
         if (rejectReason != null) {
             rejectReason.updateSubmission(this);
+        }
+    }
+
+    public void setActivityTransplant(ActivityTransplant activityTransplant) {
+        this.activityTransplant = activityTransplant;
+        if (activityTransplant != null) {
+            activityTransplant.updateSubmission(this);
+        }
+    }
+
+    public void setActivityGrazerRemoval(ActivityGrazerRemoval activityGrazerRemoval) {
+        this.activityGrazerRemoval = activityGrazerRemoval;
+        if (activityGrazerRemoval != null) {
+            activityGrazerRemoval.updateSubmission(this);
+        }
+    }
+
+    public void setActivitySubstrateImprovement(ActivitySubstrateImprovement activitySubstrateImprovement) {
+        this.activitySubstrateImprovement = activitySubstrateImprovement;
+        if (activitySubstrateImprovement != null) {
+            activitySubstrateImprovement.updateSubmission(this);
+        }
+    }
+
+    public void setActivityMonitoring(ActivityMonitoring activityMonitoring) {
+        this.activityMonitoring = activityMonitoring;
+        if (activityMonitoring != null) {
+            activityMonitoring.updateSubmission(this);
+        }
+    }
+
+    public void setActivityMarineCleanup(ActivityMarineCleanup activityMarineCleanup) {
+        this.activityMarineCleanup = activityMarineCleanup;
+        if (activityMarineCleanup != null) {
+            activityMarineCleanup.updateSubmission(this);
         }
     }
 }
