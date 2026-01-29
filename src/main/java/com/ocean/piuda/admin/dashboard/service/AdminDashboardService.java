@@ -19,11 +19,13 @@ public class AdminDashboardService {
      */
     public AdminDashboardSummaryResponse getDashboardSummary() {
         long total = submissionRepository.count();
-        long pending = submissionRepository.countByStatus(SubmissionStatus.PENDING);
+        long draft = submissionRepository.countByStatus(SubmissionStatus.DRAFT);
+        long submitted = submissionRepository.countByStatus(SubmissionStatus.SUBMITTED);
         long approved = submissionRepository.countByStatus(SubmissionStatus.APPROVED);
         long rejected = submissionRepository.countByStatus(SubmissionStatus.REJECTED);
         long deleted = submissionRepository.countByStatus(SubmissionStatus.DELETED);
 
-        return AdminDashboardSummaryResponse.of(total, pending, approved, rejected, deleted);
+        // 하위 호환성을 위해 pending 필드에 submitted 값을 전달
+        return AdminDashboardSummaryResponse.of(total, submitted, approved, rejected, deleted);
     }
 }

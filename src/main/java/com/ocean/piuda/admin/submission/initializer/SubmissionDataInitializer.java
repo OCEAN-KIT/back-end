@@ -39,12 +39,12 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
         List<Submission> submissions = new ArrayList<>();
 
-        // 1. 검수 대기 중인 제출 (PENDING)
+        // 1. 검수 대기 중인 제출 (SUBMITTED)
         submissions.add(createSubmission(
                 1L,
                 "포항 해안가",
                 ActivityType.TRANSPLANT,
-                SubmissionStatus.PENDING,
+                SubmissionStatus.SUBMITTED,
                 "홍길동",
                 "hong@example.com",
                 3,
@@ -135,12 +135,12 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         rejectedSubmission.setRejectReason(rejectReason);
         submissions.add(rejectedSubmission);
 
-        // 4. 검수 대기 중인 제출 (PENDING) - 추가
+        // 4. 검수 대기 중인 제출 (SUBMITTED) - 추가
         submissions.add(createSubmission(
                 4L,
                 "강원도 속초 해변",
                 ActivityType.TRANSPLANT,
-                SubmissionStatus.PENDING,
+                SubmissionStatus.SUBMITTED,
                 "박민수",
                 "park@example.com",
                 4,
@@ -226,12 +226,19 @@ public class SubmissionDataInitializer implements CommandLineRunner {
     ) {
         LocalDateTime submittedAt = LocalDateTime.of(recordDate, startTime);
 
-        // BasicEnv 생성
+        // BasicEnv 생성 (새 구조에 맞게 수정)
         BasicEnv basicEnv = BasicEnv.builder()
                 .recordDate(recordDate)
+                .avgDepthM(depthM != null ? depthM.doubleValue() : 10.0)  // 기본값
+                .maxDepthM(depthM != null ? depthM.doubleValue() + 2.0 : 12.0)  // 기본값
+                .waterTempC(waterTempC != null ? waterTempC.doubleValue() : 18.0)
+                .visibilityStatus(convertToMarineCondition(visibilityM))  // Float -> MarineCondition 변환
+                .waveStatus(com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL)  // 기본값
+                .surgeStatus(com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL)  // 기본값
+                .currentStatus(convertCurrentStateToMarineCondition(currentState))
+                // 하위 호환성을 위한 기존 필드
                 .startTime(startTime)
                 .endTime(endTime)
-                .waterTempC(waterTempC)
                 .visibilityM(visibilityM)
                 .depthM(depthM)
                 .currentState(currentState)
@@ -270,13 +277,16 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         // Submission 생성
         Submission submission = Submission.builder()
                 .siteName(siteName)
+                .structureType(com.ocean.piuda.admin.common.enums.StructureType.OTHER)  // 기본값
+                .recordDate(recordDate)
+                .divingRound(1)  // 기본값
                 .activityType(activityType)
-                .submittedAt(submittedAt)
+                .submittedAt(status == SubmissionStatus.DRAFT ? null : submittedAt)  // DRAFT일 때는 null
                 .status(status)
                 .authorName(authorName)
                 .authorEmail(authorEmail)
                 .attachmentCount(attachmentCount)
-                .feedbackText(feedbackText)
+                .workDescription(feedbackText)  // feedbackText -> workDescription
                 .latitude(latitude)
                 .longitude(longitude)
                 .build();
@@ -319,5 +329,35 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         }
 
         return submission;
+    }
+
+    /**
+     * Float visibility 값을 MarineCondition으로 변환
+     */
+    private com.ocean.piuda.admin.common.enums.MarineCondition convertToMarineCondition(Float visibilityM) {
+        if (visibilityM == null) {
+            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
+        }
+        if (visibilityM < 5.0) {
+            return com.ocean.piuda.admin.common.enums.MarineCondition.BAD;
+        } else if (visibilityM > 15.0) {
+            return com.ocean.piuda.admin.common.enums.MarineCondition.GOOD;
+        } else {
+            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
+        }
+    }
+
+    /**
+     * CurrentState를 MarineCondition으로 변환
+     */
+    private com.ocean.piuda.admin.common.enums.MarineCondition convertCurrentStateToMarineCondition(CurrentState currentState) {
+        if (currentState == null) {
+            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
+        }
+        return switch (currentState) {
+            case LOW -> com.ocean.piuda.admin.common.enums.MarineCondition.GOOD;
+            case MEDIUM -> com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
+            case HIGH -> com.ocean.piuda.admin.common.enums.MarineCondition.BAD;
+        };
     }
 }

@@ -45,6 +45,8 @@ public enum ExceptionType {
     SUBMISSION_ALREADY_APPROVED(CONFLICT, "AD002", "이미 승인된 제출입니다."),
     SUBMISSION_ALREADY_REJECTED(CONFLICT, "AD003", "이미 반려된 제출입니다."),
     SUBMISSION_ALREADY_DELETED(CONFLICT, "AD004", "이미 삭제된 제출입니다."),
+    SUBMISSION_ALREADY_SUBMITTED(CONFLICT, "AD010", "이미 제출된 기록입니다."),
+    SUBMISSION_INVALID_STATUS(BAD_REQUEST, "AD011", "잘못된 상태입니다."),
     REJECT_REASON_REQUIRED(UNPROCESSABLE_ENTITY, "AD005", "반려 사유를 입력해주세요."),
     EXPORT_NOT_FOUND(NOT_FOUND, "AD006", "내보내기 작업을 찾을 수 없습니다."),
     EXPORT_NOT_READY(UNPROCESSABLE_ENTITY, "AD007", "내보내기 파일이 아직 준비되지 않았습니다."),
