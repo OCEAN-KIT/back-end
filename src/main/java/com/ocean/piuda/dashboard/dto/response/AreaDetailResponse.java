@@ -35,6 +35,10 @@ public class AreaDetailResponse {
         private Double areaSize;
         private Double avgDepth;
         private String habitatType;       // "암반" / "혼합" 등
+
+        private Double lat;
+        private Double lon;
+        private String attachmentStatus; // "안정", "일부 감소" 등
     }
 
     /**

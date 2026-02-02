@@ -61,6 +61,10 @@ public class DashboardAggregateBuilder {
                 .areaSize(area.getAreaSize())
                 .avgDepth(area.getDepth())
                 .habitatType(area.getHabitat().getName())
+                .lat(area.getLat())
+                .lon(area.getLon())
+                .attachmentStatus(area.getAttachmentStatus() != null ?
+                        area.getAttachmentStatus().getName() : null)
                 .build();
     }
 
