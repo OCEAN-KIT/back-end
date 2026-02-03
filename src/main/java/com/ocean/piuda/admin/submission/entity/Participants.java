@@ -1,6 +1,5 @@
 package com.ocean.piuda.admin.submission.entity;
 
-import com.ocean.piuda.admin.common.enums.ParticipantRole;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -25,13 +24,20 @@ public class Participants {
     @Column(name = "leader_name", length = 100)
     private String leaderName;
 
+    @Column(name = "participant_names", columnDefinition = "TEXT")
+    private String participantNames;  // comma-separated 또는 JSON 배열
+
+    // 하위 호환성을 위한 기존 필드들 (deprecated)
+    @Deprecated
     @Column(name = "participant_count")
     @Builder.Default
     private Integer participantCount = 1;
 
+    @Deprecated
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private ParticipantRole role = ParticipantRole.CITIZEN_DIVER;
+    private com.ocean.piuda.admin.common.enums.ParticipantRole role = 
+        com.ocean.piuda.admin.common.enums.ParticipantRole.CITIZEN_DIVER;
 
     public void updateSubmission(Submission submission) {
         this.submission = submission;

@@ -206,7 +206,7 @@ public class ReportDraftService {
             if (!a.isEmpty()) m.put("activity", a);
         }
 
-        putIfNotBlank(m, "feedbackText", truncate(s.getFeedbackText(), 600));
+        putIfNotBlank(m, "feedbackText", truncate(s.getWorkDescription(), 600));  // API 하위 호환성을 위해 키명 유지
 
         removeNullsDeep(m);
         return m;
