@@ -62,6 +62,33 @@ public class DashboardController {
         return ApiData.ok(new IdResponse(id));
     }
 
+
+    /**
+     * ProjectArea Representative Species
+     */
+    @PatchMapping("/areas/{id}/representative-species")
+    @Operation(summary = "작업 영역 대표종 설정", description = "성장 추이 차트에 표시될 대표 종을 설정합니다.")
+    public ApiData<IdResponse> setRepresentativeSpecies(
+            @PathVariable Long id,
+            @RequestBody @Valid SetRepresentativeSpeciesRequest req
+    ) {
+        dashboardCommandService.setRepresentativeSpecies(id, req);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+    @GetMapping("/areas/{id}/species")
+    @Operation(summary = "영역 내 이식된 종 목록 조회", description = "대표종 설정 팝업 등에서 사용할 '이 영역에 존재하는 종' 목록을 반환합니다.")
+    public ApiData<List<AreaSpeciesResponse>> getAreaSpecies(@PathVariable Long id) {
+        return ApiData.ok(dashboardQueryService.getAreaSpeciesCandidates(id));
+    }
+
+    @GetMapping("/areas/{id}/representative-species")
+    @Operation(summary = "작업 영역 현재 대표종 조회", description = "현재 설정된 대표종 정보를 반환합니다. 설정되지 않은 경우 null을 반환합니다.")
+    public ApiData<AreaSpeciesResponse> getRepresentativeSpecies(@PathVariable Long id) {
+        return ApiData.ok(dashboardQueryService.getRepresentativeSpecies(id));
+    }
+
+
     /**
      * TransplantLog
      */

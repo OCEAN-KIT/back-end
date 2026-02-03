@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.repository;
 
+import com.ocean.piuda.bio.entity.Species;
 import com.ocean.piuda.dashboard.entity.TransplantLog;
 import com.ocean.piuda.dashboard.entity.WaterLog;
 import com.ocean.piuda.dashboard.repository.projection.*;
@@ -82,5 +83,12 @@ public interface TransplantLogRepository extends JpaRepository<TransplantLog, Lo
     Page<TransplantLog> findAllByProjectAreaIdAndRecordDateBetween(
             Long projectAreaId, LocalDate from, LocalDate to, Pageable pageable
     );
+
+    /**
+     * 특정 영역에 이식된 적이 있는 모든 종(Species) 목록 조회 (중복 제거)
+     * - 드롭다운 후보군 제공용
+     */
+    @Query("SELECT DISTINCT t.species FROM TransplantLog t WHERE t.projectArea.id = :areaId")
+    List<Species> findDistinctSpeciesByAreaId(@Param("areaId") Long areaId);
 
 }

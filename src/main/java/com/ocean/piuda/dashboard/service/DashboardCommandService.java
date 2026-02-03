@@ -48,6 +48,10 @@ public class DashboardCommandService {
         ProjectArea area = projectAreaRepository.findById(areaId)
                 .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
 
+
+        Species representativeSpecies = (req.representativeSpeciesId() != null ) ? speciesRepository.findById(req.representativeSpeciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND)) : null;
+
         area.update(
                 req.name(),
                 req.restorationRegion(),
@@ -59,7 +63,8 @@ public class DashboardCommandService {
                 req.level(),
                 req.attachmentStatus(),
                 req.lat(),
-                req.lon()
+                req.lon(),
+                representativeSpecies
         );
     }
 
@@ -120,6 +125,20 @@ public class DashboardCommandService {
         transplantLogRepository.delete(log);
     }
 
+
+    // -------------------------
+    // ProjectArea - Representative Species
+    // -------------------------
+    public void setRepresentativeSpecies(Long areaId, SetRepresentativeSpeciesRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = speciesRepository.findById(req.speciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        area.setRepresentativeSpecies(species);
+    }
+
     // -------------------------
     // GrowthLog
     // -------------------------
@@ -133,7 +152,6 @@ public class DashboardCommandService {
 
         GrowthLog log = GrowthLog.builder()
                 .species(species)
-                .isRepresentative(req.isRepresentative())
                 .recordDate(req.recordDate())
                 .attachmentRate(req.attachmentRate())
                 .survivalRate(req.survivalRate())
@@ -158,7 +176,6 @@ public class DashboardCommandService {
 
         log.update(
                 species,
-                req.isRepresentative(),
                 req.recordDate(),
                 req.attachmentRate(),
                 req.survivalRate(),

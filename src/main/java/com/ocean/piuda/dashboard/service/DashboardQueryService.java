@@ -241,8 +241,12 @@ public class DashboardQueryService {
         List<WorkHistoryPointProjection> history = transplantLogRepository.findWorkHistory(id);
 
         // 4. 생태 데이터 (조건부 필터링 조회)
-        // - 대표 개체로 지정된 로그의 전체 이력만 조회
-        List<GrowthLog> repGrowthLogs = growthLogRepository.findAllByProjectAreaIdAndIsRepresentativeTrueOrderByRecordDateAsc(id);
+        // - 대표 개체로 지정된 종의 로그만 시간순 조회
+        // - 대표종이 설정되어 있지 않으면 빈 리스트 (빈 차트용)
+        List<GrowthLog> repGrowthLogs = (area.getRepresentativeSpecies() != null)
+                ? growthLogRepository.findAllByProjectAreaIdAndSpeciesIdOrderByRecordDateAsc(id, area.getRepresentativeSpecies().getId())
+                : List.of();
+
         List<TransplantItemProjection> speciesItems = transplantLogRepository.findTransplantItems(id);
         List<MethodAttachmentStatusProjection> methodStatuses = transplantLogRepository.findLatestAttachmentStatusPerMethod(id);
 
@@ -360,5 +364,29 @@ public class DashboardQueryService {
                 .build();
     }
 
+    /**
+     * 영역 내 후보 종 목록 조회
+     */
+    public List<AreaSpeciesResponse> getAreaSpeciesCandidates(Long areaId) {
+        // 영역의 존재 여부
+        if (!projectAreaRepository.existsById(areaId)) throw new BusinessException(ExceptionType.RESOURCE_NOT_FOUND);
+
+        // 이식 로그 테이블에서 해당 영역에 사용된 종들을 중복없이 가져옴
+        return transplantLogRepository.findDistinctSpeciesByAreaId(areaId)
+                .stream()
+                .map(AreaSpeciesResponse::from)
+                .toList();
+    }
+
+    /**
+     * 영역의 현재 대표 종 조회
+     */
+    public AreaSpeciesResponse getRepresentativeSpecies(Long areaId) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        if (area.getRepresentativeSpecies() == null)  return null;
+        return AreaSpeciesResponse.from(area.getRepresentativeSpecies());
+    }
 
 }

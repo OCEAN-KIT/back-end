@@ -18,11 +18,10 @@ public interface GrowthLogRepository extends JpaRepository<GrowthLog, Long> {
 
 
     /**
-     * 특정 작업 영역(ProjectArea)의 대표 개체 성장 로그만 조회
-     * - isRepresentative: true 인 데이터만 필터링
+     * 특정 작업 영역(ProjectArea)의 "특정 종" 성장 로그 조회 (대표종 차트용)
      * - recordDate: 시간순(오름차순) 정렬
      */
-    List<GrowthLog> findAllByProjectAreaIdAndIsRepresentativeTrueOrderByRecordDateAsc(Long projectAreaId);
+    List<GrowthLog> findAllByProjectAreaIdAndSpeciesIdOrderByRecordDateAsc(Long projectAreaId, Long speciesId);
 
     @EntityGraph(attributePaths = {"species"})
     Page<GrowthLog> findAllByProjectAreaIdAndRecordDateBetween(
