@@ -37,26 +37,6 @@ public class SubmissionController {
     private final SubmissionQueryService submissionQueryService;
     private final SubmissionCommandService submissionCommandService;
 
-    /**
-     * 기록 임시저장 (DRAFT)
-     */
-    @PostMapping("/draft")
-    @Operation(
-            summary = "기록 임시저장",
-            description = "기록을 임시저장합니다. 상태는 DRAFT로 저장되며, 나중에 제출할 수 있습니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "임시저장 성공"),
-            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> saveDraft(
-            @RequestBody @Valid CreateSubmissionRequest request
-    ) {
-        SubmissionDetailResponse response = submissionCommandService.saveDraft(request);
-        return ApiData.ok(response);
-    }
 
     /**
      * 기록 바로 제출 (SUBMITTED)
@@ -79,46 +59,8 @@ public class SubmissionController {
         return ApiData.ok(response);
     }
 
-    /**
-     * 임시저장된 기록 불러오기 (DRAFT 상태)
-     */
-    @GetMapping("/draft/{submissionId}")
-    @Operation(summary = "임시저장된 기록 불러오기", description = "임시저장(DRAFT)된 기록을 불러와서 수정할 수 있도록 조회합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
-            @ApiResponse(responseCode = "400", description = "DRAFT 상태가 아닌 기록"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> getDraftSubmission(
-            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
-    ) {
-        SubmissionDetailResponse response = submissionQueryService.getDraftSubmission(submissionId);
-        return ApiData.ok(response);
-    }
 
-    /**
-     * 임시저장된 기록 제출 (DRAFT -> SUBMITTED)
-     */
-    @PostMapping("/{submissionId}/submit")
-    @Operation(
-            summary = "임시저장된 기록 제출",
-            description = "임시저장(DRAFT)된 기록을 제출(SUBMITTED)합니다. 불러온 기록을 수정한 후 이 API로 제출하세요."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "제출 성공"),
-            @ApiResponse(responseCode = "400", description = "제출 불가능한 상태"),
-            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> submitDraftSubmission(
-            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
-    ) {
-        SubmissionDetailResponse response = submissionCommandService.submitDraftSubmission(submissionId);
-        return ApiData.ok(response);
-    }
+
 
     /**
      * 제출 목록 조회

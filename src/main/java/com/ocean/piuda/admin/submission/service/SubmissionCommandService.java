@@ -38,12 +38,6 @@ public class SubmissionCommandService {
     private final ActivityValidator activityValidator;
     private final SubmissionStatusValidator statusValidator;
 
-    /**
-     * 임시저장 (DRAFT 상태로 저장)
-     */
-    public SubmissionDetailResponse saveDraft(CreateSubmissionRequest request) {
-        return createSubmissionInternal(request, SubmissionStatus.DRAFT, null);
-    }
 
     /**
      * 바로 제출 (SUBMITTED 상태로 저장)
@@ -305,24 +299,6 @@ public class SubmissionCommandService {
         submission.setActivity(activity);
     }
 
-    /**
-     * 임시저장된 기록 제출 (DRAFT -> SUBMITTED)
-     */
-    public SubmissionDetailResponse submitDraftSubmission(Long submissionId) {
-        Submission submission = submissionQueryService.getSubmissionById(submissionId);
-        
-        if (!statusValidator.canSubmit(submission.getStatus())) {
-            if (submission.getStatus() == SubmissionStatus.SUBMITTED) {
-                throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_SUBMITTED);
-            }
-            throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
-        }
-
-        submission.submit();
-        createAuditLog(submission, AuditAction.SUBMITTED, null);
-
-        return SubmissionDetailResponse.from(submission);
-    }
 
     /**
      * 단건 승인

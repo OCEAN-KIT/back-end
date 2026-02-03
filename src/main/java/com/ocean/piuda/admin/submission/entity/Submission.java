@@ -56,12 +56,12 @@ public class Submission extends BaseEntity {
     private ActivityType activityType;
 
     @Column(name = "submitted_at")
-    private LocalDateTime submittedAt;  // 제출 시점 (DRAFT일 때는 null)
+    private LocalDateTime submittedAt = LocalDateTime.now();  // 생성 시 제출 시점 기록
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private SubmissionStatus status = SubmissionStatus.DRAFT;
+    private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
@@ -127,17 +127,6 @@ public class Submission extends BaseEntity {
     // 비즈니스 메서드
     public void updateStatus(SubmissionStatus status) {
         this.status = status;
-    }
-
-    /**
-     * 제출 (DRAFT -> SUBMITTED)
-     */
-    public void submit() {
-        if (this.status != SubmissionStatus.DRAFT) {
-            throw new IllegalStateException("DRAFT 상태만 제출 가능합니다. 현재 상태: " + this.status);
-        }
-        this.status = SubmissionStatus.SUBMITTED;
-        this.submittedAt = LocalDateTime.now();
     }
 
     /**

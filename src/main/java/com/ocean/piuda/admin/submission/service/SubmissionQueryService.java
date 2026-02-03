@@ -66,20 +66,7 @@ public class SubmissionQueryService {
         return SubmissionDetailResponse.from(submission);
     }
 
-    /**
-     * 임시저장된 기록 불러오기 (DRAFT 상태만)
-     */
-    public SubmissionDetailResponse getDraftSubmission(Long submissionId) {
-        Submission submission = submissionRepository.findByIdWithDetails(submissionId)
-                .orElseThrow(() -> new BusinessException(ExceptionType.SUBMISSION_NOT_FOUND));
-        
-        // DRAFT 상태가 아니면 에러
-        if (submission.getStatus() != SubmissionStatus.DRAFT) {
-            throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
-        }
-        
-        return SubmissionDetailResponse.from(submission);
-    }
+
 
     /**
      * 검수 로그 조회
