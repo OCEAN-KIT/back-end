@@ -378,4 +378,15 @@ public class DashboardQueryService {
                 .toList();
     }
 
+    /**
+     * 영역의 현재 대표 종 조회
+     */
+    public AreaSpeciesResponse getRepresentativeSpecies(Long areaId) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        if (area.getRepresentativeSpecies() == null)  return null;
+        return AreaSpeciesResponse.from(area.getRepresentativeSpecies());
+    }
+
 }

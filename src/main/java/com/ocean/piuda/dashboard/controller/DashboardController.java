@@ -82,6 +82,12 @@ public class DashboardController {
         return ApiData.ok(dashboardQueryService.getAreaSpeciesCandidates(id));
     }
 
+    @GetMapping("/areas/{id}/representative-species")
+    @Operation(summary = "작업 영역 현재 대표종 조회", description = "현재 설정된 대표종 정보를 반환합니다. 설정되지 않은 경우 null을 반환합니다.")
+    public ApiData<AreaSpeciesResponse> getRepresentativeSpecies(@PathVariable Long id) {
+        return ApiData.ok(dashboardQueryService.getRepresentativeSpecies(id));
+    }
+
 
     /**
      * TransplantLog
