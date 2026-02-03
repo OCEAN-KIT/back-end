@@ -13,5 +13,6 @@ public record TimeSeriesChartDto(
         List<Double> values,    // y축 수치
         String unit,            // 단위
         String targetSpecies,   // 대상 종
+        Long targetSpeciesId,     // 대상 종의 ID
         String period           // 기간
 ) { }

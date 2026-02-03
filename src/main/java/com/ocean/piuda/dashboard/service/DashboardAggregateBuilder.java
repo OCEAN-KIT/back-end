@@ -134,13 +134,20 @@ public class DashboardAggregateBuilder {
                 })
                 .toList();
 
+        String targetSpeciesName = "미지정";
+        Long targetSpeciesId = null;
+        if (area.getRepresentativeSpecies() != null) {
+            targetSpeciesName = area.getRepresentativeSpecies().getName();
+            targetSpeciesId = area.getRepresentativeSpecies().getId();
+        }
         return AreaDetailResponse.EcologyTab.builder()
                 .attachmentStatuses(attachmentStatuses)
                 .survivalStatus(area.getAttachmentStatus() != null ? area.getAttachmentStatus().getName() : "안정")
                 .representativeGrowthChart(TimeSeriesChartDto.builder()
                         .labels(repLogs.stream().map(GrowthLog::getRecordDate).toList())
                         .values(repLogs.stream().map(GrowthLog::getGrowthLength).toList())
-                        .targetSpecies(repLogs.isEmpty() ? "미지정" : repLogs.get(0).getSpecies().getName())
+                        .targetSpecies(targetSpeciesName)
+                        .targetSpeciesId(targetSpeciesId)
                         .unit("mm/월")
                         .build())
                 .build();

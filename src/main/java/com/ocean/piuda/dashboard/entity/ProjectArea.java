@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.bio.entity.Species;
 import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
 import com.ocean.piuda.dashboard.enums.HabitatType;
 import com.ocean.piuda.dashboard.enums.ProjectLevel;
@@ -58,6 +59,10 @@ public class ProjectArea extends BaseEntity {
     @Column(nullable = false)
     private AreaAttachmentStatus attachmentStatus;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "representative_species_id")
+    private Species representativeSpecies;
+
 
     // --- 하위 연관 관계 ---
 
@@ -105,12 +110,6 @@ public class ProjectArea extends BaseEntity {
         return this.location != null ? this.location.getX() : null;
     }
 
-    // --- 연관관계 편의 메서드 ---
-    public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
-    public void addGrowth(GrowthLog log) { this.growthLogs.add(log); log.setProjectArea(this); }
-    public void addWater(WaterLog log) { this.waterLogs.add(log); log.setProjectArea(this); }
-//    public void setBiodiversity(BiodiversitySummary bio) { this.biodiversity = bio; bio.setProjectArea(this); }
-    public void addMedia(MediaLog log) { this.mediaLogs.add(log); log.setProjectArea(this); }
     public void update(
             String name,
             RestorationRegion restorationRegion,
@@ -122,7 +121,8 @@ public class ProjectArea extends BaseEntity {
             ProjectLevel level,
             AreaAttachmentStatus attachmentStatus,
             Double lat,
-            Double lon
+            Double lon,
+            Species species
     ) {
         if (name != null) this.name = name;
         if (restorationRegion != null) this.restorationRegion = restorationRegion;
@@ -135,12 +135,23 @@ public class ProjectArea extends BaseEntity {
         if (attachmentStatus != null) this.attachmentStatus = attachmentStatus;
 
         // 좌표는 둘 다 들어온 경우에만 업데이트 (한쪽만 오면 기존 유지)
-        if (lat != null && lon != null) {
-            this.setLocation(lat, lon);
-        }
+        if (lat != null && lon != null) this.setLocation(lat, lon);
+        if(species!=null) this.representativeSpecies = species;
     }
 
 
+    public void setRepresentativeSpecies(Species species) {
+        this.representativeSpecies = species;
+    }
+
+
+
+    // --- 연관관계 편의 메서드 ---
+    public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
+    public void addGrowth(GrowthLog log) { this.growthLogs.add(log); log.setProjectArea(this); }
+    public void addWater(WaterLog log) { this.waterLogs.add(log); log.setProjectArea(this); }
+    //    public void setBiodiversity(BiodiversitySummary bio) { this.biodiversity = bio; bio.setProjectArea(this); }
+    public void addMedia(MediaLog log) { this.mediaLogs.add(log); log.setProjectArea(this); }
 
 
 

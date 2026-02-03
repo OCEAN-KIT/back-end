@@ -26,7 +26,6 @@ public class GrowthLog extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "species_id", nullable = false)
     private Species species;
-    private Boolean isRepresentative; // 구역의 대표 개체 여부
 
 
     @Column(nullable = false)
@@ -45,7 +44,6 @@ public class GrowthLog extends BaseEntity {
 
     public void update(
             Species species,
-            Boolean isRepresentative,
             LocalDate recordDate,
             Double attachmentRate,
             Double survivalRate,
@@ -53,7 +51,6 @@ public class GrowthLog extends BaseEntity {
             SpeciesAttachmentStatus status
     ) {
         if (species != null) this.species = species;
-        if (isRepresentative != null) this.isRepresentative = isRepresentative;
         if (recordDate != null) this.recordDate = recordDate;
         if (attachmentRate != null) this.attachmentRate = attachmentRate;
         if (survivalRate != null) this.survivalRate = survivalRate;

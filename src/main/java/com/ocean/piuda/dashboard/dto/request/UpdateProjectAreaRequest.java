@@ -1,5 +1,6 @@
 package com.ocean.piuda.dashboard.dto.request;
 
+import com.ocean.piuda.bio.entity.Species;
 import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
 import com.ocean.piuda.dashboard.enums.HabitatType;
 import com.ocean.piuda.dashboard.enums.ProjectLevel;
@@ -20,5 +21,6 @@ public record UpdateProjectAreaRequest(
         ProjectLevel level,
         AreaAttachmentStatus attachmentStatus,
         Double lat,
-        Double lon
+        Double lon,
+        Long representativeSpeciesId
 ) {}

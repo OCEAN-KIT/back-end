@@ -17,7 +17,6 @@ public class GrowthLogResponse {
     private Long speciesId;
     private String speciesName;
 
-    private Boolean isRepresentative;
     private Double attachmentRate;
     private Double survivalRate;
     private Double growthLength;
@@ -32,7 +31,6 @@ public class GrowthLogResponse {
                 .recordDate(g.getRecordDate())
                 .speciesId(s != null ? s.getId() : null)
                 .speciesName(s != null ? s.getName() : null)
-                .isRepresentative(g.getIsRepresentative())
                 .attachmentRate(g.getAttachmentRate())
                 .survivalRate(g.getSurvivalRate())
                 .growthLength(g.getGrowthLength())

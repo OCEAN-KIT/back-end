@@ -6,7 +6,6 @@ import java.time.LocalDate;
 
 public record UpdateGrowthLogRequest(
         Long speciesId,
-        Boolean isRepresentative,
         LocalDate recordDate,
         Double attachmentRate,
         Double survivalRate,

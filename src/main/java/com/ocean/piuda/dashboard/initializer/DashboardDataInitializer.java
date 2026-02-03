@@ -58,11 +58,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * 포항 테스트 영역 1: 이식 + 성장(대표개체) + 환경 + 미디어 데이터 모두 포함
-     * - TransplantLog: recordDate, attachmentStatus 필수
-     * - GrowthLog: recordDate/attachmentRate/survivalRate/growthLength/status 필수
-     * - WaterLog: recordDate/temperature/dissolvedOxygen/nutrient + MarineStatus 4종 필수
-     * - MediaLog: recordDate/mediaUrl/category 필수
+     * 포항 테스트 영역 1
      */
     private void createPohangDemoArea1(Species gamtae, Species dasima, Species mojaban) {
         ProjectArea area = ProjectArea.builder()
@@ -77,10 +73,12 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .attachmentStatus(AreaAttachmentStatus.STABLE)
                 .build();
 
-        // setLocation(lat, lon) (내부에서 Point(lon, lat) 생성)
         area.setLocation(36.0762, 129.4432);
 
-        // -------- Transplant Logs (필수값: recordDate, attachmentStatus 포함) --------
+        // [설정] 포항 영역 대표종: 감태
+        area.setRepresentativeSpecies(gamtae);
+
+        // -------- Transplant Logs --------
         area.addTransplant(TransplantLog.builder()
                 .recordDate(LocalDate.of(2025, 3, 10))
                 .species(gamtae)
@@ -108,7 +106,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .attachmentStatus(SpeciesAttachmentStatus.GOOD)
                 .build());
 
-        // 같은 method의 최신 착생상태 쿼리 검증용으로 하나 더(날짜 최신)
         area.addTransplant(TransplantLog.builder()
                 .recordDate(LocalDate.of(2025, 6, 20))
                 .species(mojaban)
@@ -118,10 +115,10 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
                 .build());
 
-        // -------- Growth Logs (대표개체, 필수값 모두 포함) --------
+        // -------- Growth Logs (대표종 차트 데이터 포함) --------
+        // 1. 대표종(감태) 데이터 - 차트에 표시됨
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
-                .isRepresentative(true)
                 .recordDate(LocalDate.of(2025, 5, 15))
                 .attachmentRate(85.0)
                 .survivalRate(90.0)
@@ -131,7 +128,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
 
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
-                .isRepresentative(true)
                 .recordDate(LocalDate.of(2025, 6, 15))
                 .attachmentRate(88.0)
                 .survivalRate(89.0)
@@ -139,10 +135,9 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
 
-        // 대표개체가 아닌 로그도 1개 추가(대표 차트 필터링 확인용)
+        // 2. 비대표종(다시마) 데이터 - 차트에 표시 안 됨 (필터링 테스트용)
         area.addGrowth(GrowthLog.builder()
                 .species(dasima)
-                .isRepresentative(false)
                 .recordDate(LocalDate.of(2025, 6, 15))
                 .attachmentRate(70.0)
                 .survivalRate(75.0)
@@ -150,7 +145,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .status(SpeciesAttachmentStatus.NORMAL)
                 .build());
 
-        // -------- Water Logs (필수값: recordDate, temperature, DO, nutrient + 상태값 4종) --------
+        // -------- Water Logs --------
         area.addWater(WaterLog.builder()
                 .recordDate(LocalDate.of(2025, 6, 1))
                 .temperature(18.2)
@@ -173,7 +168,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .wave(MarineStatus.NORMAL)
                 .build());
 
-        // -------- Media Logs (필수값: recordDate, mediaUrl, category) --------
+        // -------- Media Logs --------
         area.addMedia(MediaLog.builder()
                 .category(MediaCategory.BEFORE)
                 .mediaUrl(VALID_IMAGE_URL)
@@ -199,7 +194,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * 울진 테스트 영역 1: 마커/통계/nearest/bbox 테스트용으로 최소 구성 + 필수로그 몇 개
+     * 울진 테스트 영역 1
      */
     private void createUljinDemoArea1(Species gamtae, Species dasima) {
         ProjectArea area = ProjectArea.builder()
@@ -215,6 +210,9 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .build();
 
         area.setLocation(36.9950, 129.4020);
+
+        // [설정] 울진 영역 대표종: 감태
+        area.setRepresentativeSpecies(gamtae);
 
         area.addTransplant(TransplantLog.builder()
                 .recordDate(LocalDate.of(2025, 8, 5))
@@ -232,6 +230,25 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .count(15)
                 .areaSize(90.0)
                 .attachmentStatus(SpeciesAttachmentStatus.POOR)
+                .build());
+
+        // [추가] 대표종(감태) 성장 로그 데이터 추가 (차트 표시용)
+        area.addGrowth(GrowthLog.builder()
+                .species(gamtae)
+                .recordDate(LocalDate.of(2025, 8, 20))
+                .attachmentRate(75.0)
+                .survivalRate(85.0)
+                .growthLength(5.5)
+                .status(SpeciesAttachmentStatus.NORMAL)
+                .build());
+
+        area.addGrowth(GrowthLog.builder()
+                .species(gamtae)
+                .recordDate(LocalDate.of(2025, 9, 20))
+                .attachmentRate(78.0)
+                .survivalRate(82.0)
+                .growthLength(8.2)
+                .status(SpeciesAttachmentStatus.GOOD)
                 .build());
 
         area.addWater(WaterLog.builder()

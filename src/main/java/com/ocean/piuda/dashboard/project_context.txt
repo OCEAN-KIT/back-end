@@ -8,6 +8,8 @@ package com.ocean.piuda.dashboard.controller;
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
 import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
 import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
+import com.ocean.piuda.dashboard.dto.response.IdResponse;
+import com.ocean.piuda.dashboard.service.DashboardCommandService;
 import com.ocean.piuda.dashboard.service.DashboardQueryService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +17,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import com.ocean.piuda.dashboard.dto.request.*;
+import jakarta.validation.Valid;
+import com.ocean.piuda.dashboard.dto.request.LogPageRequest;
+import com.ocean.piuda.dashboard.dto.response.*;
+import com.ocean.piuda.global.api.dto.PageResponse;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.ocean.piuda.dashboard.dto.request.AreaPageRequest;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -25,6 +38,290 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardQueryService dashboardQueryService;
+    private final DashboardCommandService dashboardCommandService;
+
+    /**
+     * ProjectArea
+     */
+    @PostMapping("/areas")
+    @Operation(summary = "작업 영역 생성")
+    public ApiData<IdResponse> createArea(@RequestBody @Valid CreateProjectAreaRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createArea(req)));
+    }
+
+    @PatchMapping("/areas/{id}")
+    @Operation(summary = "작업 영역 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchArea(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateProjectAreaRequest req
+    ) {
+        dashboardCommandService.updateArea(id, req);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+
+    @DeleteMapping("/areas/{id}")
+    @Operation(summary = "작업 영역 삭제")
+    public ApiData<IdResponse> deleteArea(@PathVariable Long id) {
+        dashboardCommandService.deleteArea(id);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+
+    /**
+     * ProjectArea Representative Species
+     */
+    @PatchMapping("/areas/{id}/representative-species")
+    @Operation(summary = "작업 영역 대표종 설정", description = "성장 추이 차트에 표시될 대표 종을 설정합니다.")
+    public ApiData<IdResponse> setRepresentativeSpecies(
+            @PathVariable Long id,
+            @RequestBody @Valid SetRepresentativeSpeciesRequest req
+    ) {
+        dashboardCommandService.setRepresentativeSpecies(id, req);
+        return ApiData.ok(new IdResponse(id));
+    }
+
+    @GetMapping("/areas/{id}/species")
+    @Operation(summary = "영역 내 이식된 종 목록 조회", description = "대표종 설정 팝업 등에서 사용할 '이 영역에 존재하는 종' 목록을 반환합니다.")
+    public ApiData<List<AreaSpeciesResponse>> getAreaSpecies(@PathVariable Long id) {
+        return ApiData.ok(dashboardQueryService.getAreaSpeciesCandidates(id));
+    }
+
+
+    /**
+     * TransplantLog
+     */
+
+    @GetMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 단건 조회")
+    public ApiData<TransplantLogResponse> getTransplantLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getTransplantLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/transplants")
+    @Operation(summary = "이식 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<TransplantLogResponse>> getTransplantLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getTransplantLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/transplants")
+    @Operation(summary = "이식 로그 생성")
+    public ApiData<IdResponse> createTransplant(@PathVariable Long areaId, @RequestBody @Valid CreateTransplantLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createTransplant(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchTransplant(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateTransplantLogRequest req
+    ) {
+        dashboardCommandService.updateTransplant(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/transplants/{logId}")
+    @Operation(summary = "이식 로그 삭제")
+    public ApiData<IdResponse> deleteTransplant(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteTransplant(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    /**
+     * GrowthLog
+     */
+    @GetMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 단건 조회")
+    public ApiData<GrowthLogResponse> getGrowthLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getGrowthLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/growth-logs")
+    @Operation(summary = "성장 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<GrowthLogResponse>> getGrowthLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getGrowthLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/growth-logs")
+    @Operation(summary = "성장 로그 생성")
+    public ApiData<IdResponse> createGrowth(@PathVariable Long areaId, @RequestBody @Valid CreateGrowthLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createGrowth(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchGrowth(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateGrowthLogRequest req
+    ) {
+        dashboardCommandService.updateGrowth(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/growth-logs/{logId}")
+    @Operation(summary = "성장 로그 삭제")
+    public ApiData<IdResponse> deleteGrowth(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteGrowth(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    /**
+     * WaterLog
+     */
+    @GetMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 단건 조회")
+    public ApiData<WaterLogResponse> getWaterLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getWaterLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/water-logs")
+    @Operation(summary = "환경 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<WaterLogResponse>> getWaterLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getWaterLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/water-logs")
+    @Operation(summary = "환경 로그 생성")
+    public ApiData<IdResponse> createWater(@PathVariable Long areaId, @RequestBody @Valid CreateWaterLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createWater(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchWater(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateWaterLogRequest req
+    ) {
+        dashboardCommandService.updateWater(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+
+    @DeleteMapping("/areas/{areaId}/water-logs/{logId}")
+    @Operation(summary = "환경 로그 삭제")
+    public ApiData<IdResponse> deleteWater(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteWater(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+    /**
+     * MediaLog
+     */
+    @GetMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 단건 조회")
+    public ApiData<MediaLogResponse> getMediaLog(
+            @PathVariable Long areaId,
+            @PathVariable Long logId
+    ) {
+        return ApiData.ok(dashboardQueryService.getMediaLog(areaId, logId));
+    }
+
+    @GetMapping("/areas/{areaId}/media-logs")
+    @Operation(summary = "미디어 로그 기간 기반 페이징 목록 조회")
+    public ApiData<PageResponse<MediaLogResponse>> getMediaLogs(
+            @PathVariable Long areaId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Valid LogPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getMediaLogs(areaId, from, to, pageReq));
+    }
+
+
+    @PostMapping("/areas/{areaId}/media-logs")
+    @Operation(summary = "미디어 로그 생성")
+    public ApiData<IdResponse> createMedia(@PathVariable Long areaId, @RequestBody @Valid CreateMediaLogRequest req) {
+        return ApiData.ok(new IdResponse(dashboardCommandService.createMedia(areaId, req)));
+    }
+
+    @PatchMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 부분 수정(PATCH)")
+    public ApiData<IdResponse> patchMedia(
+            @PathVariable Long areaId,
+            @PathVariable Long logId,
+            @RequestBody @Valid UpdateMediaLogRequest req
+    ) {
+        dashboardCommandService.updateMedia(areaId, logId, req);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @DeleteMapping("/areas/{areaId}/media-logs/{logId}")
+    @Operation(summary = "미디어 로그 삭제")
+    public ApiData<IdResponse> deleteMedia(@PathVariable Long areaId, @PathVariable Long logId) {
+        dashboardCommandService.deleteMedia(areaId, logId);
+        return ApiData.ok(new IdResponse(logId));
+    }
+
+
+    @GetMapping("/areas")
+    @Operation(
+            summary = "작업 영역 목록 조회(페이징) + 검색/필터",
+            description = """
+            관리자용 작업영역 전체 목록 조회 API입니다.
+            - region(포항/울진), level(프로젝트 단계), habitat, 기간(from~to), 키워드(name) 필터 지원
+            - page/size/sort 페이징 지원
+            """
+    )
+    public ApiData<PageResponse<ProjectAreaListItemResponse>> getAreas(
+            @RequestParam(required = false) RestorationRegion region,
+            @RequestParam(required = false) ProjectLevel level,
+            @RequestParam(required = false) HabitatType habitat,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String keyword,
+            @Valid AreaPageRequest pageReq
+    ) {
+        return ApiData.ok(dashboardQueryService.getAreas(region, level, habitat, from, to, keyword, pageReq));
+    }
+
+
+    /**
+     * 대시보드 조회
+     */
 
     // 1. 상세 데이터 API
     @GetMapping("/areas/{id}")
@@ -33,80 +330,6 @@ public class DashboardController {
         return ApiData.ok(dashboardQueryService.getAreaDetail(id));
     }
 
-    /**
-     * @deprecated
-     *   - 실제 화면 구현에서는 마커 클릭 시 ID 기반 단건 상세 조회만 사용하고 있어, 반경 기준 상세 리스트는 필요하지 않아 미사용 상태입니다.
-     *   - 설계 의도: 특정 좌표/반경 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회하는 분석/리포트 용도.
-     *   - 향후 관리자용 리포트/분석 화면 등에서 재활용 가능성을 고려해 일단 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/nearby")
-    @Operation(
-            summary = "[Deprecated] 반경 기반 작업 영역 상세 검색",
-            description = """
-                설계 의도: 중심 좌표와 반경(km) 기준으로 여러 작업 영역의 '상세 데이터'를 한 번에 조회
-                                
-                실제 구현에서는 영역별 상세는 ID 기반 단건 조회로 충분하여, 
-                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getNearby(
-            @Parameter(description = "위도") @RequestParam Double lat,
-            @Parameter(description = "경도") @RequestParam Double lon,
-            @Parameter(description = "반경(km), 기본값 5.0") @RequestParam(defaultValue = "5.0") Double radius) {
-        return ApiData.ok(dashboardQueryService.getNearbyAreas(lat, lon, radius));
-    }
-
-    /**
-     * @deprecated
-     *   - 실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-     *   - 설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
-     *   - 향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/bbox")
-    @Operation(
-            summary = "[Deprecated] 뷰포트(BBox) 내 작업 영역 상세 검색",
-            description = """
-                설계 의도 : 지도 뷰포트(BBox)에 포함된 모든 작업 영역의 '상세 데이터'를 한 번에 조회.
-                
-                실제 구현에서는 뷰포트 기준으론 마커용 경량 데이터만 필요하고, 
-                상세 데이터는 마커 클릭 시 /areas/{id}로 개별 조회하면 충분하다고 판단되어 미사용 상태입니다.
-                향후 다른 분석/관리 도메인에서 재활용 가능성을 고려해 보존합니다.                
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getBBox(
-            @RequestParam Double minLat, @RequestParam Double minLon,
-            @RequestParam Double maxLat, @RequestParam Double maxLon) {
-        return ApiData.ok(dashboardQueryService.getAreasInBBox(minLat, minLon, maxLat, maxLon));
-    }
-
-    /**
-     * @deprecated
-     *   - 실제 UX에서는 리스트/지도에는 요약 정보만 보여주고, 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않게 되었습니다.
-     *   - 초기 설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
-     *   - 다만 KNN 기반 상세 리스트가 필요한 별도 화면(예: 관리자 분석 페이지 등)이 생길 수 있어 보존합니다.
-     */
-    @Deprecated
-    @GetMapping("/areas/nearest")
-    @Operation(
-            summary = "[Deprecated] 가장 가까운 작업 영역 상세 검색",
-            description = """
-                설계 의도: "내 위치에서 가장 가까운 N개 작업 영역의 상세 데이터"를 한 번에 조회하는 기능.
-               
-                실제 UX에서는 상세는 클릭 시 단건 조회하는 방식으로 충분해 이 API는 사용하지 않습니다.
-                잠재적 재활용(예: 관리자/분석 화면)을 위해 보존합니다.
-                """,
-            deprecated = true
-    )
-    public ApiData<List<AreaDetailResponse>> getNearest(
-            @RequestParam Double lat, @RequestParam Double lon,
-            @RequestParam(defaultValue = "3") Integer limit) {
-        return ApiData.ok(dashboardQueryService.getNearestAreas(lat, lon, limit));
-    }
 
     @GetMapping("/stats/nearby")
     @Operation(summary = "반경 내 통계 요약", description = "반경 내 프로젝트 수, 총 면적, 평균 수심 등을 집계합니다.")
@@ -180,11 +403,304 @@ public class DashboardController {
 
 
 ================================================================================
+File Path: .\dto\request\AreaPageRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.AreaSort;
+import com.ocean.piuda.global.api.dto.PageRequest;
+
+public class AreaPageRequest extends PageRequest<AreaSort> {
+
+    public AreaPageRequest() {
+        super();
+        this.setSort(AreaSort.ID_DESC);
+    }
+
+    @Override
+    public void setSort(AreaSort sort) {
+        super.setSort(sort == null ? AreaSort.ID_DESC : sort);
+    }
+}
+
+
+================================================================================
+File Path: .\dto\request\CreateGrowthLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateGrowthLogRequest(
+        @NotNull Long speciesId,
+        @NotNull LocalDate recordDate,
+        @NotNull Double attachmentRate,
+        @NotNull Double survivalRate,
+        @NotNull Double growthLength,
+        @NotNull SpeciesAttachmentStatus status
+) {}
+
+
+================================================================================
+File Path: .\dto\request\CreateMediaLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.MediaCategory;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateMediaLogRequest(
+        @NotNull LocalDate recordDate,
+        @NotBlank String mediaUrl,
+        String caption,
+        @NotNull MediaCategory category
+) {}
+
+
+================================================================================
+File Path: .\dto\request\CreateProjectAreaRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateProjectAreaRequest(
+        @NotBlank String name,
+        @NotNull RestorationRegion restorationRegion,
+        @NotNull LocalDate startDate,
+        LocalDate endDate,
+        @NotNull HabitatType habitat,
+        @NotNull Double depth,
+        @NotNull Double areaSize,
+        @NotNull ProjectLevel level,
+        @NotNull AreaAttachmentStatus attachmentStatus,
+        @NotNull Double lat,
+        @NotNull Double lon
+) {}
+
+
+================================================================================
+File Path: .\dto\request\CreateTransplantLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateTransplantLogRequest(
+        @NotNull LocalDate recordDate,
+        @NotNull TransplantMethod method,
+        @NotNull Long speciesId,
+        @NotNull Integer count,
+        @NotNull Double areaSize,
+        @NotNull SpeciesAttachmentStatus attachmentStatus
+) {}
+
+
+================================================================================
+File Path: .\dto\request\CreateWaterLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.MarineStatus;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record CreateWaterLogRequest(
+        @NotNull LocalDate recordDate,
+        @NotNull Double temperature,
+        @NotNull Double dissolvedOxygen,
+        @NotNull Double nutrient,
+        @NotNull MarineStatus visibility,
+        @NotNull MarineStatus current,
+        @NotNull MarineStatus surge,
+        @NotNull MarineStatus wave
+) {}
+
+
+================================================================================
+File Path: .\dto\request\LogPageRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.LogSort;
+import com.ocean.piuda.global.api.dto.PageRequest;
+import jakarta.validation.constraints.NotNull;
+
+public class LogPageRequest extends PageRequest<LogSort> {
+
+    public LogPageRequest() {
+        super();
+        this.setSort(LogSort.RECORD_DATE_DESC);
+    }
+
+    @Override
+    public void setSort(LogSort sort) {
+        super.setSort(sort == null ? LogSort.RECORD_DATE_DESC : sort);
+    }
+}
+
+
+================================================================================
+File Path: .\dto\request\SetRepresentativeSpeciesRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+
+public record SetRepresentativeSpeciesRequest(
+        @NotNull(message = "종 ID는 필수입니다.")
+        Long speciesId
+) {}
+
+
+================================================================================
+File Path: .\dto\request\UpdateGrowthLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+
+import java.time.LocalDate;
+
+public record UpdateGrowthLogRequest(
+        Long speciesId,
+        LocalDate recordDate,
+        Double attachmentRate,
+        Double survivalRate,
+        Double growthLength,
+        SpeciesAttachmentStatus status
+) {}
+
+
+================================================================================
+File Path: .\dto\request\UpdateMediaLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.MediaCategory;
+
+import java.time.LocalDate;
+
+public record UpdateMediaLogRequest(
+        LocalDate recordDate,
+        String mediaUrl,
+        String caption,
+        MediaCategory category
+) {}
+
+
+
+================================================================================
+File Path: .\dto\request\UpdateProjectAreaRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+
+public record UpdateProjectAreaRequest(
+        String name,
+        RestorationRegion restorationRegion,
+        LocalDate startDate,
+        LocalDate endDate,
+        HabitatType habitat,
+        Double depth,
+        Double areaSize,
+        ProjectLevel level,
+        AreaAttachmentStatus attachmentStatus,
+        Double lat,
+        Double lon,
+        Long representativeSpeciesId
+) {}
+
+
+================================================================================
+File Path: .\dto\request\UpdateTransplantLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+
+import java.time.LocalDate;
+
+public record UpdateTransplantLogRequest(
+        LocalDate recordDate,
+        TransplantMethod method,
+        Long speciesId,
+        Integer count,
+        Double areaSize,
+        SpeciesAttachmentStatus attachmentStatus
+) {}
+
+
+================================================================================
+File Path: .\dto\request\UpdateWaterLogRequest.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.request;
+
+import com.ocean.piuda.dashboard.enums.MarineStatus;
+
+import java.time.LocalDate;
+
+public record UpdateWaterLogRequest(
+        LocalDate recordDate,
+        Double temperature,
+        Double dissolvedOxygen,
+        Double nutrient,
+        MarineStatus visibility,
+        MarineStatus current,
+        MarineStatus surge,
+        MarineStatus wave
+) {}
+
+
+
+================================================================================
 File Path: .\dto\response\AreaDetailResponse.java
 ================================================================================
 
 package com.ocean.piuda.dashboard.dto.response;
 
+import com.ocean.piuda.dashboard.dto.TimeSeriesChartDto;
 import com.ocean.piuda.dashboard.entity.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -192,71 +708,136 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Builder
 @Getter
 public class AreaDetailResponse {
-
     private Long id;
-    private BasicInfo basic;
+    private OverviewTab overview;
+    private StatusTab status;
+    private EcologyTab ecology;
+    private EnvironmentTab environment;
+    private PhotoTab photos;
 
-    private List<TransplantDto> transplants;
-    private List<GrowthLogDto> growthLogs;
-    private List<WaterLogDto> waterLogs;
-    private BiodiversityDto biodiversity;
-    private List<MediaDto> mediaLogs;
-
-    @Builder @Getter
-    public static class BasicInfo {
+    /**
+     * 개요탭
+     */
+    @Builder
+    @Getter
+    public static class OverviewTab {
         private String name;
+        private Long areaId;
+        private String restorationRegion; // "포항" / "울진"
         private LocalDate startDate;
-        private String habitat;
-        private Double depth;
+        private LocalDate endDate;
+        private StatusInfo currentStatus;  // 단계 이름 + 설명 객체
         private Double areaSize;
-        private String stage;
+        private Double avgDepth;
+        private String habitatType;       // "암반" / "혼합" 등
+
         private Double lat;
         private Double lon;
+        private String attachmentStatus; // "안정", "일부 감소" 등
     }
 
-    // ... (TransplantDto, GrowthLogDto, WaterLogDto, BiodiversityDto, MediaDto 등 내부 클래스 기존과 동일)
-    @Builder @Getter public static class TransplantDto { String species; Integer count; Double area; }
-    @Builder @Getter public static class GrowthLogDto { LocalDate date; Double attachmentRate; Double survivalRate; Double growthLength; }
-    @Builder @Getter public static class WaterLogDto { LocalDate date; Double temperature; Double dissolvedOxygen; Double nutrient; }
-    @Builder @Getter public static class BiodiversityDto { Stat before; Stat after; @Builder @Getter public static class Stat { Integer fishCount; Integer invertCount; Double shannonIndex; } }
-    @Builder @Getter public static class MediaDto { LocalDate date; String url; String caption; }
-
-    public static AreaDetailResponse fromEntity(ProjectArea entity) {
-        return AreaDetailResponse.builder()
-                .id(entity.getId())
-                .basic(BasicInfo.builder()
-                        .name(entity.getName())
-                        .startDate(entity.getStartDate())
-                        .habitat(entity.getHabitat() != null ? entity.getHabitat().getDescription() : null)
-                        .depth(entity.getDepth())
-                        .areaSize(entity.getAreaSize())
-                        .stage(entity.getStatus() != null ? entity.getStatus().getDescription() : null)
-                        // [수정] Entity의 캡슐화된 메서드 사용
-                        .lat(entity.getLat())
-                        .lon(entity.getLon())
-                        .build())
-
-                .transplants(entity.getTransplants().stream()
-                        .map(t -> TransplantDto.builder().species(t.getSpeciesName()).count(t.getCount()).area(t.getAreaSize()).build()).toList())
-                .growthLogs(entity.getGrowthLogs().stream()
-                        .sorted(Comparator.comparing(GrowthLog::getRecordDate))
-                        .map(g -> GrowthLogDto.builder().date(g.getRecordDate()).attachmentRate(g.getAttachmentRate()).survivalRate(g.getSurvivalRate()).growthLength(g.getGrowthLength()).build()).toList())
-                .waterLogs(entity.getWaterLogs().stream()
-                        .sorted(Comparator.comparing(WaterLog::getRecordDate))
-                        .map(w -> WaterLogDto.builder().date(w.getRecordDate()).temperature(w.getTemperature()).dissolvedOxygen(w.getDissolvedOxygen()).nutrient(w.getNutrient()).build()).toList())
-                .biodiversity(entity.getBiodiversity() != null ? BiodiversityDto.builder()
-                        .before(BiodiversityDto.Stat.builder().fishCount(entity.getBiodiversity().getFishCountBefore()).invertCount(entity.getBiodiversity().getInvertCountBefore()).shannonIndex(entity.getBiodiversity().getShannonIndexBefore()).build())
-                        .after(BiodiversityDto.Stat.builder().fishCount(entity.getBiodiversity().getFishCountAfter()).invertCount(entity.getBiodiversity().getInvertCountAfter()).shannonIndex(entity.getBiodiversity().getShannonIndexAfter()).build())
-                        .build() : null)
-                .mediaLogs(entity.getMediaLogs().stream()
-                        .sorted(Comparator.comparing(MediaLog::getRecordDate))
-                        .map(m -> MediaDto.builder().date(m.getRecordDate()).url(m.getMediaUrl()).caption(m.getCaption()).build()).toList())
-                .build();
+    /**
+     * 개요탭
+     */
+    @Builder
+    @Getter
+    public static class StatusInfo {
+        private String name;        // 예: "관측"
+        private String description; // 예: "초기 상태 기록"
     }
+
+    /**
+     * 현황 탭
+     */
+    @Builder
+    @Getter
+    public static class StatusTab {
+        private List<TransplantItem> speciesList;
+        private Map<String, Double> methodDistribution; // 이식 방식별 비율 (%)
+        private AccumulatedStats accumulated;           // 누적 집계
+        private TimeSeriesChartDto workHistoryChart;    // 최근 3개월 작업 횟수 그래프
+    }
+
+    @Builder
+    @Getter
+    public static class TransplantItem {
+        private String speciesName;
+        private String method;      // 예: "로프"
+        private String methodDesc;  // 예: "종묘줄을 로프에 고정하여 이식"
+        private Long quantity;   // 수량
+        private String unit;     // 수랑의 단위 ("줄", "m", "기", "지점")
+    }
+
+    @Builder
+    @Getter
+    public static class AccumulatedStats {
+        private Double totalAreaSize;
+        private Integer totalWorkCount;
+        private LocalDate lastWorkDate;
+    }
+
+    /**
+     * 생태 반응 탭
+     */
+    @Builder
+    @Getter
+    public static class EcologyTab {
+        private List<AttachmentStatus> attachmentStatuses;
+        private String survivalStatus; // "안정", "일부 감소", "불안정"
+        private TimeSeriesChartDto representativeGrowthChart; // 성장 추이 그래프
+    }
+
+    @Builder
+    @Getter
+    public static class AttachmentStatus {
+        private String method; // 이식 방식 명칭
+        private String status; // "양호", "보통", "미흡"
+    }
+
+    /**
+     * 환경 탭
+     */
+    @Builder
+    @Getter
+    public static class EnvironmentTab {
+        private EnvironmentSummary last3MonthsSummary;
+        private TimeSeriesChartDto temperatureChart; // 수온 시계열
+    }
+
+    @Builder
+    @Getter
+    public static class EnvironmentSummary {
+        private String visibility; // 시야 (좋음/보통/나쁨)
+        private String current;    // 조류
+        private String surge;      // 서지
+        private String wave;       // 파도
+    }
+
+    /**
+     * 사진 탭
+     */
+    @Builder
+    @Getter
+    public static class PhotoTab {
+        private String beforeUrl;
+        private String afterUrl;
+        private List<TimelinePhoto> timeline;
+    }
+
+    @Builder
+    @Getter
+    public static class TimelinePhoto {
+        private String url;
+        private String label; // "2025.07" 또는 "3분기"
+        private String caption;
+    }
+
+
 }
 
 
@@ -295,7 +876,32 @@ public class AreaMarkerResponse {
     private String habitat;
 
     /** 프로젝트 단계 한글 설명 (예: "이식 완료") */
-    private String stage;
+    private String level;
+}
+
+
+================================================================================
+File Path: .\dto\response\AreaSpeciesResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.bio.entity.Species;
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+@Builder
+public class AreaSpeciesResponse {
+    private Long speciesId;
+    private String speciesName;
+
+    public static AreaSpeciesResponse from(Species species) {
+        return AreaSpeciesResponse.builder()
+                .speciesId(species.getId())
+                .speciesName(species.getName())
+                .build();
+    }
 }
 
 
@@ -320,13 +926,297 @@ public class AreaStatResponse {
 
 
 ================================================================================
+File Path: .\dto\response\GrowthLogResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.entity.GrowthLog;
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+public class GrowthLogResponse {
+    private Long id;
+    private LocalDate recordDate;
+
+    private Long speciesId;
+    private String speciesName;
+
+    private Double attachmentRate;
+    private Double survivalRate;
+    private Double growthLength;
+
+    private SpeciesAttachmentStatus status;
+    private String statusName;
+
+    public static GrowthLogResponse from(GrowthLog g) {
+        Species s = g.getSpecies();
+        return GrowthLogResponse.builder()
+                .id(g.getId())
+                .recordDate(g.getRecordDate())
+                .speciesId(s != null ? s.getId() : null)
+                .speciesName(s != null ? s.getName() : null)
+                .attachmentRate(g.getAttachmentRate())
+                .survivalRate(g.getSurvivalRate())
+                .growthLength(g.getGrowthLength())
+                .status(g.getStatus())
+                .statusName(g.getStatus() != null ? g.getStatus().getName() : null)
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\dto\response\IdResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+public record IdResponse(Long id) {}
+
+
+================================================================================
+File Path: .\dto\response\MediaLogResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.dashboard.entity.MediaLog;
+import com.ocean.piuda.dashboard.enums.MediaCategory;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+public class MediaLogResponse {
+    private Long id;
+    private LocalDate recordDate;
+    private String mediaUrl;
+    private String caption;
+    private MediaCategory category;
+    private String categoryName;
+
+    public static MediaLogResponse from(MediaLog m) {
+        return MediaLogResponse.builder()
+                .id(m.getId())
+                .recordDate(m.getRecordDate())
+                .mediaUrl(m.getMediaUrl())
+                .caption(m.getCaption())
+                .category(m.getCategory())
+                .categoryName(m.getCategory() != null ? m.getCategory().getName() : null)
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\dto\response\ProjectAreaListItemResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.dashboard.entity.ProjectArea;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+public class ProjectAreaListItemResponse {
+
+    private Long id;
+    private String name;
+
+    private String restorationRegion; // "포항"/"울진"
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    private String habitat;           // "암반"/"혼합"/...
+    private Double depth;
+    private Double areaSize;
+
+    private String level;             // "관측"/"정착"/...
+    private String attachmentStatus;  // "안정"/"일부 감소"/...
+
+    private Double lat;
+    private Double lon;
+
+    public static ProjectAreaListItemResponse from(ProjectArea a) {
+        return ProjectAreaListItemResponse.builder()
+                .id(a.getId())
+                .name(a.getName())
+                .restorationRegion(a.getRestorationRegion() != null ? a.getRestorationRegion().getName() : null)
+                .startDate(a.getStartDate())
+                .endDate(a.getEndDate())
+                .habitat(a.getHabitat() != null ? a.getHabitat().getName() : null)
+                .depth(a.getDepth())
+                .areaSize(a.getAreaSize())
+                .level(a.getLevel() != null ? a.getLevel().getName() : null)
+                .attachmentStatus(a.getAttachmentStatus() != null ? a.getAttachmentStatus().getName() : null)
+                .lat(a.getLat())
+                .lon(a.getLon())
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\dto\response\TransplantLogResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.entity.TransplantLog;
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+public class TransplantLogResponse {
+    private Long id;
+    private LocalDate recordDate;
+
+    private TransplantMethod method;
+    private String methodName;
+    private String methodDesc;
+    private String unit;
+
+    private Long speciesId;
+    private String speciesName;
+
+    private Integer count;
+    private Double areaSize;
+
+    private SpeciesAttachmentStatus attachmentStatus;
+    private String attachmentStatusName;
+
+    public static TransplantLogResponse from(TransplantLog t) {
+        Species s = t.getSpecies();
+        TransplantMethod m = t.getMethod();
+
+        return TransplantLogResponse.builder()
+                .id(t.getId())
+                .recordDate(t.getRecordDate())
+                .method(m)
+                .methodName(m != null ? m.getName() : null)
+                .methodDesc(m != null ? m.getDescription() : null)
+                .unit(m != null ? m.getUnit() : null)
+                .speciesId(s != null ? s.getId() : null)
+                .speciesName(s != null ? s.getName() : null)
+                .count(t.getCount())
+                .areaSize(t.getAreaSize())
+                .attachmentStatus(t.getAttachmentStatus())
+                .attachmentStatusName(t.getAttachmentStatus() != null ? t.getAttachmentStatus().getName() : null)
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\dto\response\WaterLogResponse.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto.response;
+
+import com.ocean.piuda.dashboard.entity.WaterLog;
+import com.ocean.piuda.dashboard.enums.MarineStatus;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDate;
+
+@Getter
+@Builder
+public class WaterLogResponse {
+    private Long id;
+    private LocalDate recordDate;
+
+    private Double temperature;
+    private Double dissolvedOxygen;
+    private Double nutrient;
+
+    private MarineStatus visibility;
+    private String visibilityName;
+
+    private MarineStatus current;
+    private String currentName;
+
+    private MarineStatus surge;
+    private String surgeName;
+
+    private MarineStatus wave;
+    private String waveName;
+
+    public static WaterLogResponse from(WaterLog w) {
+        return WaterLogResponse.builder()
+                .id(w.getId())
+                .recordDate(w.getRecordDate())
+                .temperature(w.getTemperature())
+                .dissolvedOxygen(w.getDissolvedOxygen())
+                .nutrient(w.getNutrient())
+                .visibility(w.getVisibility())
+                .visibilityName(w.getVisibility() != null ? w.getVisibility().getName() : null)
+                .current(w.getCurrent())
+                .currentName(w.getCurrent() != null ? w.getCurrent().getName() : null)
+                .surge(w.getSurge())
+                .surgeName(w.getSurge() != null ? w.getSurge().getName() : null)
+                .wave(w.getWave())
+                .waveName(w.getWave() != null ? w.getWave().getName() : null)
+                .build();
+    }
+}
+
+
+================================================================================
+File Path: .\dto\TimeSeriesChartDto.java
+================================================================================
+
+package com.ocean.piuda.dashboard.dto;
+
+
+import lombok.Builder;
+
+import java.time.LocalDate;
+import java.util.List;
+
+
+@Builder
+public record TimeSeriesChartDto(
+        List<LocalDate> labels,   // x축 (예: ["2025-01", "2025-02"...])
+        List<Double> values,    // y축 수치
+        String unit,            // 단위
+        String targetSpecies,   // 대상 종
+        String period           // 기간
+) { }
+
+
+================================================================================
 File Path: .\entity\BiodiversitySummary.java
 ================================================================================
 
+/**
+ * 개편된 5개의 탭 구조에 맞춰 불필요한 "생물 다양성 요약 엔티티"는 사용하지 않습니다.
+ */
+/*
 package com.ocean.piuda.dashboard.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 
 @Entity
 @Table(name = "biodiversity_summaries")
@@ -354,6 +1244,8 @@ public class BiodiversitySummary {
     private Double shannonIndexAfter;
 }
 
+ */
+
 
 ================================================================================
 File Path: .\entity\GrowthLog.java
@@ -361,6 +1253,9 @@ File Path: .\entity\GrowthLog.java
 
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -372,20 +1267,50 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class GrowthLog {
+public class GrowthLog extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id")
+    @JoinColumn(name = "area_id", nullable = false)
     @Setter
     private ProjectArea projectArea;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id", nullable = false)
+    private Species species;
+
+
+    @Column(nullable = false)
     private LocalDate recordDate; // 기록 날짜 (YYYY-MM-DD)
 
+    @Column(nullable = false)
     private Double attachmentRate; // 착생률 (%)
+    @Column(nullable = false)
     private Double survivalRate;   // 생존률 (%)
+    @Column(nullable = false)
     private Double growthLength;   // 성장 길이 (mm)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SpeciesAttachmentStatus status;
+
+    public void update(
+            Species species,
+            LocalDate recordDate,
+            Double attachmentRate,
+            Double survivalRate,
+            Double growthLength,
+            SpeciesAttachmentStatus status
+    ) {
+        if (species != null) this.species = species;
+        if (recordDate != null) this.recordDate = recordDate;
+        if (attachmentRate != null) this.attachmentRate = attachmentRate;
+        if (survivalRate != null) this.survivalRate = survivalRate;
+        if (growthLength != null) this.growthLength = growthLength;
+        if (status != null) this.status = status;
+    }
+
 }
 
 
@@ -395,6 +1320,8 @@ File Path: .\entity\MediaLog.java
 
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.dashboard.enums.MediaCategory;
+import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -406,18 +1333,37 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class MediaLog {
+public class MediaLog extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id")
+    @JoinColumn(name = "area_id", nullable=false)
     @Setter
     private ProjectArea projectArea;
 
+    @Column(nullable = false)
     private LocalDate recordDate;
+    @Column(nullable = false)
     private String mediaUrl;
     private String caption; // 설명 (선택)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MediaCategory category;
+
+    public void update(
+            LocalDate recordDate,
+            String mediaUrl,
+            String caption,
+            MediaCategory category
+    ) {
+        if (recordDate != null) this.recordDate = recordDate;
+        if (mediaUrl != null) this.mediaUrl = mediaUrl;
+        if (caption != null) this.caption = caption;
+        if (category != null) this.category = category;
+    }
+
 }
 
 
@@ -427,8 +1373,11 @@ File Path: .\entity\ProjectArea.java
 
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
 import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import com.ocean.piuda.global.util.GeometryUtils;
 import jakarta.persistence.*;
@@ -436,10 +1385,10 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.locationtech.jts.geom.Point;
 
-import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "project_areas")
@@ -453,30 +1402,42 @@ public class ProjectArea extends BaseEntity {
     @Column(name = "area_id")
     private Long id;
 
+    // 작업 영역 이름
     @Column(nullable = false)
     private String name; // 예: "작업 영역 1"
 
-    private String description; // 상세 설명
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RestorationRegion restorationRegion;
 
+    @Column(nullable = false)
     private LocalDate startDate;
+    private LocalDate endDate;
+
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private HabitatType habitat; // String -> HabitatType
+    @Column(nullable = false)
+    private HabitatType habitat;
 
+    @Column(nullable = false)
     private Double depth; // 수심 (m)
-
-    private Double areaSize; // 면적 (m2) - 숫자형으로 관리 권장
+    @Column(nullable = false)
+    private Double areaSize; // 면적 (m^2)
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ProjectStatus status;
+    @Column(nullable = false)
+    private ProjectLevel level;
 
-    // 좌표 (GeoSpatial 타입 도입 전에는 Double 사용)
-    private Double lat;
-    private Double lon;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AreaAttachmentStatus attachmentStatus;
 
-    // --- 하위 연관 관계 (Cascade 설정) ---
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "representative_species_id")
+    private Species representativeSpecies;
+
+
+    // --- 하위 연관 관계 ---
 
     @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -490,8 +1451,8 @@ public class ProjectArea extends BaseEntity {
     @Builder.Default
     private List<WaterLog> waterLogs = new ArrayList<>();
 
-    @OneToOne(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
-    private BiodiversitySummary biodiversity;
+//    @OneToOne(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private BiodiversitySummary biodiversity;
 
     @OneToMany(mappedBy = "projectArea", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -500,7 +1461,20 @@ public class ProjectArea extends BaseEntity {
 
     @Column(columnDefinition = "geometry(Point, 4326)")
     private Point location;
-    // DTO용 편의 메서드 (Getter)
+
+
+    /**
+     * lat, lon -> GIS location set 편의 메서드
+     */
+    public void setLocation(Double lat, Double lon) {
+        if (lat != null && lon != null) this.location = GeometryUtils.createPoint(lon, lat);
+        else this.location = null;
+    }
+
+
+    /**
+     * GIS locatoin -> lat , lon get 편의 메서드
+     */
     public Double getLat() {
         return this.location != null ? this.location.getY() : null;
     }
@@ -509,21 +1483,51 @@ public class ProjectArea extends BaseEntity {
         return this.location != null ? this.location.getX() : null;
     }
 
-    // 데이터 세팅 편의 메서드 (Setter)
-    public void setLocation(Double lat, Double lon) {
-        if (lat != null && lon != null) {
-            this.location = GeometryUtils.createPoint(lon, lat);
-        } else {
-            this.location = null;
-        }
+    public void update(
+            String name,
+            RestorationRegion restorationRegion,
+            LocalDate startDate,
+            LocalDate endDate,
+            HabitatType habitat,
+            Double depth,
+            Double areaSize,
+            ProjectLevel level,
+            AreaAttachmentStatus attachmentStatus,
+            Double lat,
+            Double lon,
+            Species species
+    ) {
+        if (name != null) this.name = name;
+        if (restorationRegion != null) this.restorationRegion = restorationRegion;
+        if (startDate != null) this.startDate = startDate;
+        if (endDate != null) this.endDate = endDate;
+        if (habitat != null) this.habitat = habitat;
+        if (depth != null) this.depth = depth;
+        if (areaSize != null) this.areaSize = areaSize;
+        if (level != null) this.level = level;
+        if (attachmentStatus != null) this.attachmentStatus = attachmentStatus;
+
+        // 좌표는 둘 다 들어온 경우에만 업데이트 (한쪽만 오면 기존 유지)
+        if (lat != null && lon != null) this.setLocation(lat, lon);
+        if(species!=null) this.representativeSpecies = species;
     }
+
+
+    public void setRepresentativeSpecies(Species species) {
+        this.representativeSpecies = species;
+    }
+
+
 
     // --- 연관관계 편의 메서드 ---
     public void addTransplant(TransplantLog log) { this.transplants.add(log); log.setProjectArea(this); }
     public void addGrowth(GrowthLog log) { this.growthLogs.add(log); log.setProjectArea(this); }
     public void addWater(WaterLog log) { this.waterLogs.add(log); log.setProjectArea(this); }
-    public void setBiodiversity(BiodiversitySummary bio) { this.biodiversity = bio; bio.setProjectArea(this); }
+    //    public void setBiodiversity(BiodiversitySummary bio) { this.biodiversity = bio; bio.setProjectArea(this); }
     public void addMedia(MediaLog log) { this.mediaLogs.add(log); log.setProjectArea(this); }
+
+
+
 }
 
 
@@ -533,8 +1537,14 @@ File Path: .\entity\TransplantLog.java
 
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "transplant_logs")
@@ -542,18 +1552,53 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class TransplantLog {
+public class TransplantLog extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id")
+    @JoinColumn(name = "area_id", nullable = false)
     @Setter
     private ProjectArea projectArea;
 
-    private String speciesName; // 감태, 다시마
-    private Integer count;      // 개체수
+    @Column(nullable = false)
+    private LocalDate recordDate;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransplantMethod method;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id", nullable = false)
+    private Species species;
+
+    @Column(nullable = false)
+    private Integer count;      // 개체
+
+    @Column(nullable = false)
     private Double areaSize;    // 이식 면적 (m2)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SpeciesAttachmentStatus attachmentStatus; // 전문가 입력: GOOD/NORMAL/POOR
+
+    public void update(
+            LocalDate recordDate,
+            TransplantMethod method,
+            Species species,
+            Integer count,
+            Double areaSize,
+            SpeciesAttachmentStatus attachmentStatus
+    ) {
+        if (recordDate != null) this.recordDate = recordDate;
+        if (method != null) this.method = method;
+        if (species != null) this.species = species;
+        if (count != null) this.count = count;
+        if (areaSize != null) this.areaSize = areaSize;
+        if (attachmentStatus != null) this.attachmentStatus = attachmentStatus;
+    }
+
 }
 
 
@@ -563,6 +1608,8 @@ File Path: .\entity\WaterLog.java
 
 package com.ocean.piuda.dashboard.entity;
 
+import com.ocean.piuda.dashboard.enums.MarineStatus;
+import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -574,20 +1621,114 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class WaterLog {
+public class WaterLog extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id")
+    @JoinColumn(name = "area_id", nullable = false)
     @Setter
     private ProjectArea projectArea;
 
+    @Column(nullable = false)
     private LocalDate recordDate;
 
+    @Column(nullable = false)
     private Double temperature;     // 수온
+
+    @Column(nullable = false)
     private Double dissolvedOxygen; // DO
+
+    @Column(nullable = false)
     private Double nutrient;        // 영양염류
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MarineStatus visibility; // 시야
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MarineStatus current;    // 조류
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MarineStatus surge;     // 서지
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MarineStatus wave;      // 파도
+
+    public void update(
+            LocalDate recordDate,
+            Double temperature,
+            Double dissolvedOxygen,
+            Double nutrient,
+            MarineStatus visibility,
+            MarineStatus current,
+            MarineStatus surge,
+            MarineStatus wave
+    ) {
+        if (recordDate != null) this.recordDate = recordDate;
+        if (temperature != null) this.temperature = temperature;
+        if (dissolvedOxygen != null) this.dissolvedOxygen = dissolvedOxygen;
+        if (nutrient != null) this.nutrient = nutrient;
+        if (visibility != null) this.visibility = visibility;
+        if (current != null) this.current = current;
+        if (surge != null) this.surge = surge;
+        if (wave != null) this.wave = wave;
+    }
+
+}
+
+
+================================================================================
+File Path: .\enums\AreaAttachmentStatus.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 영역 전체 범위의 착생 상태
+ */
+@Getter
+@RequiredArgsConstructor
+public enum AreaAttachmentStatus {
+    STABLE("안정"), DECREASED("일부 감소"), UNSTABLE("불안정");
+    private final String name;
+}
+
+
+================================================================================
+File Path: .\enums\AreaSort.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import com.ocean.piuda.global.enums.SortEnum;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+
+@RequiredArgsConstructor
+public enum AreaSort implements SortEnum {
+
+    ID_DESC(Sort.by(Sort.Direction.DESC, "id")),
+    ID_ASC(Sort.by(Sort.Direction.ASC, "id")),
+
+    START_DATE_DESC(Sort.by(Sort.Direction.DESC, "startDate").and(Sort.by(Sort.Direction.DESC, "id"))),
+    START_DATE_ASC(Sort.by(Sort.Direction.ASC, "startDate").and(Sort.by(Sort.Direction.ASC, "id"))),
+
+    NAME_ASC(Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id"))),
+    NAME_DESC(Sort.by(Sort.Direction.DESC, "name").and(Sort.by(Sort.Direction.DESC, "id")));
+
+    private final Sort sort;
+
+    @Override
+    public Sort toSort() {
+        return sort;
+    }
 }
 
 
@@ -603,20 +1744,83 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum HabitatType {
-    KELP_FOREST("켈프숲"),
-    SEAGRASS_BED("잘피밭"),
-    URCHIN_BARREN("성게 황폐지"),
-    ROCKY_REEF("암반리프"),
-    SOFT_BOTTOM("연질저서"),
-    ARTIFICIAL_STRUCTURE("인공구조물"),
+    ROCKY("암반"),
+    MIXED("혼합"),
     OTHER("기타");
 
-    private final String description;
+    private final String name;
 }
 
 
 ================================================================================
-File Path: .\enums\ProjectStatus.java
+File Path: .\enums\LogSort.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import com.ocean.piuda.global.enums.SortEnum;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+
+@RequiredArgsConstructor
+public enum LogSort implements SortEnum {
+
+    RECORD_DATE_DESC(Sort.by(Sort.Direction.DESC, "recordDate").and(Sort.by(Sort.Direction.DESC, "id"))),
+    RECORD_DATE_ASC(Sort.by(Sort.Direction.ASC, "recordDate").and(Sort.by(Sort.Direction.ASC, "id"))),
+    ID_DESC(Sort.by(Sort.Direction.DESC, "id")),
+    ID_ASC(Sort.by(Sort.Direction.ASC, "id"));
+
+    private final Sort sort;
+
+    @Override
+    public Sort toSort() {
+        return sort;
+    }
+}
+
+
+================================================================================
+File Path: .\enums\MarineStatus.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 기록 당시 해양 기상
+ */
+@Getter
+@RequiredArgsConstructor
+public enum MarineStatus {
+    GOOD("좋음"), NORMAL("보통"), POOR("나쁨");
+    private final String name;
+}
+
+
+================================================================================
+File Path: .\enums\MediaCategory.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum MediaCategory {
+    BEFORE("복원 전"),
+    AFTER("복원 후"),
+    TIMELINE("타임라인");
+
+    private final String name;
+}
+
+
+================================================================================
+File Path: .\enums\ProjectLevel.java
 ================================================================================
 
 package com.ocean.piuda.dashboard.enums;
@@ -626,13 +1830,77 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ProjectStatus {
-    TRANSPLANT_COMPLETED("이식 완료"),
-    GROWING("성장 중"),
-    STABLE("안정화 구역"),
-    MONITORING("모니터링 중");
+public enum ProjectLevel {
+    OBSERVATION("관측", "초기 상태 기록"),
+    SETTLEMENT("정착", "이식 단위 활착 확인"),
+    GROWTH("성장", "해조류 군집 확대 관찰"),
+    MANAGEMENT("관리", "지속 관찰 및 유지");
 
+    private final String name;
     private final String description;
+}
+
+
+================================================================================
+File Path: .\enums\RestorationRegion.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum RestorationRegion {
+    POHANG("포항"),
+    ULJIN("울진");
+
+    private final String name;
+}
+
+
+================================================================================
+File Path: .\enums\SpeciesAttachmentStatus.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 이식 방식별 착생 상태
+ */
+@Getter
+@RequiredArgsConstructor
+public enum SpeciesAttachmentStatus {
+    GOOD("양호"), NORMAL("보통"), POOR("미흡");
+    private final String name;
+}
+
+
+================================================================================
+File Path: .\enums\TransplantMethod.java
+================================================================================
+
+package com.ocean.piuda.dashboard.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum TransplantMethod {
+    SEEDLING_STRING("종묘줄", "종묘줄(줄)", "줄"),
+    ROPE("로프", "로프(m) : 종묘줄을 로프에 고정하여 이식", "m"),
+    ROCK_FIXATION("암반 고정", "종묘를 암반에 직접 부착하여 이식", "지점"),
+    TRANSPLANT_MODULE("이식 모듈", "이식 모듈(기) : 제작된 모듈에 부착 후 수중에 고정", "기"),
+    DIRECT_FIXATION("직접 고정 지점", "직접 고정 지점(지점)", "지점");
+
+    private final String name;
+    private final String description;
+    private final String unit;
 }
 
 
@@ -642,102 +1910,256 @@ File Path: .\initializer\DashboardDataInitializer.java
 
 package com.ocean.piuda.dashboard.initializer;
 
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.bio.enums.BioGroup;
+import com.ocean.piuda.bio.repository.SpeciesRepository;
 import com.ocean.piuda.dashboard.entity.*;
-import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
+import com.ocean.piuda.dashboard.enums.*;
 import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
-import com.ocean.piuda.global.util.GeometryUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @Profile("!prod")
+@Order(1)
 public class DashboardDataInitializer implements CommandLineRunner {
 
     private final ProjectAreaRepository projectAreaRepository;
+    private final SpeciesRepository speciesRepository;
+
+    private static final String VALID_IMAGE_URL = "/images/underSea.jpg";
 
     @Override
     @Transactional
-    public void run(String... args) throws Exception {
-        if (projectAreaRepository.count() > 0) {
-            return;
-        }
+    public void run(String... args) {
+        if (projectAreaRepository.count() > 0) return;
 
-        log.info("Dashboard 초기 데이터 적재 시작");
-        createPohangData();
+        log.info("OC DASHBOARD 실증용 데이터 초기화 시작");
+
+        // 1) Species
+        Species gamtae = getOrCreateSpecies("감태", BioGroup.MACROALGAE);
+        Species dasima = getOrCreateSpecies("다시마", BioGroup.MACROALGAE);
+        Species mojaban = getOrCreateSpecies("모자반", BioGroup.MACROALGAE);
+
+        // 2) Areas
+        createPohangDemoArea1(gamtae, dasima, mojaban);
+        createUljinDemoArea1(gamtae, dasima);
+
+        log.info("OC DASHBOARD 데이터 초기화 완료");
     }
 
-    private void createPohangData() {
-        // 좌표 정의
-        double lat = 36.0762;
-        double lon = 129.4432;
+    private Species getOrCreateSpecies(String name, BioGroup category) {
+        return speciesRepository.findByName(name)
+                .orElseGet(() -> speciesRepository.save(
+                        Species.builder()
+                                .name(name)
+                                .category(category)
+                                .build()
+                ));
+    }
 
+    /**
+     * 포항 테스트 영역 1: 이식 + 성장(대표개체) + 환경 + 미디어 데이터 모두 포함
+     * - TransplantLog: recordDate, attachmentStatus 필수
+     * - GrowthLog: recordDate/attachmentRate/survivalRate/growthLength/status 필수
+     * - WaterLog: recordDate/temperature/dissolvedOxygen/nutrient + MarineStatus 4종 필수
+     * - MediaLog: recordDate/mediaUrl/category 필수
+     */
+    private void createPohangDemoArea1(Species gamtae, Species dasima, Species mojaban) {
         ProjectArea area = ProjectArea.builder()
-                .name("작업 영역 1")
-                .startDate(LocalDate.of(2025, 7, 15))
-                .habitat(HabitatType.ROCKY_REEF)
-                .depth(8.0)
-                .areaSize(2100.0)
-                .status(ProjectStatus.TRANSPLANT_COMPLETED)
-                // [수정] Point 객체 생성 및 주입 (Lon, Lat 순서)
-                .location(GeometryUtils.createPoint(lon, lat))
+                .name("포항 테스트 영역-1")
+                .restorationRegion(RestorationRegion.POHANG)
+                .startDate(LocalDate.of(2025, 3, 1))
+                .endDate(LocalDate.of(2026, 12, 31))
+                .habitat(HabitatType.ROCKY)
+                .depth(10.5)
+                .areaSize(1850.0)
+                .level(ProjectLevel.GROWTH)
+                .attachmentStatus(AreaAttachmentStatus.STABLE)
                 .build();
 
-        // 이식 데이터
-        area.addTransplant(TransplantLog.builder().speciesName("감태").count(2100).areaSize(1100.0).build());
-        area.addTransplant(TransplantLog.builder().speciesName("다시마").count(700).areaSize(650.0).build());
-        area.addTransplant(TransplantLog.builder().speciesName("곰피").count(380).areaSize(350.0).build());
+        // setLocation(lat, lon) (내부에서 Point(lon, lat) 생성)
+        area.setLocation(36.0762, 129.4432);
 
-        // 시계열 데이터
-        LocalDate baseDate = LocalDate.of(2025, 1, 15);
-        List<Double> attach = List.of(60.0, 65.0, 71.0, 77.0, 80.0, 82.0);
-        List<Double> surviv = List.of(92.0, 90.0, 89.0, 88.0, 86.0, 85.0);
-        List<Double> growth = List.of(1.0, 1.2, 1.5, 1.8, 2.0, 2.3);
-
-        List<Double> wTemp = List.of(9.6, 10.0, 11.3, 13.7, 16.1);
-        List<Double> wDo = List.of(8.6, 8.4, 8.2, 8.0, 7.8);
-        List<Double> wNut = List.of(0.29, 0.26, 0.24, 0.22, 0.21);
-
-        for (int i = 0; i < 6; i++) {
-            LocalDate date = baseDate.plusMonths(i);
-            area.addGrowth(GrowthLog.builder()
-                    .recordDate(date)
-                    .attachmentRate(attach.get(i))
-                    .survivalRate(surviv.get(i))
-                    .growthLength(growth.get(i))
-                    .build());
-
-            if (i < 5) {
-                area.addWater(WaterLog.builder()
-                        .recordDate(date)
-                        .temperature(wTemp.get(i))
-                        .dissolvedOxygen(wDo.get(i))
-                        .nutrient(wNut.get(i))
-                        .build());
-            }
-        }
-
-        area.setBiodiversity(BiodiversitySummary.builder()
-                .fishCountBefore(5).fishCountAfter(11)
-                .invertCountBefore(10).invertCountAfter(18)
-                .shannonIndexBefore(1.12).shannonIndexAfter(1.78)
+        // -------- Transplant Logs (필수값: recordDate, attachmentStatus 포함) --------
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 3, 10))
+                .species(gamtae)
+                .method(TransplantMethod.SEEDLING_STRING)
+                .count(48)
+                .areaSize(500.0)
+                .attachmentStatus(SpeciesAttachmentStatus.GOOD)
                 .build());
 
-        String imgUrl = "/images/underSea.jpg";
-        area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 7, 1)).mediaUrl(imgUrl).caption("2025.07").build());
-        area.addMedia(MediaLog.builder().recordDate(LocalDate.of(2025, 8, 1)).mediaUrl(imgUrl).caption("2025.08").build());
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 3, 18))
+                .species(dasima)
+                .method(TransplantMethod.TRANSPLANT_MODULE)
+                .count(22)
+                .areaSize(350.0)
+                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
+                .build());
+
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 4, 5))
+                .species(mojaban)
+                .method(TransplantMethod.ROPE)
+                .count(12)
+                .areaSize(200.0)
+                .attachmentStatus(SpeciesAttachmentStatus.GOOD)
+                .build());
+
+        // 같은 method의 최신 착생상태 쿼리 검증용으로 하나 더(날짜 최신)
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 6, 20))
+                .species(mojaban)
+                .method(TransplantMethod.ROPE)
+                .count(8)
+                .areaSize(120.0)
+                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
+                .build());
+
+        // -------- Growth Logs (대표개체, 필수값 모두 포함) --------
+        area.addGrowth(GrowthLog.builder()
+                .species(gamtae)
+                .recordDate(LocalDate.of(2025, 5, 15))
+                .attachmentRate(85.0)
+                .survivalRate(90.0)
+                .growthLength(12.5)
+                .status(SpeciesAttachmentStatus.GOOD)
+                .build());
+
+        area.addGrowth(GrowthLog.builder()
+                .species(gamtae)
+                .recordDate(LocalDate.of(2025, 6, 15))
+                .attachmentRate(88.0)
+                .survivalRate(89.0)
+                .growthLength(18.2)
+                .status(SpeciesAttachmentStatus.GOOD)
+                .build());
+
+        // 대표개체가 아닌 로그도 1개 추가(대표 차트 필터링 확인용)
+        area.addGrowth(GrowthLog.builder()
+                .species(dasima)
+                .recordDate(LocalDate.of(2025, 6, 15))
+                .attachmentRate(70.0)
+                .survivalRate(75.0)
+                .growthLength(10.0)
+                .status(SpeciesAttachmentStatus.NORMAL)
+                .build());
+
+        // -------- Water Logs (필수값: recordDate, temperature, DO, nutrient + 상태값 4종) --------
+        area.addWater(WaterLog.builder()
+                .recordDate(LocalDate.of(2025, 6, 1))
+                .temperature(18.2)
+                .dissolvedOxygen(7.4)
+                .nutrient(0.35)
+                .visibility(MarineStatus.GOOD)
+                .current(MarineStatus.NORMAL)
+                .surge(MarineStatus.NORMAL)
+                .wave(MarineStatus.GOOD)
+                .build());
+
+        area.addWater(WaterLog.builder()
+                .recordDate(LocalDate.of(2025, 7, 1))
+                .temperature(21.5)
+                .dissolvedOxygen(6.9)
+                .nutrient(0.42)
+                .visibility(MarineStatus.NORMAL)
+                .current(MarineStatus.NORMAL)
+                .surge(MarineStatus.POOR)
+                .wave(MarineStatus.NORMAL)
+                .build());
+
+        // -------- Media Logs (필수값: recordDate, mediaUrl, category) --------
+        area.addMedia(MediaLog.builder()
+                .category(MediaCategory.BEFORE)
+                .mediaUrl(VALID_IMAGE_URL)
+                .recordDate(LocalDate.of(2025, 2, 20))
+                .caption("복원 전 수중 상태")
+                .build());
+
+        area.addMedia(MediaLog.builder()
+                .category(MediaCategory.AFTER)
+                .mediaUrl(VALID_IMAGE_URL)
+                .recordDate(LocalDate.of(2025, 4, 10))
+                .caption("1차 이식 완료 후")
+                .build());
+
+        area.addMedia(MediaLog.builder()
+                .category(MediaCategory.TIMELINE)
+                .mediaUrl(VALID_IMAGE_URL)
+                .recordDate(LocalDate.of(2025, 6, 15))
+                .caption("6월 성장 관측")
+                .build());
 
         projectAreaRepository.save(area);
-        log.info("Pohang 데이터 생성 완료 (ID: {})", area.getId());
+    }
+
+    /**
+     * 울진 테스트 영역 1: 마커/통계/nearest/bbox 테스트용으로 최소 구성 + 필수로그 몇 개
+     */
+    private void createUljinDemoArea1(Species gamtae, Species dasima) {
+        ProjectArea area = ProjectArea.builder()
+                .name("울진 테스트 영역-1")
+                .restorationRegion(RestorationRegion.ULJIN)
+                .startDate(LocalDate.of(2025, 8, 1))
+                .endDate(null)
+                .habitat(HabitatType.MIXED)
+                .depth(8.0)
+                .areaSize(920.0)
+                .level(ProjectLevel.SETTLEMENT)
+                .attachmentStatus(AreaAttachmentStatus.DECREASED)
+                .build();
+
+        area.setLocation(36.9950, 129.4020);
+        area.setRepresentativeSpecies(gamtae);
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 8, 5))
+                .species(gamtae)
+                .method(TransplantMethod.ROCK_FIXATION)
+                .count(30)
+                .areaSize(180.0)
+                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
+                .build());
+
+        area.addTransplant(TransplantLog.builder()
+                .recordDate(LocalDate.of(2025, 9, 2))
+                .species(dasima)
+                .method(TransplantMethod.DIRECT_FIXATION)
+                .count(15)
+                .areaSize(90.0)
+                .attachmentStatus(SpeciesAttachmentStatus.POOR)
+                .build());
+
+        area.addWater(WaterLog.builder()
+                .recordDate(LocalDate.of(2025, 9, 1))
+                .temperature(20.0)
+                .dissolvedOxygen(7.0)
+                .nutrient(0.40)
+                .visibility(MarineStatus.NORMAL)
+                .current(MarineStatus.GOOD)
+                .surge(MarineStatus.NORMAL)
+                .wave(MarineStatus.NORMAL)
+                .build());
+
+        area.addMedia(MediaLog.builder()
+                .category(MediaCategory.TIMELINE)
+                .mediaUrl(VALID_IMAGE_URL)
+                .recordDate(LocalDate.of(2025, 9, 1))
+                .caption("울진 9월 관측")
+                .build());
+
+        projectAreaRepository.save(area);
     }
 }
 
@@ -888,6 +2310,79 @@ public class ProjectExporter {
 
 
 ================================================================================
+File Path: .\repository\GrowthLogRepository.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository;
+
+import com.ocean.piuda.dashboard.entity.GrowthLog;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+@Repository
+public interface GrowthLogRepository extends JpaRepository<GrowthLog, Long> {
+    Optional<GrowthLog> findByIdAndProjectAreaId(Long id, Long projectAreaId);
+
+
+    /**
+     * 특정 작업 영역(ProjectArea)의 "특정 종" 성장 로그 조회 (대표종 차트용)
+     * - recordDate: 시간순(오름차순) 정렬
+     */
+    List<GrowthLog> findAllByProjectAreaIdAndSpeciesIdOrderByRecordDateAsc(Long projectAreaId, Long speciesId);
+
+    @EntityGraph(attributePaths = {"species"})
+    Page<GrowthLog> findAllByProjectAreaIdAndRecordDateBetween(
+            Long projectAreaId, LocalDate from, LocalDate to, Pageable pageable
+    );
+
+}
+
+
+================================================================================
+File Path: .\repository\MediaLogRepository.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository;
+
+import com.ocean.piuda.dashboard.entity.MediaLog;
+import com.ocean.piuda.dashboard.repository.projection.MediaPointProjection;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+
+@Repository
+public interface MediaLogRepository extends JpaRepository<MediaLog, Long> {
+
+    Optional<MediaLog> findByIdAndProjectAreaId(Long id, Long projectAreaId);
+
+
+    /**
+     * 특정 영역의 모든 사진 데이터를 날짜순으로 조회
+     */
+    List<MediaPointProjection> findAllByProjectAreaIdOrderByRecordDateAsc(Long areaId);
+
+    Page<MediaLog> findAllByProjectAreaIdAndRecordDateBetween(
+            Long projectAreaId, LocalDate from, LocalDate to, Pageable pageable
+    );
+
+}
+
+
+================================================================================
 File Path: .\repository\ProjectAreaRepository.java
 ================================================================================
 
@@ -900,11 +2395,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 @Repository
-public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> {
+public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> , JpaSpecificationExecutor<ProjectArea> {
 
     // 1. 상세 엔티티 조회용 공간쿼리 (Deprecated / 현재 미사용)
     /**
@@ -926,6 +2421,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             @Param("lon") double lon,
             @Param("radiusInMeters") double radiusInMeters
     );
+
 
     /**
      * @deprecated
@@ -994,7 +2490,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         WHERE p.location && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
         """, nativeQuery = true)
@@ -1019,7 +2515,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         WHERE ST_DWithin(
             CAST(p.location AS geography),
@@ -1048,7 +2544,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             p.depth          AS depth,
             p.area_size      AS areaSize,
             p.habitat        AS habitat,
-            p.status         AS status
+            p.level          AS level
         FROM project_areas p
         ORDER BY p.location <-> ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)
         LIMIT :limitCount
@@ -1058,6 +2554,21 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
             @Param("lon") double lon,
             @Param("limitCount") int limitCount
     );
+}
+
+
+================================================================================
+File Path: .\repository\projection\AccumulatedStatsProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import java.time.LocalDate;
+
+public interface AccumulatedStatsProjection {
+    Long getTotalCount();
+    LocalDate getLastDate();
+    Double getTotalArea();
 }
 
 
@@ -1085,7 +2596,7 @@ public interface AreaMarkerProjection {
     Double getAreaSize();
 
     String getHabitat(); // DB에 저장된 Enum String (예: "ROCKY_REEF")
-    String getStatus();  // DB에 저장된 Enum String (예: "TRANSPLANT_COMPLETED")
+    String getLevel();  // DB에 저장된 Enum String (예: "TRANSPLANT_COMPLETED")
 }
 
 
@@ -1103,27 +2614,832 @@ public interface AreaStatProjection {
 
 
 ================================================================================
-File Path: .\service\DashboardQueryService.java
+File Path: .\repository\projection\EnvironmentSummaryProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+public interface EnvironmentSummaryProjection {
+    String getVisibility();
+    String getCurrent();
+    String getSurge();
+    String getWave();
+}
+
+
+================================================================================
+File Path: .\repository\projection\MediaPointProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import com.ocean.piuda.dashboard.enums.MediaCategory;
+import java.time.LocalDate;
+
+public interface MediaPointProjection {
+    String getMediaUrl();
+    LocalDate getRecordDate();
+    String getCaption();
+    MediaCategory getCategory();
+}
+
+
+================================================================================
+File Path: .\repository\projection\MethodAttachmentStatusProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+public interface MethodAttachmentStatusProjection {
+    String getMethodName();  // TransplantMethod enum name (e.g. ROPE)
+    String getStatusName();  // SpeciesAttachmentStatus enum name (e.g. GOOD)
+}
+
+
+================================================================================
+File Path: .\repository\projection\MethodDistributionProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+
+public interface MethodDistributionProjection {
+    TransplantMethod getMethodName();
+    Long getCount();
+}
+
+
+================================================================================
+File Path: .\repository\projection\SpeciesStatusProjection.java
+================================================================================
+
+//package com.ocean.piuda.dashboard.repository.projection;
+//
+//public interface SpeciesStatusProjection {
+//    String getSpeciesName();
+//    String getStatusName();
+//}
+
+
+================================================================================
+File Path: .\repository\projection\TemperaturePointProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import java.time.LocalDate;
+
+public interface TemperaturePointProjection {
+    LocalDate getRecordDate();
+    Double getTemperature();
+}
+
+
+================================================================================
+File Path: .\repository\projection\TransplantItemProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import com.ocean.piuda.dashboard.enums.TransplantMethod;
+
+public interface TransplantItemProjection {
+    String getSpeciesName();
+    TransplantMethod getMethodName(); // Enum name
+    Long getTotalCount();
+}
+
+
+================================================================================
+File Path: .\repository\projection\WorkHistoryPointProjection.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository.projection;
+
+import java.time.LocalDate;
+
+public interface WorkHistoryPointProjection {
+    LocalDate getMonth();
+    Long getCount();
+}
+
+
+================================================================================
+File Path: .\repository\TransplantLogRepository.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository;
+
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.dashboard.entity.TransplantLog;
+import com.ocean.piuda.dashboard.entity.WaterLog;
+import com.ocean.piuda.dashboard.repository.projection.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@Repository
+public interface TransplantLogRepository extends JpaRepository<TransplantLog, Long> {
+
+    Optional<TransplantLog> findByIdAndProjectAreaId(Long id, Long projectAreaId);
+
+
+    /**
+     * 이식 방식별 최신 착생 상태
+     */
+    @Query(value = """
+    SELECT DISTINCT ON (t.method)
+        t.method as methodName,
+        t.attachment_status as statusName
+    FROM transplant_logs t
+    WHERE t.area_id = :areaId
+   ORDER BY t.method, t.record_date DESC NULLS LAST, t.id DESC
+   """, nativeQuery = true)
+    List<MethodAttachmentStatusProjection> findLatestAttachmentStatusPerMethod(@Param("areaId") Long areaId);
+
+
+    /**
+     * 방식별 분포: DB에서 집계 (전체 기간)
+     */
+    @Query("SELECT t.method as methodName, COUNT(t) as count FROM TransplantLog t " +
+            "WHERE t.projectArea.id = :areaId GROUP BY t.method")
+    List<MethodDistributionProjection> findMethodDistribution(@Param("areaId") Long areaId);
+
+    /**
+     * 누적 통계: DB에서 집계 (전체 기간)
+     */
+    @Query("""
+       SELECT COUNT(t) as totalCount,
+              MAX(t.recordDate) as lastDate,
+              COALESCE(SUM(t.areaSize), 0) as totalArea
+       FROM TransplantLog t
+       WHERE t.projectArea.id = :areaId""")
+
+    AccumulatedStatsProjection getAccumulatedStats(@Param("areaId") Long areaId);
+
+    /**
+     * 작업 히스토리: 최근 3개월 월별 집계 (DB에서 연-월 그룹화)
+     */
+    @Query(value = """
+        SELECT (DATE_TRUNC('month', record_date))::date as month, COUNT(*) as count
+        FROM transplant_logs
+        WHERE area_id = :areaId
+        AND record_date > (SELECT MAX(record_date) FROM transplant_logs WHERE area_id = :areaId) - INTERVAL '3 months'
+        GROUP BY month ORDER BY month ASC
+        """, nativeQuery = true)
+    List<WorkHistoryPointProjection> findWorkHistory(@Param("areaId") Long areaId);
+
+
+    @Query("""
+            SELECT t.species.name as speciesName,
+                   t.method as methodName,
+                   SUM(t.count) as totalCount
+            FROM TransplantLog t
+            WHERE t.projectArea.id = :areaId
+            GROUP BY t.species.name, t.method
+    """)
+    List<TransplantItemProjection> findTransplantItems(@Param("areaId") Long areaId);
+
+    @EntityGraph(attributePaths = {"species"})
+    Page<TransplantLog> findAllByProjectAreaIdAndRecordDateBetween(
+            Long projectAreaId, LocalDate from, LocalDate to, Pageable pageable
+    );
+
+    /**
+     * 특정 영역에 이식된 적이 있는 모든 종(Species) 목록 조회 (중복 제거)
+     * - 드롭다운 후보군 제공용
+     */
+    @Query("SELECT DISTINCT t.species FROM TransplantLog t WHERE t.projectArea.id = :areaId")
+    List<Species> findDistinctSpeciesByAreaId(@Param("areaId") Long areaId);
+
+}
+
+
+================================================================================
+File Path: .\repository\WaterLogRepository.java
+================================================================================
+
+package com.ocean.piuda.dashboard.repository;
+
+import com.ocean.piuda.dashboard.entity.WaterLog;
+import com.ocean.piuda.dashboard.repository.projection.EnvironmentSummaryProjection;
+import com.ocean.piuda.dashboard.repository.projection.TemperaturePointProjection;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+
+
+@Repository
+public interface WaterLogRepository extends JpaRepository<WaterLog, Long> {
+
+    Optional<WaterLog> findByIdAndProjectAreaId(Long id, Long projectAreaId);
+
+
+    /**
+     * 수온 차트: 전체 기간에서 날짜와 온도만 (엔티티 로딩 X)
+     */
+    @Query("SELECT w.recordDate as recordDate, w.temperature as temperature " +
+            "FROM WaterLog w WHERE w.projectArea.id = :areaId ORDER BY w.recordDate ASC")
+    List<TemperaturePointProjection> findTemperatureHistory(@Param("areaId") Long areaId);
+
+    /**
+     * 환경 요약: 가장 최근 1건의 상태만 조회
+     */
+    @Query(value = "SELECT * FROM water_logs WHERE area_id = :areaId ORDER BY record_date DESC LIMIT 1", nativeQuery = true)
+    Optional<WaterLog> findTopByAreaIdOrderByRecordDateDesc(@Param("areaId") Long areaId);
+
+    @Query(value = """
+        SELECT
+          (SELECT w.visibility
+             FROM water_logs w
+            WHERE w.area_id = :areaId
+              AND w.record_date > (SELECT MAX(record_date) FROM water_logs WHERE area_id = :areaId) - INTERVAL '3 months'
+            GROUP BY w.visibility
+            ORDER BY COUNT(*) DESC, w.visibility
+            LIMIT 1
+          ) AS visibility,
+
+          (SELECT w."current"
+             FROM water_logs w
+            WHERE w.area_id = :areaId
+              AND w.record_date > (SELECT MAX(record_date) FROM water_logs WHERE area_id = :areaId) - INTERVAL '3 months'
+            GROUP BY w."current"
+            ORDER BY COUNT(*) DESC, w."current"
+            LIMIT 1
+          ) AS current,
+
+          (SELECT w.surge
+             FROM water_logs w
+            WHERE w.area_id = :areaId
+              AND w.record_date > (SELECT MAX(record_date) FROM water_logs WHERE area_id = :areaId) - INTERVAL '3 months'
+            GROUP BY w.surge
+            ORDER BY COUNT(*) DESC, w.surge
+            LIMIT 1
+          ) AS surge,
+
+          (SELECT w.wave
+             FROM water_logs w
+            WHERE w.area_id = :areaId
+              AND w.record_date > (SELECT MAX(record_date) FROM water_logs WHERE area_id = :areaId) - INTERVAL '3 months'
+            GROUP BY w.wave
+            ORDER BY COUNT(*) DESC, w.wave
+            LIMIT 1
+          ) AS wave
+        """, nativeQuery = true)
+    EnvironmentSummaryProjection findEnvironmentSummaryModeLast3Months(@Param("areaId") Long areaId);
+
+    Page<WaterLog> findAllByProjectAreaIdAndRecordDateBetween(
+            Long projectAreaId, LocalDate from, LocalDate to, Pageable pageable
+    );
+
+}
+
+
+================================================================================
+File Path: .\service\DashboardAggregateBuilder.java
 ================================================================================
 
 package com.ocean.piuda.dashboard.service;
 
+import com.ocean.piuda.dashboard.dto.TimeSeriesChartDto;
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
-import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
-import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
-import com.ocean.piuda.dashboard.entity.ProjectArea;
-import com.ocean.piuda.dashboard.enums.HabitatType;
-import com.ocean.piuda.dashboard.enums.ProjectStatus;
-import com.ocean.piuda.dashboard.repository.ProjectAreaRepository;
-import com.ocean.piuda.dashboard.repository.projection.AreaMarkerProjection;
-import com.ocean.piuda.dashboard.repository.projection.AreaStatProjection;
+import com.ocean.piuda.dashboard.entity.*;
+import com.ocean.piuda.dashboard.enums.*;
+import com.ocean.piuda.dashboard.repository.projection.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+@Component
+@RequiredArgsConstructor
+public class DashboardAggregateBuilder {
+
+    /**
+     * @param area 기본 정보를 담은 엔티티
+     * @param tempHistory 수온 차트용 프로젝션 (전체 기간)
+     * @param envSummary 최신 3개월 환경 요약
+     * @param distributions 이식 방식 분포 (전체 집계 프로젝션)
+     * @param history 최근 3개월 작업 횟수 (집계 프로젝션)
+     * @param repGrowthLogs 대표 개체 성장 로그 (필터링된 엔티티 리스트)
+     */
+    public AreaDetailResponse build(
+            ProjectArea area,
+            List<TemperaturePointProjection> tempHistory,
+            EnvironmentSummaryProjection envSummary,
+            List<MethodDistributionProjection> distributions,
+            List<WorkHistoryPointProjection> history,
+            List<GrowthLog> repGrowthLogs,
+            List<MethodAttachmentStatusProjection> methodStatuses,
+            List<TransplantItemProjection> speciesItems,
+            LocalDate lastWorkDate,
+            Double totalTransplantArea,
+            List<MediaPointProjection> mediaHistory
+    ) {
+        return AreaDetailResponse.builder()
+                .id(area.getId())
+                .overview(buildOverview(area))
+                .status(buildStatus(area, distributions, history,speciesItems,lastWorkDate,totalTransplantArea))
+                .ecology(buildEcology(area, repGrowthLogs,methodStatuses))
+                .environment(buildEnvironment(envSummary, tempHistory))
+                .photos(buildPhotos(mediaHistory))
+                .build();
+    }
+
+    private AreaDetailResponse.OverviewTab buildOverview(ProjectArea area) {
+        return AreaDetailResponse.OverviewTab.builder()
+                .name(area.getName())
+                .areaId(area.getId())
+                .restorationRegion(area.getRestorationRegion().getName())
+                .startDate(area.getStartDate())
+                .endDate(area.getEndDate())
+                .currentStatus(AreaDetailResponse.StatusInfo.builder()
+                        .name(area.getLevel().getName())
+                        .description(area.getLevel().getDescription())
+                        .build())
+                .areaSize(area.getAreaSize())
+                .avgDepth(area.getDepth())
+                .habitatType(area.getHabitat().getName())
+                .lat(area.getLat())
+                .lon(area.getLon())
+                .attachmentStatus(area.getAttachmentStatus() != null ?
+                        area.getAttachmentStatus().getName() : null)
+                .build();
+    }
+
+    private AreaDetailResponse.StatusTab buildStatus(
+            ProjectArea area,
+            List<MethodDistributionProjection> distributions,
+            List<WorkHistoryPointProjection> history,
+            List<TransplantItemProjection> speciesItems,
+            LocalDate lastWorkDate,
+            Double totalTransplantArea
+    ) {
+        //  방식별 분포
+        Map<String, Double> distributionMap = new HashMap<>();
+        long totalCount = distributions.stream().mapToLong(MethodDistributionProjection::getCount).sum();
+
+        distributions.forEach(d -> {
+            double ratio = totalCount == 0 ? 0 : (double) d.getCount() / totalCount * 100;
+            distributionMap.put(d.getMethodName().getName(), Math.round(ratio * 10.0) / 10.0);
+        });
+
+        // 종별 리스트 생성
+
+        List<AreaDetailResponse.TransplantItem> speciesList = speciesItems.stream()
+                .map(p -> {
+
+                    TransplantMethod method = p.getMethodName();
+
+                    return AreaDetailResponse.TransplantItem.builder()
+                        .speciesName(p.getSpeciesName())
+                        .method(method.getName())
+                        .methodDesc(method.getDescription())
+                            .quantity(p.getTotalCount())
+                            .unit(method.getUnit())
+                            .build();
+                }
+                )
+                .toList();
+
+
+        return AreaDetailResponse.StatusTab.builder()
+                .speciesList(speciesList)
+                .methodDistribution(distributionMap)
+                .accumulated(AreaDetailResponse.AccumulatedStats.builder()
+                        .totalAreaSize(totalTransplantArea)
+                        .totalWorkCount((int) totalCount)
+                        .lastWorkDate(lastWorkDate)
+                        .build())
+                .workHistoryChart(TimeSeriesChartDto.builder()
+                        .labels(history.stream().map(WorkHistoryPointProjection::getMonth).toList())
+                        .values(history.stream().map(h -> h.getCount().doubleValue()).toList())
+                        .unit("회")
+                        .build())
+                .build();
+    }
+
+    private AreaDetailResponse.EcologyTab buildEcology(ProjectArea area, List<GrowthLog> repLogs, List<MethodAttachmentStatusProjection> methodStatuses) {
+
+        // DB에서 가져온 종별 최신 상태를 DTO로 매핑
+        List<AreaDetailResponse.AttachmentStatus> attachmentStatuses = methodStatuses.stream()
+                .map(p -> {
+                    TransplantMethod method = TransplantMethod.valueOf(p.getMethodName());
+                    String statusKorean = SpeciesAttachmentStatus.valueOf(p.getStatusName()).getName();
+                    return AreaDetailResponse.AttachmentStatus.builder()
+                            .method(method.getName())
+                            .status(statusKorean)
+                            .build();
+                })
+                .toList();
+
+        String targetSpeciesName = (area.getRepresentativeSpecies() != null)
+                ? area.getRepresentativeSpecies().getName()
+                : "미지정";
+
+        return AreaDetailResponse.EcologyTab.builder()
+                .attachmentStatuses(attachmentStatuses)
+                .survivalStatus(area.getAttachmentStatus() != null ? area.getAttachmentStatus().getName() : "안정")
+                .representativeGrowthChart(TimeSeriesChartDto.builder()
+                        .labels(repLogs.stream().map(GrowthLog::getRecordDate).toList())
+                        .values(repLogs.stream().map(GrowthLog::getGrowthLength).toList())
+                        .targetSpecies(targetSpeciesName)
+                        .unit("mm/월")
+                        .build())
+                .build();
+    }
+
+    private AreaDetailResponse.EnvironmentTab buildEnvironment( EnvironmentSummaryProjection summary, List<TemperaturePointProjection> tempHistory) {
+        return AreaDetailResponse.EnvironmentTab.builder()
+                .last3MonthsSummary(AreaDetailResponse.EnvironmentSummary.builder()
+                        .visibility(toMarineStatusName(summary != null ? summary.getVisibility() : null))
+                        .current(toMarineStatusName(summary != null ? summary.getCurrent() : null))
+                        .surge(toMarineStatusName(summary != null ? summary.getSurge() : null))
+                        .wave(toMarineStatusName(summary != null ? summary.getWave() : null))
+                        .build())
+
+                .temperatureChart(TimeSeriesChartDto.builder()
+                        .labels(tempHistory.stream().map(TemperaturePointProjection::getRecordDate).toList())
+                        .values(tempHistory.stream().map(TemperaturePointProjection::getTemperature).toList())
+                        .unit("℃")
+                        .build())
+                .build();
+    }
+    private String toMarineStatusName(String enumName) {
+        if (enumName == null) return "데이터 없음";
+        return MarineStatus.valueOf(enumName).getName(); // GOOD/NORMAL/POOR -> 좋음/보통/나쁨
+    }
+
+    private AreaDetailResponse.PhotoTab buildPhotos(List<MediaPointProjection> mediaHistory) {
+        // 1. 복원 전/후 사진 추출 (단건)
+        String before = mediaHistory.stream()
+                .filter(m -> m.getCategory() == MediaCategory.BEFORE)
+                .map(MediaPointProjection::getMediaUrl).findFirst().orElse(null);
+
+        String after = mediaHistory.stream()
+                .filter(m -> m.getCategory() == MediaCategory.AFTER)
+                .map(MediaPointProjection::getMediaUrl).findFirst().orElse(null);
+
+        // 2. 타임라인 리스트 생성
+        List<AreaDetailResponse.TimelinePhoto> timeline = mediaHistory.stream()
+                .filter(m -> m.getCategory() == MediaCategory.TIMELINE)
+                .map(m -> AreaDetailResponse.TimelinePhoto.builder()
+                        .url(m.getMediaUrl())
+                        .label(m.getRecordDate().format(DateTimeFormatter.ofPattern("yyyy.MM")))
+                        .caption(m.getCaption())
+                        .build())
+                .toList();
+
+        return AreaDetailResponse.PhotoTab.builder()
+                .beforeUrl(before)
+                .afterUrl(after)
+                .timeline(timeline)
+                .build();    }
+}
+
+
+================================================================================
+File Path: .\service\DashboardCommandService.java
+================================================================================
+
+package com.ocean.piuda.dashboard.service;
+
+import com.ocean.piuda.bio.entity.Species;
+import com.ocean.piuda.bio.repository.SpeciesRepository;
+import com.ocean.piuda.dashboard.dto.request.*;
+import com.ocean.piuda.dashboard.entity.*;
+import com.ocean.piuda.dashboard.repository.*;
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class DashboardCommandService {
+
+    private final ProjectAreaRepository projectAreaRepository;
+    private final TransplantLogRepository transplantLogRepository;
+    private final GrowthLogRepository growthLogRepository;
+    private final WaterLogRepository waterLogRepository;
+    private final MediaLogRepository mediaLogRepository;
+    private final SpeciesRepository speciesRepository;
+
+    // -------------------------
+    // ProjectArea
+    // -------------------------
+
+    public Long createArea(CreateProjectAreaRequest req) {
+        ProjectArea area = ProjectArea.builder()
+                .name(req.name())
+                .restorationRegion(req.restorationRegion())
+                .startDate(req.startDate())
+                .endDate(req.endDate())
+                .habitat(req.habitat())
+                .depth(req.depth())
+                .areaSize(req.areaSize())
+                .level(req.level())
+                .attachmentStatus(req.attachmentStatus())
+                .build();
+
+        area.setLocation(req.lat(), req.lon());
+        return projectAreaRepository.save(area).getId();
+    }
+
+    public void updateArea(Long areaId, UpdateProjectAreaRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+
+        Species representativeSpecies = (req.representativeSpeciesId() != null ) ? speciesRepository.findById(req.representativeSpeciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND)) : null;
+
+        area.update(
+                req.name(),
+                req.restorationRegion(),
+                req.startDate(),
+                req.endDate(),
+                req.habitat(),
+                req.depth(),
+                req.areaSize(),
+                req.level(),
+                req.attachmentStatus(),
+                req.lat(),
+                req.lon(),
+                representativeSpecies
+        );
+    }
+
+    public void deleteArea(Long areaId) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        projectAreaRepository.delete(area); // cascade로 로그들도 같이 정리
+    }
+
+    // -------------------------
+    // TransplantLog
+    // -------------------------
+
+    public Long createTransplant(Long areaId, CreateTransplantLogRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = speciesRepository.findById(req.speciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        TransplantLog log = TransplantLog.builder()
+                .recordDate(req.recordDate())
+                .method(req.method())
+                .species(species)
+                .count(req.count())
+                .areaSize(req.areaSize())
+                .attachmentStatus(req.attachmentStatus())
+                .build();
+
+        area.addTransplant(log);
+
+        return transplantLogRepository.save(log).getId();
+    }
+
+    public void updateTransplant(Long areaId, Long logId, UpdateTransplantLogRequest req) {
+        TransplantLog log = transplantLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = null;
+        if (req.speciesId() != null) {
+            species = speciesRepository.findById(req.speciesId())
+                    .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        }
+
+        log.update(
+                req.recordDate(),
+                req.method(),
+                species,
+                req.count(),
+                req.areaSize(),
+                req.attachmentStatus()
+        );
+    }
+
+    public void deleteTransplant(Long areaId, Long logId) {
+        TransplantLog log = transplantLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        transplantLogRepository.delete(log);
+    }
+
+
+    // -------------------------
+    // ProjectArea - Representative Species
+    // -------------------------
+    public void setRepresentativeSpecies(Long areaId, SetRepresentativeSpeciesRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = speciesRepository.findById(req.speciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        area.setRepresentativeSpecies(species);
+    }
+
+    // -------------------------
+    // GrowthLog
+    // -------------------------
+
+    public Long createGrowth(Long areaId, CreateGrowthLogRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = speciesRepository.findById(req.speciesId())
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        GrowthLog log = GrowthLog.builder()
+                .species(species)
+                .recordDate(req.recordDate())
+                .attachmentRate(req.attachmentRate())
+                .survivalRate(req.survivalRate())
+                .growthLength(req.growthLength())
+                .status(req.status())
+                .build();
+
+        area.addGrowth(log);
+
+        return growthLogRepository.save(log).getId();
+    }
+
+    public void updateGrowth(Long areaId, Long logId, UpdateGrowthLogRequest req) {
+        GrowthLog log = growthLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        Species species = null;
+        if (req.speciesId() != null) {
+            species = speciesRepository.findById(req.speciesId())
+                    .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        }
+
+        log.update(
+                species,
+                req.recordDate(),
+                req.attachmentRate(),
+                req.survivalRate(),
+                req.growthLength(),
+                req.status()
+        );
+    }
+
+
+    public void deleteGrowth(Long areaId, Long logId) {
+        GrowthLog log = growthLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        growthLogRepository.delete(log);
+    }
+
+    // -------------------------
+    // WaterLog
+    // -------------------------
+
+    public Long createWater(Long areaId, CreateWaterLogRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        WaterLog log = WaterLog.builder()
+                .recordDate(req.recordDate())
+                .temperature(req.temperature())
+                .dissolvedOxygen(req.dissolvedOxygen())
+                .nutrient(req.nutrient())
+                .visibility(req.visibility())
+                .current(req.current())
+                .surge(req.surge())
+                .wave(req.wave())
+                .build();
+
+        area.addWater(log);
+
+        return waterLogRepository.save(log).getId();
+    }
+
+    public void updateWater(Long areaId, Long logId, UpdateWaterLogRequest req) {
+        WaterLog log = waterLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        log.update(
+                req.recordDate(),
+                req.temperature(),
+                req.dissolvedOxygen(),
+                req.nutrient(),
+                req.visibility(),
+                req.current(),
+                req.surge(),
+                req.wave()
+        );
+    }
+
+
+    public void deleteWater(Long areaId, Long logId) {
+        WaterLog log = waterLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        waterLogRepository.delete(log);
+    }
+
+    // -------------------------
+    // MediaLog
+    // -------------------------
+
+    public Long createMedia(Long areaId, CreateMediaLogRequest req) {
+        ProjectArea area = projectAreaRepository.findById(areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        MediaLog log = MediaLog.builder()
+                .recordDate(req.recordDate())
+                .mediaUrl(req.mediaUrl())
+                .caption(req.caption())
+                .category(req.category())
+                .build();
+
+        area.addMedia(log);
+
+        return mediaLogRepository.save(log).getId();
+    }
+
+    public void updateMedia(Long areaId, Long logId, UpdateMediaLogRequest req) {
+        MediaLog log = mediaLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        log.update(
+                req.recordDate(),
+                req.mediaUrl(),
+                req.caption(),
+                req.category()
+        );
+    }
+
+
+    public void deleteMedia(Long areaId, Long logId) {
+        MediaLog log = mediaLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        mediaLogRepository.delete(log);
+    }
+}
+
+
+================================================================================
+File Path: .\service\DashboardQueryService.java
+================================================================================
+
+package com.ocean.piuda.dashboard.service;
+import com.ocean.piuda.dashboard.dto.request.AreaPageRequest;
+import com.ocean.piuda.dashboard.enums.RestorationRegion;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+
+import org.springframework.data.jpa.domain.Specification;
+
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+
+import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaMarkerResponse;
+import com.ocean.piuda.dashboard.dto.response.AreaStatResponse;
+import com.ocean.piuda.dashboard.entity.*;
+import com.ocean.piuda.dashboard.enums.HabitatType;
+import com.ocean.piuda.dashboard.enums.ProjectLevel;
+import com.ocean.piuda.dashboard.repository.*;
+import com.ocean.piuda.dashboard.repository.projection.*;
+import com.ocean.piuda.global.api.exception.BusinessException;
+import com.ocean.piuda.global.api.exception.ExceptionType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 import java.util.List;
+import com.ocean.piuda.dashboard.dto.request.LogPageRequest;
+import com.ocean.piuda.dashboard.dto.response.*;
+import com.ocean.piuda.global.api.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+
 
 @Service
 @RequiredArgsConstructor
@@ -1131,53 +3447,242 @@ import java.util.List;
 public class DashboardQueryService {
 
     private final ProjectAreaRepository projectAreaRepository;
+    private final DashboardAggregateBuilder aggregateBuilder;
+    private final WaterLogRepository waterLogRepository;
+    private final TransplantLogRepository transplantLogRepository;
+    private final GrowthLogRepository growthLogRepository;
+    private final MediaLogRepository mediaLogRepository;
 
-    // 1. 상세 조회
+    private static final LocalDate DEFAULT_FROM = LocalDate.of(1900, 1, 1);
+    private static final LocalDate DEFAULT_TO   = LocalDate.of(3000, 12, 31);
+
+    private LocalDate safeFrom(LocalDate from) { return from != null ? from : DEFAULT_FROM; }
+    private LocalDate safeTo(LocalDate to) { return to != null ? to : DEFAULT_TO; }
+
+    /**
+     * ----------------------------
+     * TransplantLog 조회
+     * ----------------------------
+     */
+    public TransplantLogResponse getTransplantLog(Long areaId, Long logId) {
+        var log = transplantLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        return TransplantLogResponse.from(log);
+    }
+
+    public PageResponse<TransplantLogResponse> getTransplantLogs(
+            Long areaId, LocalDate from, LocalDate to, LogPageRequest req
+    ) {
+        var pageable = req.toPageable();
+        Page<TransplantLog> page = transplantLogRepository.findAllByProjectAreaIdAndRecordDateBetween(
+                areaId, safeFrom(from), safeTo(to), pageable
+        );
+
+        List<TransplantLogResponse> content = page.getContent().stream()
+                .map(TransplantLogResponse::from)
+                .toList();
+
+        Page<TransplantLogResponse> mapped = new PageImpl<>(content, pageable, page.getTotalElements());
+        return PageResponse.of(mapped);
+    }
+
+    /**
+     * ----------------------------
+     * GrowthLog 조회
+     * ----------------------------
+     */
+    public GrowthLogResponse getGrowthLog(Long areaId, Long logId) {
+        var log = growthLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        return GrowthLogResponse.from(log);
+    }
+
+    public PageResponse<GrowthLogResponse> getGrowthLogs(
+            Long areaId, LocalDate from, LocalDate to, LogPageRequest req
+    ) {
+        var pageable = req.toPageable();
+        Page<GrowthLog> page = growthLogRepository.findAllByProjectAreaIdAndRecordDateBetween(
+                areaId, safeFrom(from), safeTo(to), pageable
+        );
+
+        List<GrowthLogResponse> content = page.getContent().stream()
+                .map(GrowthLogResponse::from)
+                .toList();
+
+        Page<GrowthLogResponse> mapped = new PageImpl<>(content, pageable, page.getTotalElements());
+        return PageResponse.of(mapped);
+    }
+
+    /**
+     * ----------------------------
+     * WaterLog 조회
+     * ----------------------------
+     */
+    public WaterLogResponse getWaterLog(Long areaId, Long logId) {
+        var log = waterLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        return WaterLogResponse.from(log);
+    }
+
+    public PageResponse<WaterLogResponse> getWaterLogs(
+            Long areaId, LocalDate from, LocalDate to, LogPageRequest req
+    ) {
+        var pageable = req.toPageable();
+        Page<WaterLog> page = waterLogRepository.findAllByProjectAreaIdAndRecordDateBetween(
+                areaId, safeFrom(from), safeTo(to), pageable
+        );
+
+        List<WaterLogResponse> content = page.getContent().stream()
+                .map(WaterLogResponse::from)
+                .toList();
+
+        Page<WaterLogResponse> mapped = new PageImpl<>(content, pageable, page.getTotalElements());
+        return PageResponse.of(mapped);
+    }
+
+    /**
+     * ----------------------------
+     * MediaLog 조회
+     * ----------------------------
+     */
+    public MediaLogResponse getMediaLog(Long areaId, Long logId) {
+        var log = mediaLogRepository.findByIdAndProjectAreaId(logId, areaId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+        return MediaLogResponse.from(log);
+    }
+
+    public PageResponse<MediaLogResponse> getMediaLogs(
+            Long areaId, LocalDate from, LocalDate to, LogPageRequest req
+    ) {
+        var pageable = req.toPageable();
+        Page<MediaLog> page = mediaLogRepository.findAllByProjectAreaIdAndRecordDateBetween(
+                areaId, safeFrom(from), safeTo(to), pageable
+        );
+
+        List<MediaLogResponse> content = page.getContent().stream()
+                .map(MediaLogResponse::from)
+                .toList();
+
+        Page<MediaLogResponse> mapped = new PageImpl<>(content, pageable, page.getTotalElements());
+        return PageResponse.of(mapped);
+    }
+
+
+    public PageResponse<ProjectAreaListItemResponse> getAreas(
+            RestorationRegion region,
+            ProjectLevel level,
+            HabitatType habitat,
+            LocalDate from,
+            LocalDate to,
+            String keyword,
+            AreaPageRequest req
+    ) {
+        var pageable = req.toPageable();
+
+        Specification<ProjectArea> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (region != null) {
+                predicates.add(cb.equal(root.get("restorationRegion"), region));
+            }
+            if (level != null) {
+                predicates.add(cb.equal(root.get("level"), level));
+            }
+            if (habitat != null) {
+                predicates.add(cb.equal(root.get("habitat"), habitat));
+            }
+            if (keyword != null && !keyword.isBlank()) {
+                String like = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("name")), like));
+            }
+
+            //  기간 필터: "겹치는 프로젝트만" 포함
+            // - from/to 둘 다 있을 때: startDate <= to AND (endDate IS NULL OR endDate >= from)
+            // - from만: endDate IS NULL OR endDate >= from
+            // - to만: startDate <= to
+            if (from != null && to != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("startDate"), to));
+                predicates.add(cb.or(
+                        cb.isNull(root.get("endDate")),
+                        cb.greaterThanOrEqualTo(root.get("endDate"), from)
+                ));
+            } else if (from != null) {
+                predicates.add(cb.or(
+                        cb.isNull(root.get("endDate")),
+                        cb.greaterThanOrEqualTo(root.get("endDate"), from)
+                ));
+            } else if (to != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("startDate"), to));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<ProjectArea> page = projectAreaRepository.findAll(spec, pageable);
+
+        var content = page.getContent().stream()
+                .map(ProjectAreaListItemResponse::from)
+                .toList();
+
+        Page<ProjectAreaListItemResponse> mapped = new PageImpl<>(content, pageable, page.getTotalElements());
+        return PageResponse.of(mapped);
+    }
+
+
+    /**
+     * 1. 상세 조회 : 특정 작업 영역의 모든 상세 데이터(5개 탭)를 조회합니다.
+     */
     public AreaDetailResponse getAreaDetail(Long id) {
+        // 작업 영역 엔티티
         ProjectArea area = projectAreaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
-        return AreaDetailResponse.fromEntity(area);
+
+        // 환경 데이터 (DB 최적화 조회)
+        // - 전체 수온 시계열 (프로젝션)
+        List<TemperaturePointProjection> tempHistory = waterLogRepository.findTemperatureHistory(id);
+        // - 최신 환경 요약 (단건 엔티티)
+        EnvironmentSummaryProjection envSummary = waterLogRepository.findEnvironmentSummaryModeLast3Months(id);
+
+        // 이식 데이터 (DB 집계 조회)
+        // - 전체 방식별 분포 (집계 프로젝션)
+        List<MethodDistributionProjection> distributions = transplantLogRepository.findMethodDistribution(id);
+        // - 최근 3개월 월별 작업 횟수 (서브쿼리 집계 프로젝션)
+        List<WorkHistoryPointProjection> history = transplantLogRepository.findWorkHistory(id);
+
+        // 4. 생태 데이터 (조건부 필터링 조회)
+        // - 대표 개체로 지정된 종의 로그만 시간순 조회
+        // - 대표종이 설정되어 있지 않으면 빈 리스트 (빈 차트용)
+        List<GrowthLog> repGrowthLogs = (area.getRepresentativeSpecies() != null)
+                ? growthLogRepository.findAllByProjectAreaIdAndSpeciesIdOrderByRecordDateAsc(id, area.getRepresentativeSpecies().getId())
+                : List.of();
+
+        List<TransplantItemProjection> speciesItems = transplantLogRepository.findTransplantItems(id);
+        List<MethodAttachmentStatusProjection> methodStatuses = transplantLogRepository.findLatestAttachmentStatusPerMethod(id);
+
+        // 마지막 작업일
+        // lastDate : @Query 에서 부여된 alias
+        AccumulatedStatsProjection stats = transplantLogRepository.getAccumulatedStats(id);
+
+        LocalDate lastWorkDate = (stats != null && stats.getLastDate() != null)
+                        ? stats.getLastDate()
+                        : area.getStartDate();
+
+        Double totalTransplantArea = (stats != null && stats.getTotalArea() != null)
+                ? stats.getTotalArea()
+                : 0.0;
+
+        // 5. 미디어 데이터
+        List<MediaPointProjection> mediaHistory = mediaLogRepository.findAllByProjectAreaIdOrderByRecordDateAsc(id);
+
+
+        // 최종 조립
+        return aggregateBuilder.build(area, tempHistory, envSummary, distributions, history, repGrowthLogs, methodStatuses, speciesItems, lastWorkDate, totalTransplantArea, mediaHistory);
     }
+
 
     /**
-     * @deprecated
-     *   - 여러 작업 영역의 '상세 데이터'를 반경 기준으로 한 번에 조회하기 위한 메서드입니다.
-     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
+     *  반경 내 통계 정보 요약
      */
-    @Deprecated
-    public List<AreaDetailResponse> getNearbyAreas(Double lat, Double lon, Double radiusKm) {
-        double radiusMeters = (radiusKm != null ? radiusKm : 5.0) * 1000;
-        return projectAreaRepository.findNearbyAreas(lat, lon, radiusMeters).stream()
-                .map(AreaDetailResponse::fromEntity)
-                .toList();
-    }
-
-    /**
-     * @deprecated
-     *   - 뷰포트 기준으로 여러 작업 영역의 '상세 데이터'를 모두 내려주는 메서드입니다.
-     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
-     */
-    @Deprecated
-    public List<AreaDetailResponse> getAreasInBBox(Double minLat, Double minLon, Double maxLat, Double maxLon) {
-        return projectAreaRepository.findWithinBBox(minLat, minLon, maxLat, maxLon).stream()
-                .map(AreaDetailResponse::fromEntity)
-                .toList();
-    }
-
-    /**
-     * @deprecated
-     *   - "가장 가까운 작업 영역 목록의 상세 데이터"를 조회하기 위한 메서드입니다.
-     *   - 현재 서비스 플로우에서는 사용하지 않으며,잠재적 재활용을 위해 보존합니다.
-     */
-    @Deprecated
-    public List<AreaDetailResponse> getNearestAreas(Double lat, Double lon, Integer limit) {
-        int limitCount = (limit != null && limit > 0) ? limit : 3;
-        return projectAreaRepository.findNearestAreas(lat, lon, limitCount).stream()
-                .map(AreaDetailResponse::fromEntity)
-                .toList();
-    }
-
-    // 1-4. 통계 (Projection -> DTO)
     public AreaStatResponse getNearbyStats(Double lat, Double lon, Double radiusKm) {
         double radiusMeters = (radiusKm != null ? radiusKm : 10.0) * 1000;
 
@@ -1249,24 +3754,11 @@ public class DashboardQueryService {
 
     // 내부 변환 로직
     private AreaMarkerResponse toMarkerResponse(AreaMarkerProjection p) {
-        String habitatDesc = null;
-        if (p.getHabitat() != null) {
-            try {
-                habitatDesc = HabitatType.valueOf(p.getHabitat()).getDescription();
-            } catch (IllegalArgumentException e) {
-                // enum 매칭 실패 시, 원본 값을 그대로 사용
-                habitatDesc = p.getHabitat();
-            }
-        }
+        String habitatName = p.getHabitat() != null ?
+                HabitatType.valueOf(p.getHabitat()).getName() : "기타";
 
-        String stageDesc = null;
-        if (p.getStatus() != null) {
-            try {
-                stageDesc = ProjectStatus.valueOf(p.getStatus()).getDescription();
-            } catch (IllegalArgumentException e) {
-                stageDesc = p.getStatus();
-            }
-        }
+        String stageName = p.getLevel() != null ?
+                ProjectLevel.valueOf(p.getLevel()).getName() : "미정";
 
         return AreaMarkerResponse.builder()
                 .id(p.getId())
@@ -1276,11 +3768,24 @@ public class DashboardQueryService {
                 .startDate(p.getStartDate())
                 .depth(p.getDepth())
                 .areaSize(p.getAreaSize())
-                .habitat(habitatDesc)
-                .stage(stageDesc)
+                .habitat(habitatName)
+                .level(stageName)
                 .build();
     }
 
+    /**
+     * 영역 내 후보 종 목록 조회
+     */
+    public List<AreaSpeciesResponse> getAreaSpeciesCandidates(Long areaId) {
+        // 영역의 존재 여부
+        if (!projectAreaRepository.existsById(areaId)) throw new BusinessException(ExceptionType.RESOURCE_NOT_FOUND);
+
+        // 이식 로그 테이블에서 해당 영역에 사용된 종들을 중복없이 가져옴
+        return transplantLogRepository.findDistinctSpeciesByAreaId(areaId)
+                .stream()
+                .map(AreaSpeciesResponse::from)
+                .toList();
+    }
 
 }
 
