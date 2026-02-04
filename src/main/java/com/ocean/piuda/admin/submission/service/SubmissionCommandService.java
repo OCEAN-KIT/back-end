@@ -1,9 +1,10 @@
 package com.ocean.piuda.admin.submission.service;
 
+import com.ocean.piuda.admin.site.entity.SiteNameOption;
+import com.ocean.piuda.admin.site.repository.SiteNameOptionRepository;
 import com.ocean.piuda.admin.submission.dto.response.*;
 import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.AuditAction;
-import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
 import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
@@ -38,8 +39,8 @@ public class SubmissionCommandService {
     private final SubmissionQueryService submissionQueryService;
     private final ActivityValidator activityValidator;
     private final SubmissionStatusValidator statusValidator;
-    private final UserRepository userRepository;
     private final TokenUserService tokenUserService;
+    private final SiteNameOptionRepository siteNameOptionRepository;
 
     /**
      * 바로 제출 (SUBMITTED 상태로 저장)
@@ -65,19 +66,27 @@ public class SubmissionCommandService {
                 : LocalDate.now();
 
         // 구조물 유형 처리 (null이면 OTHER로 기본값, 커스텀 텍스트도 설정)
-        StructureType structureType = request.getStructureType() != null 
-                ? request.getStructureType() 
-                : StructureType.OTHER;
+        // 1현장 명칭 결정 (Snapshot & FK 설정)
+        String finalSiteName;
+        SiteNameOption siteOption = null;
+
+        if (request.getSiteNameOptionId() != null) {
+            // Case A: 선택지(Option)를 선택한 경우 -> DB에서 조회해서 이름 가져옴 (신뢰성 확보)
+            siteOption = siteNameOptionRepository.findById(request.getSiteNameOptionId()).orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+            finalSiteName = siteOption.getName();
+        } else {
+            // Case B: 직접 입력한 경우 -> 텍스트 값 사용
+            if (request.getSiteName() == null || request.getSiteName().isBlank())  throw new BusinessException(ExceptionType.INVALID_INPUT_VALUE);
+            finalSiteName = request.getSiteName();
+        }
 
         // 현재 유저 정보 저장
         User currentUser = tokenUserService.getCurrentUser();
 
         // Submission 생성
         Submission submission = Submission.builder()
-                .siteName(request.getSiteName())
-                .structureType(structureType)
-                .customStructureType(request.getCustomStructureType())
-                .recordDate(recordDate)
+                .siteName(finalSiteName) // 결정된 최종 이름 스냅샷 저장
+                .siteNameOption(siteOption) // 연관관계 설정 (nullable)                .recordDate(recordDate)
                 .divingRound(request.getDivingRound())
                 .activityType(request.getActivityType())
                 .status(status)

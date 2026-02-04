@@ -1,8 +1,8 @@
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
-import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.site.entity.SiteNameOption;
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import com.ocean.piuda.user.entity.User;
 import jakarta.persistence.*;
@@ -32,16 +32,19 @@ public class Submission extends BaseEntity {
     @Column(name = "submission_id")
     private Long submissionId;
 
+    /**
+     * 스냅샷 :실제 화면에 표시될 이름 (직접 입력 or 선택된 옵션의 이름)
+     */
     @Column(name = "site_name", nullable = false, length = 200)
     private String siteName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "structure_type", nullable = false)
-    @Builder.Default
-    private StructureType structureType = StructureType.OTHER;
+    /**
+     * 마스터 데이터 연동 (선택사항: 직접 입력 시 null)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_option_id")
+    private SiteNameOption siteNameOption;
 
-    @Column(name = "custom_structure_type", length = 200)
-    private String customStructureType;  // 구조물 유형 커스텀 텍스트 (OTHER일 때 사용)
 
     @Column(name = "record_date", nullable = false)
     @Builder.Default

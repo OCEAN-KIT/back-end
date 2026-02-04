@@ -20,14 +20,12 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateSubmissionRequest {
 
-    @NotBlank(message = "현장명은 필수입니다")
+    /**
+     * siteName : 옵션 ID가 있으면 이건 null이어도 됨
+     * siteNameOptionId : 옵션 현장명을 사용한 경우 기입. 사용하지 않은 경우는 null.
+     */
     private String siteName;
-
-    // 구조물 유형 (선택사항, null이면 OTHER로 기본값 설정)
-    private StructureType structureType;
-    
-    // 구조물 유형 커스텀 텍스트 (structureType이 OTHER일 때 사용 가능)
-    private String customStructureType;
+    private Long siteNameOptionId;
 
     private LocalDate recordDate;  // null이면 현재 날짜
 
