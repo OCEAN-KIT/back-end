@@ -1,7 +1,7 @@
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
-import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.common.enums.HealthStatus;
 import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
 import com.ocean.piuda.admin.submission.entity.embeded.Survival;
 import jakarta.persistence.*;
@@ -42,8 +42,8 @@ public class Activity {
 
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "health_grade")
-    private HealthGrade healthGrade;
+    @Column(name = "health_status")
+    private HealthStatus healthStatus;
 
     @Column(name = "growth_cm")
     @Builder.Default

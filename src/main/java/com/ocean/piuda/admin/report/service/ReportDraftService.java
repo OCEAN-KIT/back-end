@@ -181,7 +181,7 @@ public class ReportDraftService {
 
             ActivityType type = s.getActivity().getType();
             if (type == ActivityType.TRANSPLANT || type == ActivityType.MONITORING || type == ActivityType.RESEARCH) {
-                putIfNotNull(a, "healthGrade", s.getActivity().getHealthGrade() != null ? s.getActivity().getHealthGrade().name() : null);
+                putIfNotNull(a, "healthGrade", s.getActivity().getHealthStatus() != null ? s.getActivity().getHealthStatus().name() : null);
                 putIfNotNull(a, "growthCm", s.getActivity().getGrowthCm());
 
                 if (s.getActivity().getNaturalReproduction() != null) {

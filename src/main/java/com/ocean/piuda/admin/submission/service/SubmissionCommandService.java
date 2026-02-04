@@ -294,7 +294,7 @@ public class SubmissionCommandService {
                 .details(activityDto.getDetails())
                 .collectionAmount(activityDto.getCollectionAmount() != null ? activityDto.getCollectionAmount() : 0f)
                 .durationHours(activityDto.getDurationHours() != null ? activityDto.getDurationHours() : 0f)
-                .healthGrade(activityDto.getHealthGrade())
+                .healthStatus(activityDto.getHealthStatus())
                 .growthCm(activityDto.getGrowthCm() != null ? activityDto.getGrowthCm() : 0f)
                 .naturalReproduction(naturalReproduction)
                 .survival(survival)

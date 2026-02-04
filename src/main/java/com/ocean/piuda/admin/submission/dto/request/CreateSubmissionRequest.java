@@ -262,11 +262,11 @@ public class CreateSubmissionRequest {
         
         // 지형 구성
         @NotNull(message = "지형 구성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.TerrainType terrain;
+        private TerrainType terrain;
         
         // 갯녹음 정도
         @NotNull(message = "갯녹음 정도는 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.BarrenExtent barrenExtent;
+        private BarrenExtent barrenExtent;
         
         // 조식동물 분포
         @NotNull(message = "조식동물 분포는 필수입니다")
@@ -274,15 +274,15 @@ public class CreateSubmissionRequest {
         
         // 암반 특성 (복수 선택)
         @NotNull(message = "암반 특성은 최소 1개 이상 선택해야 합니다")
-        private List<com.ocean.piuda.admin.submission.entity.ActivityMonitoring.RockFeature> rockFeatures;
+        private List<RockFeature> rockFeatures;
         
         // 해조 이식 적합성
         @NotNull(message = "해조 이식 적합성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.Suitability suitability;
+        private Suitability suitability;
         
         // 해조류 상태
         private String seaweedIdNumber;  // 식별번호
-        private com.ocean.piuda.admin.common.enums.SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
+        private SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
         
         // 정밀측정 여부
         private Boolean precisionMeasurement;
@@ -341,7 +341,7 @@ public class CreateSubmissionRequest {
         private String details;
         private Float collectionAmount;
         private Float durationHours;
-        private HealthGrade healthGrade;
+        private HealthStatus healthStatus;
         private Float growthCm;
         private NaturalReproductionDto naturalReproduction;
         private SurvivalDto survival;

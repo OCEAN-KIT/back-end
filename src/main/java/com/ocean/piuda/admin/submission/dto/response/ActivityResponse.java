@@ -1,7 +1,7 @@
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
-import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.common.enums.HealthStatus;
 import com.ocean.piuda.admin.submission.entity.Activity;
 import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
 import com.ocean.piuda.admin.submission.entity.embeded.Survival;
@@ -13,7 +13,7 @@ public record ActivityResponse(
         Float durationHours,
 
         // --- 추가된 필드 ---
-        HealthGrade healthGrade,
+        HealthStatus healthGrade,
         Float growthCm,
         NaturalReproductionResponse naturalReproduction,
         SurvivalResponse survival
@@ -27,7 +27,7 @@ public record ActivityResponse(
                 activity.getDurationHours(),
 
                 // 매핑 로직
-                activity.getHealthGrade(),
+                activity.getHealthStatus(),
                 activity.getGrowthCm(),
                 NaturalReproductionResponse.from(activity.getNaturalReproduction()),
                 SurvivalResponse.from(activity.getSurvival())
