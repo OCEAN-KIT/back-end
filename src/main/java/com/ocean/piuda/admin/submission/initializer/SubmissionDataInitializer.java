@@ -27,6 +27,9 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
     private final SubmissionRepository submissionRepository;
 
+    // [수정] 이미지 URL 상수화
+    private static final String VALID_IMAGE_URL = "/images/underSea.jpg";
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -59,13 +62,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 10.5f,
                 CurrentState.MEDIUM,
                 Weather.SUNNY,
-                "홍길동",
-                5,
-                ParticipantRole.CITIZEN_DIVER,
+                "홍길동, 김철수", // 공동 작업자
                 "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
                 50.0f,
                 3.5f,
-                "public/user_objects/2025-01-15/photo1.jpg"
+                VALID_IMAGE_URL // [수정] 상수 사용
         ));
 
         // 2. 승인된 제출 (APPROVED)
@@ -88,13 +89,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 5.0f,
                 CurrentState.LOW,
                 Weather.SUNNY,
-                "김철수",
-                3,
-                ParticipantRole.CITIZEN_DIVER,
+                "김철수, 이영희, 박민수", // 공동 작업자
                 "플라스틱 병 30개, 캔 15개를 수거했습니다.",
                 45.0f,
                 4.0f,
-                "public/user_objects/2025-01-10/photo2.jpg"
+                VALID_IMAGE_URL
         ));
 
         // 3. 반려된 제출 (REJECTED)
@@ -117,13 +116,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 8.0f,
                 CurrentState.LOW,
                 Weather.CLOUDY,
-                "이영희",
-                2,
-                ParticipantRole.RESEARCHER,
+                "이영희", // 공동 작업자 (혼자)
                 "해양 생물 관찰 및 정화 활동",
                 10.0f,
                 3.0f,
-                "public/user_objects/2025-01-08/photo3.jpg"
+                VALID_IMAGE_URL
         );
         RejectReason rejectReason = RejectReason.builder()
                 .submission(rejectedSubmission)
@@ -155,13 +152,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 15.0f,
                 CurrentState.HIGH,
                 Weather.WINDY,
-                "박민수",
-                4,
-                ParticipantRole.LOCAL_MANAGER,
+                "박민수, 최지영",
                 "이식 80개 완료",
                 80.0f,
                 4.0f,
-                "public/user_objects/2025-01-16/photo4.jpg"
+                VALID_IMAGE_URL
         ));
 
         // 5. 승인된 제출 (APPROVED) - 추가
@@ -184,13 +179,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 7.0f,
                 CurrentState.MEDIUM,
                 Weather.SUNNY,
-                "최지영",
-                6,
-                ParticipantRole.CITIZEN_DIVER,
+                "최지영, 홍길동",
                 "쓰레기 100개 수거 완료",
                 100.0f,
                 4.0f,
-                "public/user_objects/2025-01-07/photo5.jpg"
+                VALID_IMAGE_URL
         ));
 
         submissionRepository.saveAll(submissions);
@@ -216,9 +209,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
             Float depthM,
             CurrentState currentState,
             Weather weather,
-            String leaderName,
-            int participantCount,
-            ParticipantRole role,
+            String participantNames, // [변경] 단순 String
             String activityDetails,
             Float collectionAmount,
             Float durationHours,
@@ -226,17 +217,17 @@ public class SubmissionDataInitializer implements CommandLineRunner {
     ) {
         LocalDateTime submittedAt = LocalDateTime.of(recordDate, startTime);
 
-        // BasicEnv 생성 (새 구조에 맞게 수정)
+        // BasicEnv 생성
         BasicEnv basicEnv = BasicEnv.builder()
                 .recordDate(recordDate)
-                .avgDepthM(depthM != null ? depthM.doubleValue() : 10.0)  // 기본값
-                .maxDepthM(depthM != null ? depthM.doubleValue() + 2.0 : 12.0)  // 기본값
+                .avgDepthM(depthM != null ? depthM.doubleValue() : 10.0)
+                .maxDepthM(depthM != null ? depthM.doubleValue() + 2.0 : 12.0)
                 .waterTempC(waterTempC != null ? waterTempC.doubleValue() : 18.0)
-                .visibilityStatus(convertToMarineCondition(visibilityM))  // Float -> MarineCondition 변환
-                .waveStatus(com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL)  // 기본값
-                .surgeStatus(com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL)  // 기본값
+                .visibilityStatus(convertToMarineCondition(visibilityM))
+                .waveStatus(MarineCondition.NORMAL)   // [수정] 패키지명 제거
+                .surgeStatus(MarineCondition.NORMAL)  // [수정] 패키지명 제거
                 .currentStatus(convertCurrentStateToMarineCondition(currentState))
-                // 하위 호환성을 위한 기존 필드
+                // Legacy fields
                 .startTime(startTime)
                 .endTime(endTime)
                 .visibilityM(visibilityM)
@@ -246,23 +237,24 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .build();
 
 
-        // Activity 생성
+        // Activity 생성 (Legacy)
         Activity activity = Activity.builder()
                 .type(activityType)
                 .details(activityDetails)
                 .collectionAmount(collectionAmount)
                 .durationHours(durationHours)
+                .healthStatus(HealthStatus.A) // [수정] 패키지명 제거 및 기본값 설정
                 .build();
 
         // Attachments 생성
         List<Attachment> attachments = new ArrayList<>();
-        String baseUrl = fileUrl.substring(0, fileUrl.lastIndexOf("/") + 1);
+        // 파일 URL은 이제 상수 VALID_IMAGE_URL을 사용하므로 baseUrl 파싱 로직 제거
         for (int i = 1; i <= attachmentCount; i++) {
             Attachment attachment = Attachment.builder()
                     .fileName("photo" + i + ".jpg")
-                    .fileUrl(baseUrl + "photo" + i + ".jpg")
+                    .fileUrl(VALID_IMAGE_URL) // [수정] 상수 사용
                     .mimeType("image/jpeg")
-                    .fileSize(1024 * 500 * i) // 500KB * i
+                    .fileSize(1024 * 500 * i)
                     .uploadedAt(submittedAt)
                     .build();
             attachments.add(attachment);
@@ -271,17 +263,18 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         // Submission 생성
         Submission submission = Submission.builder()
                 .siteName(siteName)
-                .structureType(com.ocean.piuda.admin.common.enums.StructureType.OTHER)  // 기본값
+                .structureType(StructureType.OTHER) // [수정] 패키지명 제거
                 .recordDate(recordDate)
-                .divingRound(1)  // 기본값
+                .divingRound(1)
                 .activityType(activityType)
                 .status(status)
                 .authorName(authorName)
                 .authorEmail(authorEmail)
                 .attachmentCount(attachmentCount)
-                .workDescription(feedbackText)  // feedbackText -> workDescription
+                .workDescription(feedbackText)
                 .latitude(latitude)
                 .longitude(longitude)
+                .participantNames(participantNames)
                 .build();
 
         // 관계 설정
@@ -299,7 +292,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .build();
         submission.addAuditLog(submitLog);
 
-        // 승인/반려된 경우 AuditLog 추가
         if (status == SubmissionStatus.APPROVED) {
             AuditLog approveLog = AuditLog.builder()
                     .submission(submission)
@@ -323,33 +315,19 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         return submission;
     }
 
-    /**
-     * Float visibility 값을 MarineCondition으로 변환
-     */
-    private com.ocean.piuda.admin.common.enums.MarineCondition convertToMarineCondition(Float visibilityM) {
-        if (visibilityM == null) {
-            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
-        }
-        if (visibilityM < 5.0) {
-            return com.ocean.piuda.admin.common.enums.MarineCondition.BAD;
-        } else if (visibilityM > 15.0) {
-            return com.ocean.piuda.admin.common.enums.MarineCondition.GOOD;
-        } else {
-            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
-        }
+    private MarineCondition convertToMarineCondition(Float visibilityM) {
+        if (visibilityM == null) return MarineCondition.NORMAL;
+        if (visibilityM < 5.0) return MarineCondition.BAD;
+        else if (visibilityM > 15.0) return MarineCondition.GOOD;
+        else return MarineCondition.NORMAL;
     }
 
-    /**
-     * CurrentState를 MarineCondition으로 변환
-     */
-    private com.ocean.piuda.admin.common.enums.MarineCondition convertCurrentStateToMarineCondition(CurrentState currentState) {
-        if (currentState == null) {
-            return com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
-        }
+    private MarineCondition convertCurrentStateToMarineCondition(CurrentState currentState) {
+        if (currentState == null) return MarineCondition.NORMAL;
         return switch (currentState) {
-            case LOW -> com.ocean.piuda.admin.common.enums.MarineCondition.GOOD;
-            case MEDIUM -> com.ocean.piuda.admin.common.enums.MarineCondition.NORMAL;
-            case HIGH -> com.ocean.piuda.admin.common.enums.MarineCondition.BAD;
+            case LOW -> MarineCondition.GOOD;
+            case MEDIUM -> MarineCondition.NORMAL;
+            case HIGH -> MarineCondition.BAD;
         };
     }
 }
