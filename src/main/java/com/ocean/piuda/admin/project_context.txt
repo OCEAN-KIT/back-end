@@ -1337,98 +1337,98 @@ public class ProjectExporter {
 File Path: .\report\controller\ReportDraftController.java
 ================================================================================
 
-package com.ocean.piuda.admin.report.controller;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import java.nio.charset.StandardCharsets;
-
-import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
-import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
-import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
-import com.ocean.piuda.admin.report.service.ReportDraftService;
-import com.ocean.piuda.global.api.dto.ApiData;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-@RestController
-@RequestMapping("/api/admin/reports/drafts")
-@RequiredArgsConstructor
-@Tag(name = "Admin Report Draft", description = "선택한 해양 활동 제출물로 리포트 초안을 Gemini로 생성합니다.")
-public class ReportDraftController {
-
-    private final ReportDraftService reportDraftService;
-
-    @PostMapping("/by-ids")
-    @Operation(
-            summary = "리포트 초안 생성 (IDs 기반)",
-            description = "선택한 submission ids(기본: APPROVED)를 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
-    )
-    public ApiData<ReportDraftResponse> byIds(@RequestBody @Valid ReportDraftByIdsRequest request) {
-        return ApiData.ok(reportDraftService.generateByIds(request));
-    }
-
-    @PostMapping("/by-period")
-    @Operation(
-            summary = "리포트 초안 생성 (기간 기반)",
-            description = "dateFrom~dateTo 기간(기본: APPROVED)을 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
-    )
-    public ApiData<ReportDraftResponse> byPeriod(@RequestBody @Valid ReportDraftByPeriodRequest request) {
-        return ApiData.ok(reportDraftService.generateByPeriod(request));
-    }
-
-    @PostMapping(
-            value = "/by-ids/pdf",
-            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
-    )
-    @Operation(summary = "리포트 PDF 생성 (IDs 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
-    public ResponseEntity<byte[]> byIdsPdf(@RequestBody @Valid ReportDraftByIdsRequest request) {
-        var pdf = reportDraftService.generatePdfByIds(request);
-
-        ContentDisposition cd = ContentDisposition.attachment()
-                .filename(pdf.fileName(), StandardCharsets.UTF_8)
-                .build();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(cd);
-        headers.setContentLength(pdf.bytes().length);
-        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-        headers.add("Pragma", "no-cache");
-        headers.add("Expires", "0");
-
-        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
-    }
-
-    @PostMapping(
-            value = "/by-period/pdf",
-            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
-    )
-    @Operation(summary = "리포트 PDF 생성 (기간 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
-    public ResponseEntity<byte[]> byPeriodPdf(@RequestBody @Valid ReportDraftByPeriodRequest request) {
-        var pdf = reportDraftService.generatePdfByPeriod(request);
-
-        ContentDisposition cd = ContentDisposition.attachment()
-                .filename(pdf.fileName(), StandardCharsets.UTF_8)
-                .build();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(cd);
-        headers.setContentLength(pdf.bytes().length);
-        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-        headers.add("Pragma", "no-cache");
-        headers.add("Expires", "0");
-
-        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
-    }
-
-}
+//package com.ocean.piuda.admin.report.controller;
+//import org.springframework.http.ContentDisposition;
+//import org.springframework.http.HttpHeaders;
+//import org.springframework.http.MediaType;
+//import org.springframework.http.ResponseEntity;
+//import java.nio.charset.StandardCharsets;
+//
+//import com.ocean.piuda.admin.report.dto.request.ReportDraftByIdsRequest;
+//import com.ocean.piuda.admin.report.dto.request.ReportDraftByPeriodRequest;
+//import com.ocean.piuda.admin.report.dto.response.ReportDraftResponse;
+//import com.ocean.piuda.admin.report.service.ReportDraftService;
+//import com.ocean.piuda.global.api.dto.ApiData;
+//import io.swagger.v3.oas.annotations.Operation;
+//import io.swagger.v3.oas.annotations.tags.Tag;
+//import jakarta.validation.Valid;
+//import lombok.RequiredArgsConstructor;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.web.bind.annotation.*;
+//
+//@RestController
+//@RequestMapping("/api/admin/reports/drafts")
+//@RequiredArgsConstructor
+//@Tag(name = "Admin Report Draft", description = "선택한 해양 활동 제출물로 리포트 초안을 Gemini로 생성합니다.")
+//public class ReportDraftController {
+//
+//    private final ReportDraftService reportDraftService;
+//
+//    @PostMapping("/by-ids")
+//    @Operation(
+//            summary = "리포트 초안 생성 (IDs 기반)",
+//            description = "선택한 submission ids(기본: APPROVED)를 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+//    )
+//    public ApiData<ReportDraftResponse> byIds(@RequestBody @Valid ReportDraftByIdsRequest request) {
+//        return ApiData.ok(reportDraftService.generateByIds(request));
+//    }
+//
+//    @PostMapping("/by-period")
+//    @Operation(
+//            summary = "리포트 초안 생성 (기간 기반)",
+//            description = "dateFrom~dateTo 기간(기본: APPROVED)을 기반으로 내부/대외홍보용 리포트 초안을 생성합니다."
+//    )
+//    public ApiData<ReportDraftResponse> byPeriod(@RequestBody @Valid ReportDraftByPeriodRequest request) {
+//        return ApiData.ok(reportDraftService.generateByPeriod(request));
+//    }
+//
+//    @PostMapping(
+//            value = "/by-ids/pdf",
+//            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
+//    )
+//    @Operation(summary = "리포트 PDF 생성 (IDs 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
+//    public ResponseEntity<byte[]> byIdsPdf(@RequestBody @Valid ReportDraftByIdsRequest request) {
+//        var pdf = reportDraftService.generatePdfByIds(request);
+//
+//        ContentDisposition cd = ContentDisposition.attachment()
+//                .filename(pdf.fileName(), StandardCharsets.UTF_8)
+//                .build();
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_PDF);
+//        headers.setContentDisposition(cd);
+//        headers.setContentLength(pdf.bytes().length);
+//        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+//        headers.add("Pragma", "no-cache");
+//        headers.add("Expires", "0");
+//
+//        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
+//    }
+//
+//    @PostMapping(
+//            value = "/by-period/pdf",
+//            produces = { MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE }
+//    )
+//    @Operation(summary = "리포트 PDF 생성 (기간 기반)", description = "리포트 초안을 PDF로 생성하여 다운로드합니다.")
+//    public ResponseEntity<byte[]> byPeriodPdf(@RequestBody @Valid ReportDraftByPeriodRequest request) {
+//        var pdf = reportDraftService.generatePdfByPeriod(request);
+//
+//        ContentDisposition cd = ContentDisposition.attachment()
+//                .filename(pdf.fileName(), StandardCharsets.UTF_8)
+//                .build();
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_PDF);
+//        headers.setContentDisposition(cd);
+//        headers.setContentLength(pdf.bytes().length);
+//        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+//        headers.add("Pragma", "no-cache");
+//        headers.add("Expires", "0");
+//
+//        return ResponseEntity.ok().headers(headers).body(pdf.bytes());
+//    }
+//
+//}
 
 
 ================================================================================
@@ -1553,6 +1553,7 @@ public enum ReportDraftType {
 File Path: .\report\service\ReportDraftService.java
 ================================================================================
 
+/*
 package com.ocean.piuda.admin.report.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -1836,214 +1837,218 @@ public class ReportDraftService {
         return new ReportPdfResponse(fileName, pdfBytes);
     }
 }
+ */
 
 
 ================================================================================
 File Path: .\report\service\ReportPdfService.java
 ================================================================================
 
-package com.ocean.piuda.admin.report.service;
-
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
-import com.vladsch.flexmark.html.HtmlRenderer;
-import com.vladsch.flexmark.parser.Parser;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
-import com.openhtmltopdf.extend.FSSupplier;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class ReportPdfService {
-
-    private final Parser mdParser = Parser.builder().build();
-    private final HtmlRenderer htmlRenderer = HtmlRenderer.builder().build();
-
-    private static FSSupplier<InputStream> cp(String path) {
-        return () -> {
-            try {
-                return new ClassPathResource(path).getInputStream();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-    }
-
-    public byte[] renderMarkdownToPdf(String markdown, String title) {
-        try {
-            String safeMarkdown = stripEmoji(markdown == null ? "" : markdown);
-            String safeTitle = stripEmoji(title);
-
-            String htmlBody = htmlRenderer.render(mdParser.parse(safeMarkdown));
-            String html = wrapHtml(htmlBody, safeTitle);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.useFastMode();
-            builder.withHtmlContent(html, null);
-            builder.toStream(baos);
-
-            builder.useFont(cp("fonts/NotoSansKR-Regular.ttf"), "NotoSansKR", 400,
-                    PdfRendererBuilder.FontStyle.NORMAL, true);
-            builder.useFont(cp("fonts/NotoSansKR-Bold.ttf"), "NotoSansKR", 700,
-                    PdfRendererBuilder.FontStyle.NORMAL, true);
-
-            builder.run();
-            return baos.toByteArray();
-        } catch (Exception e) {
-            log.error("PDF 렌더링 실패: {}", e.getMessage(), e);
-            throw new RuntimeException("REPORT_PDF_RENDER_FAILED", e);
-        }
-    }
-
-    private String wrapHtml(String body, String title) {
-        String generatedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        return ("""
-    <!DOCTYPE html>
-    <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
-    <head>
-      <meta charset="UTF-8" />
-      <style>
-        @page { size: A4; margin: 18mm; }
-
-        body {
-          font-family: "NotoSansKR", sans-serif;
-          font-size: 11pt;
-          line-height: 1.6;
-          color: #111;
-        }
-
-        h1 { font-size: 20pt; margin: 0 0 10pt 0; font-weight: 700; }
-        h2 { font-size: 15pt; margin: 16pt 0 8pt 0; font-weight: 700; }
-        h3 { font-size: 13pt; margin: 14pt 0 6pt 0; font-weight: 700; }
-
-        p { margin: 6pt 0; }
-
-        /*  리스트 bullet 크기/모양 커스텀 (기본 마커 대신 ::before 사용) */
-        ul, ol {
-          margin: 6pt 0 6pt 0;
-          padding-left: 0;
-        }
-
-        ul { list-style: none; }
-        ul > li {
-          position: relative;
-          padding-left: 12pt;   /* bullet + 간격 */
-          margin: 2pt 0;
-        }
-        ul > li::before {
-          content: "•";
-          position: absolute;
-          left: 0;
-          top: 0;
-          font-size: 8.5pt;     /*  bullet 크기 */
-          line-height: 1.6;     /* 텍스트 라인과 맞춤 */
-        }
-
-        /* 중첩 ul은 더 작은 마커 */
-        ul ul > li { padding-left: 11pt; }
-        ul ul > li::before {
-          content: "◦";
-          font-size: 8pt;
-          line-height: 1.6;
-        }
-
-        /* 번호 목록은 기본 유지 */
-        ol { padding-left: 18pt; }
-        ol li { margin: 2pt 0; }
-
-        code, pre { font-family: monospace; font-size: 10pt; }
-        pre {
-          background: #f6f6f6;
-          padding: 10pt;
-          border-radius: 6pt;
-          white-space: pre-wrap;
-        }
-
-        table { width: 100%%; border-collapse: collapse; margin: 10pt 0; }
-        th, td { border: 1px solid #ddd; padding: 6pt; }
-        th { background: #f2f2f2; }
-
-        .meta { font-size: 9.5pt; color: #555; margin-bottom: 12pt; }
-      </style>
-      <title>%s</title>
-    </head>
-    <body>
-      <div class="meta">생성일시: %s</div>
-      %s
-    </body>
-    </html>
-    """).formatted(escapeHtml(title), generatedAt, body).strip();
-    }
-
-    private String escapeHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
-    }
-
-    private static String stripEmoji(String s) {
-        if (s == null || s.isBlank()) return s;
-
-        StringBuilder out = new StringBuilder(s.length());
-        for (int i = 0; i < s.length(); ) {
-            int cp = s.codePointAt(i);
-            i += Character.charCount(cp);
-
-            if (isEmojiLike(cp)) {
-                // 필요하면 공백 하나로 치환하고 싶으면 아래 주석 해제
-                // out.append(' ');
-                continue;
-            }
-            out.appendCodePoint(cp);
-        }
-        return out.toString();
-    }
-
-    /**
-     * “대부분의” 이모지/이모지 조합을 제거하기 위한 범위 체크
-     * (표시 안 해도 되는 목적이면 이 정도가 실무에서 가장 무난합니다)
-     */
-    private static boolean isEmojiLike(int cp) {
-        // variation selectors (emoji 스타일 선택), ZWJ(결합자), keycap 결합자
-        if (cp == 0xFE0E || cp == 0xFE0F || cp == 0x200D || cp == 0x20E3) return true;
-
-        // skin tone modifiers
-        if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true;
-
-        // flags (regional indicator symbols)
-        if (cp >= 0x1F1E6 && cp <= 0x1F1FF) return true;
-
-        // Misc symbols / dingbats (♻️ ☀️ ✨ 같은 것들)
-        if (cp >= 0x2600 && cp <= 0x26FF) return true;
-        if (cp >= 0x2700 && cp <= 0x27BF) return true;
-
-        // Main emoji blocks
-        if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // pictographs
-        if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // emoticons
-        if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // transport
-        if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // alchemical
-        if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // geometric ext
-        if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // arrows-c
-        if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // supplemental
-        if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // chess etc
-        if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // extended-a
-
-        return false;
-    }
-
-}
+//
+//package com.ocean.piuda.admin.report.service;
+//
+//import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+//import com.vladsch.flexmark.html.HtmlRenderer;
+//import com.vladsch.flexmark.parser.Parser;
+//import lombok.RequiredArgsConstructor;
+//import lombok.extern.slf4j.Slf4j;
+//import org.springframework.core.io.ClassPathResource;
+//import org.springframework.stereotype.Service;
+//import com.openhtmltopdf.extend.FSSupplier;
+//
+//import java.io.ByteArrayOutputStream;
+//import java.io.IOException;
+//import java.io.InputStream;
+//import java.io.UncheckedIOException;
+//import java.time.LocalDateTime;
+//import java.time.format.DateTimeFormatter;
+//
+//@Slf4j
+//@Service
+//@RequiredArgsConstructor
+//public class ReportPdfService {
+//
+//    private final Parser mdParser = Parser.builder().build();
+//    private final HtmlRenderer htmlRenderer = HtmlRenderer.builder().build();
+//
+//    private static FSSupplier<InputStream> cp(String path) {
+//        return () -> {
+//            try {
+//                return new ClassPathResource(path).getInputStream();
+//            } catch (IOException e) {
+//                throw new UncheckedIOException(e);
+//            }
+//        };
+//    }
+//
+//    public byte[] renderMarkdownToPdf(String markdown, String title) {
+//        try {
+//            String safeMarkdown = stripEmoji(markdown == null ? "" : markdown);
+//            String safeTitle = stripEmoji(title);
+//
+//            String htmlBody = htmlRenderer.render(mdParser.parse(safeMarkdown));
+//            String html = wrapHtml(htmlBody, safeTitle);
+//
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//            PdfRendererBuilder builder = new PdfRendererBuilder();
+//            builder.useFastMode();
+//            builder.withHtmlContent(html, null);
+//            builder.toStream(baos);
+//
+//            builder.useFont(cp("fonts/NotoSansKR-Regular.ttf"), "NotoSansKR", 400,
+//                    PdfRendererBuilder.FontStyle.NORMAL, true);
+//            builder.useFont(cp("fonts/NotoSansKR-Bold.ttf"), "NotoSansKR", 700,
+//                    PdfRendererBuilder.FontStyle.NORMAL, true);
+//
+//            builder.run();
+//            return baos.toByteArray();
+//        } catch (Exception e) {
+//            log.error("PDF 렌더링 실패: {}", e.getMessage(), e);
+//            throw new RuntimeException("REPORT_PDF_RENDER_FAILED", e);
+//        }
+//    }
+//
+//    private String wrapHtml(String body, String title) {
+//        String generatedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//
+//        return ("""
+//    <!DOCTYPE html>
+//    <html xmlns="http://www.w3.org/1999/xhtml" lang="ko">
+//    <head>
+//      <meta charset="UTF-8" />
+//      <style>
+//        @page { size: A4; margin: 18mm; }
+//
+//        body {
+//          font-family: "NotoSansKR", sans-serif;
+//          font-size: 11pt;
+//          line-height: 1.6;
+//          color: #111;
+//        }
+//
+//        h1 { font-size: 20pt; margin: 0 0 10pt 0; font-weight: 700; }
+//        h2 { font-size: 15pt; margin: 16pt 0 8pt 0; font-weight: 700; }
+//        h3 { font-size: 13pt; margin: 14pt 0 6pt 0; font-weight: 700; }
+//
+//        p { margin: 6pt 0; }
+//
+//        /*  리스트 bullet 크기/모양 커스텀 (기본 마커 대신 ::before 사용) */
+//        ul, ol {
+//          margin: 6pt 0 6pt 0;
+//          padding-left: 0;
+//        }
+//
+//        ul { list-style: none; }
+//        ul > li {
+//          position: relative;
+//          padding-left: 12pt;   /* bullet + 간격 */
+//          margin: 2pt 0;
+//        }
+//        ul > li::before {
+//          content: "•";
+//          position: absolute;
+//          left: 0;
+//          top: 0;
+//          font-size: 8.5pt;     /*  bullet 크기 */
+//          line-height: 1.6;     /* 텍스트 라인과 맞춤 */
+//        }
+//
+//        /* 중첩 ul은 더 작은 마커 */
+//        ul ul > li { padding-left: 11pt; }
+//        ul ul > li::before {
+//          content: "◦";
+//          font-size: 8pt;
+//          line-height: 1.6;
+//        }
+//
+//        /* 번호 목록은 기본 유지 */
+//        ol { padding-left: 18pt; }
+//        ol li { margin: 2pt 0; }
+//
+//        code, pre { font-family: monospace; font-size: 10pt; }
+//        pre {
+//          background: #f6f6f6;
+//          padding: 10pt;
+//          border-radius: 6pt;
+//          white-space: pre-wrap;
+//        }
+//
+//        table { width: 100%%; border-collapse: collapse; margin: 10pt 0; }
+//        th, td { border: 1px solid #ddd; padding: 6pt; }
+//        th { background: #f2f2f2; }
+//
+//        .meta { font-size: 9.5pt; color: #555; margin-bottom: 12pt; }
+//      </style>
+//      <title>%s</title>
+//    </head>
+//    <body>
+//      <div class="meta">생성일시: %s</div>
+//      %s
+//    </body>
+//    </html>
+//    """).formatted(escapeHtml(title), generatedAt, body).strip();
+//    }
+//
+//    private String escapeHtml(String s) {
+//        if (s == null) return "";
+//        return s.replace("&", "&amp;")
+//                .replace("<", "&lt;")
+//                .replace(">", "&gt;");
+//    }
+//
+//    private static String stripEmoji(String s) {
+//        if (s == null || s.isBlank()) return s;
+//
+//        StringBuilder out = new StringBuilder(s.length());
+//        for (int i = 0; i < s.length(); ) {
+//            int cp = s.codePointAt(i);
+//            i += Character.charCount(cp);
+//
+//            if (isEmojiLike(cp)) {
+//                // 필요하면 공백 하나로 치환하고 싶으면 아래 주석 해제
+//                // out.append(' ');
+//                continue;
+//            }
+//            out.appendCodePoint(cp);
+//        }
+//        return out.toString();
+//    }
+//
+//    /**
+//     * “대부분의” 이모지/이모지 조합을 제거하기 위한 범위 체크
+//     * (표시 안 해도 되는 목적이면 이 정도가 실무에서 가장 무난합니다)
+//     */
+//    private static boolean isEmojiLike(int cp) {
+//        // variation selectors (emoji 스타일 선택), ZWJ(결합자), keycap 결합자
+//        if (cp == 0xFE0E || cp == 0xFE0F || cp == 0x200D || cp == 0x20E3) return true;
+//
+//        // skin tone modifiers
+//        if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true;
+//
+//        // flags (regional indicator symbols)
+//        if (cp >= 0x1F1E6 && cp <= 0x1F1FF) return true;
+//
+//        // Misc symbols / dingbats (♻️ ☀️ ✨ 같은 것들)
+//        if (cp >= 0x2600 && cp <= 0x26FF) return true;
+//        if (cp >= 0x2700 && cp <= 0x27BF) return true;
+//
+//        // Main emoji blocks
+//        if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // pictographs
+//        if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // emoticons
+//        if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // transport
+//        if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // alchemical
+//        if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // geometric ext
+//        if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // arrows-c
+//        if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // supplemental
+//        if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // chess etc
+//        if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // extended-a
+//
+//        return false;
+//    }
+//
+//}
+//
+//
 
 
 ================================================================================
@@ -3962,7 +3967,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
     private final SubmissionRepository submissionRepository;
 
-    // [수정] 이미지 URL 상수화
+    // 이미지 URL 상수
     private static final String VALID_IMAGE_URL = "/images/underSea.jpg";
 
     @Override
@@ -3977,85 +3982,58 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
         List<Submission> submissions = new ArrayList<>();
 
-        // 1. 검수 대기 중인 제출 (SUBMITTED)
+        // 1. 검수 대기 (이식)
         submissions.add(createSubmission(
-                1L,
-                "포항 해안가",
-                ActivityType.TRANSPLANT,
-                SubmissionStatus.SUBMITTED,
-                "홍길동",
-                "hong@example.com",
-                3,
+                1L, "포항 해안가", ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
+                "홍길동", "hong@example.com", 3,
                 "깨끗해진 바다가 뿌듯합니다",
-                new BigDecimal("36.0322"),
-                new BigDecimal("129.3650"),
-                LocalDate.now().minusDays(2),
-                LocalTime.of(9, 0),
-                LocalTime.of(12, 30),
-                18.5f,
-                15.0f,
-                10.5f,
-                CurrentState.MEDIUM,
-                Weather.SUNNY,
-                "홍길동, 김철수", // 공동 작업자
+                new BigDecimal("36.0322"), new BigDecimal("129.3650"),
+                LocalDate.now().minusDays(2), LocalTime.of(9, 0),
+                18.5,  // 수온
+                MarineCondition.GOOD,   // 시야
+                10.5,  // 수심
+                MarineCondition.NORMAL, // 파도
+                MarineCondition.NORMAL, // 서지
+                MarineCondition.NORMAL, // 조류 (기존 CurrentState 대체)
+                "홍길동, 김철수",
                 "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
-                50.0f,
-                3.5f,
-                VALID_IMAGE_URL // [수정] 상수 사용
+                "50개"
         ));
 
-        // 2. 승인된 제출 (APPROVED)
+        // 2. 승인 (해양정화 - 구 폐기물수거)
         submissions.add(createSubmission(
-                2L,
-                "부산 송도해수욕장",
-                ActivityType.TRASH_COLLECTION,
-                SubmissionStatus.APPROVED,
-                "김철수",
-                "kim@example.com",
-                2,
+                2L, "부산 송도해수욕장", ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
+                "김철수", "kim@example.com", 2,
                 "해변 청소 활동에 참여했습니다",
-                new BigDecimal("35.0784"),
-                new BigDecimal("129.0756"),
-                LocalDate.now().minusDays(5),
-                LocalTime.of(10, 0),
-                LocalTime.of(14, 0),
-                20.0f,
-                20.0f,
-                5.0f,
-                CurrentState.LOW,
-                Weather.SUNNY,
-                "김철수, 이영희, 박민수", // 공동 작업자
+                new BigDecimal("35.0784"), new BigDecimal("129.0756"),
+                LocalDate.now().minusDays(5), LocalTime.of(10, 0),
+                20.0,
+                MarineCondition.GOOD,
+                5.0,
+                MarineCondition.GOOD,   // 파도
+                MarineCondition.GOOD,   // 서지 (GOOD=파도없음/약함 의미로 가정)
+                MarineCondition.GOOD,   // 조류 (약함)
+                "김철수, 이영희, 박민수",
                 "플라스틱 병 30개, 캔 15개를 수거했습니다.",
-                45.0f,
-                4.0f,
-                VALID_IMAGE_URL
+                "45kg"
         ));
 
-        // 3. 반려된 제출 (REJECTED)
+        // 3. 반려 (기타)
         Submission rejectedSubmission = createSubmission(
-                3L,
-                "제주도 성산일출봉",
-                ActivityType.OTHER,
-                SubmissionStatus.REJECTED,
-                "이영희",
-                "lee@example.com",
-                1,
+                3L, "제주도 성산일출봉", ActivityType.OTHER, SubmissionStatus.REJECTED,
+                "이영희", "lee@example.com", 1,
                 "제주도 바다 정화 활동",
-                new BigDecimal("33.4584"),
-                new BigDecimal("126.9426"),
-                LocalDate.now().minusDays(7),
-                LocalTime.of(8, 0),
-                LocalTime.of(11, 0),
-                22.0f,
-                25.0f,
-                8.0f,
-                CurrentState.LOW,
-                Weather.CLOUDY,
-                "이영희", // 공동 작업자 (혼자)
+                new BigDecimal("33.4584"), new BigDecimal("126.9426"),
+                LocalDate.now().minusDays(7), LocalTime.of(8, 0),
+                22.0,
+                MarineCondition.NORMAL,
+                8.0,
+                MarineCondition.GOOD,
+                MarineCondition.GOOD,
+                MarineCondition.GOOD,
+                "이영희",
                 "해양 생물 관찰 및 정화 활동",
-                10.0f,
-                3.0f,
-                VALID_IMAGE_URL
+                null
         );
         RejectReason rejectReason = RejectReason.builder()
                 .submission(rejectedSubmission)
@@ -4067,58 +4045,40 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         rejectedSubmission.setRejectReason(rejectReason);
         submissions.add(rejectedSubmission);
 
-        // 4. 검수 대기 중인 제출 (SUBMITTED) - 추가
+        // 4. 검수 대기 (이식)
         submissions.add(createSubmission(
-                4L,
-                "강원도 속초 해변",
-                ActivityType.TRANSPLANT,
-                SubmissionStatus.SUBMITTED,
-                "박민수",
-                "park@example.com",
-                4,
+                4L, "강원도 속초 해변", ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
+                "박민수", "park@example.com", 4,
                 "속초 바다 정화 활동에 참여했습니다",
-                new BigDecimal("38.2070"),
-                new BigDecimal("128.5918"),
-                LocalDate.now().minusDays(1),
-                LocalTime.of(13, 0),
-                LocalTime.of(17, 0),
-                16.0f,
-                12.0f,
-                15.0f,
-                CurrentState.HIGH,
-                Weather.WINDY,
+                new BigDecimal("38.2070"), new BigDecimal("128.5918"),
+                LocalDate.now().minusDays(1), LocalTime.of(13, 0),
+                16.0,
+                MarineCondition.BAD,
+                15.0,
+                MarineCondition.BAD,    // 파도 높음
+                MarineCondition.BAD,    // 서지 있음
+                MarineCondition.BAD,    // 조류 강함
                 "박민수, 최지영",
                 "이식 80개 완료",
-                80.0f,
-                4.0f,
-                VALID_IMAGE_URL
+                "80개"
         ));
 
-        // 5. 승인된 제출 (APPROVED) - 추가
+        // 5. 승인 (해양정화 - 구 폐기물수거)
         submissions.add(createSubmission(
-                5L,
-                "전라남도 여수 해수욕장",
-                ActivityType.TRASH_COLLECTION,
-                SubmissionStatus.APPROVED,
-                "최지영",
-                "choi@example.com",
-                5,
+                5L, "전라남도 여수 해수욕장", ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
+                "최지영", "choi@example.com", 5,
                 "여수 바다가 아름답습니다",
-                new BigDecimal("34.7604"),
-                new BigDecimal("127.6622"),
-                LocalDate.now().minusDays(10),
-                LocalTime.of(9, 30),
-                LocalTime.of(13, 30),
-                19.0f,
-                18.0f,
-                7.0f,
-                CurrentState.MEDIUM,
-                Weather.SUNNY,
+                new BigDecimal("34.7604"), new BigDecimal("127.6622"),
+                LocalDate.now().minusDays(10), LocalTime.of(9, 30),
+                19.0,
+                MarineCondition.GOOD,
+                7.0,
+                MarineCondition.NORMAL,
+                MarineCondition.NORMAL,
+                MarineCondition.NORMAL,
                 "최지영, 홍길동",
                 "쓰레기 100개 수거 완료",
-                100.0f,
-                4.0f,
-                VALID_IMAGE_URL
+                "100kg"
         ));
 
         submissionRepository.saveAll(submissions);
@@ -4133,72 +4093,39 @@ public class SubmissionDataInitializer implements CommandLineRunner {
             String authorName,
             String authorEmail,
             int attachmentCount,
-            String feedbackText,
+            String workDescription,
             BigDecimal latitude,
             BigDecimal longitude,
             LocalDate recordDate,
             LocalTime startTime,
-            LocalTime endTime,
-            Float waterTempC,
-            Float visibilityM,
-            Float depthM,
-            CurrentState currentState,
-            Weather weather,
-            String participantNames, // [변경] 단순 String
+            Double waterTempC,
+            MarineCondition visibilityStatus, // [수정] Float visibilityM 제거 -> MarineCondition
+            Double depthM,
+            MarineCondition waveStatus,       // [추가] 파도
+            MarineCondition surgeStatus,      // [추가] 서지
+            MarineCondition currentStatus,    // [수정] CurrentState 제거 -> MarineCondition
+            String participantNames,
             String activityDetails,
-            Float collectionAmount,
-            Float durationHours,
-            String fileUrl
+            String amountOrScale
     ) {
         LocalDateTime submittedAt = LocalDateTime.of(recordDate, startTime);
 
-        // BasicEnv 생성
+        // 1. BasicEnv 생성
         BasicEnv basicEnv = BasicEnv.builder()
                 .recordDate(recordDate)
-                .avgDepthM(depthM != null ? depthM.doubleValue() : 10.0)
-                .maxDepthM(depthM != null ? depthM.doubleValue() + 2.0 : 12.0)
-                .waterTempC(waterTempC != null ? waterTempC.doubleValue() : 18.0)
-                .visibilityStatus(convertToMarineCondition(visibilityM))
-                .waveStatus(MarineCondition.NORMAL)   // [수정] 패키지명 제거
-                .surgeStatus(MarineCondition.NORMAL)  // [수정] 패키지명 제거
-                .currentStatus(convertCurrentStateToMarineCondition(currentState))
-                // Legacy fields
-                .startTime(startTime)
-                .endTime(endTime)
-                .visibilityM(visibilityM)
-                .depthM(depthM)
-                .currentState(currentState)
-                .weather(weather)
+                .avgDepthM(depthM)
+                .maxDepthM(depthM + 2.0)
+                .waterTempC(waterTempC)
+                .visibilityStatus(visibilityStatus)
+                .waveStatus(waveStatus)
+                .surgeStatus(surgeStatus)
+                .currentStatus(currentStatus)
                 .build();
 
-
-        // Activity 생성 (Legacy)
-        Activity activity = Activity.builder()
-                .type(activityType)
-                .details(activityDetails)
-                .collectionAmount(collectionAmount)
-                .durationHours(durationHours)
-                .healthStatus(HealthStatus.A) // [수정] 패키지명 제거 및 기본값 설정
-                .build();
-
-        // Attachments 생성
-        List<Attachment> attachments = new ArrayList<>();
-        // 파일 URL은 이제 상수 VALID_IMAGE_URL을 사용하므로 baseUrl 파싱 로직 제거
-        for (int i = 1; i <= attachmentCount; i++) {
-            Attachment attachment = Attachment.builder()
-                    .fileName("photo" + i + ".jpg")
-                    .fileUrl(VALID_IMAGE_URL) // [수정] 상수 사용
-                    .mimeType("image/jpeg")
-                    .fileSize(1024 * 500 * i)
-                    .uploadedAt(submittedAt)
-                    .build();
-            attachments.add(attachment);
-        }
-
-        // Submission 생성
+        // 2. Submission 생성
         Submission submission = Submission.builder()
                 .siteName(siteName)
-                .structureType(StructureType.OTHER) // [수정] 패키지명 제거
+                .structureType(StructureType.OTHER)
                 .recordDate(recordDate)
                 .divingRound(1)
                 .activityType(activityType)
@@ -4206,18 +4133,32 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .authorName(authorName)
                 .authorEmail(authorEmail)
                 .attachmentCount(attachmentCount)
-                .workDescription(feedbackText)
+                .workDescription(workDescription)
                 .latitude(latitude)
                 .longitude(longitude)
                 .participantNames(participantNames)
+                .submittedAt(submittedAt)
                 .build();
 
-        // 관계 설정
+        // 3. 관계 설정 (Env)
         submission.setBasicEnv(basicEnv);
-        submission.setActivity(activity);
-        attachments.forEach(submission::addAttachment);
 
-        // AuditLog 생성 (제출됨)
+        // 4. Activity Type별 상세 엔티티 생성 및 연결
+        createSpecificActivity(submission, activityType, activityDetails, amountOrScale);
+
+        // 5. Attachments 생성
+        for (int i = 1; i <= attachmentCount; i++) {
+            Attachment attachment = Attachment.builder()
+                    .fileName("photo" + i + ".jpg")
+                    .fileUrl(VALID_IMAGE_URL)
+                    .mimeType("image/jpeg")
+                    .fileSize(1024 * 500 * i)
+                    .uploadedAt(submittedAt)
+                    .build();
+            submission.addAttachment(attachment);
+        }
+
+        // 6. AuditLog 생성
         AuditLog submitLog = AuditLog.builder()
                 .submission(submission)
                 .action(AuditAction.SUBMITTED)
@@ -4241,7 +4182,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                     .submission(submission)
                     .action(AuditAction.REJECTED)
                     .performedBy("admin@oceancampus.kr")
-                    .comment("사진이 부족합니다. 최소 3장 이상의 사진을 첨부해주세요.")
+                    .comment("사진이 부족합니다.")
                     .createdAt(submittedAt.plusDays(1))
                     .build();
             submission.addAuditLog(rejectLog);
@@ -4250,20 +4191,71 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         return submission;
     }
 
-    private MarineCondition convertToMarineCondition(Float visibilityM) {
-        if (visibilityM == null) return MarineCondition.NORMAL;
-        if (visibilityM < 5.0) return MarineCondition.BAD;
-        else if (visibilityM > 15.0) return MarineCondition.GOOD;
-        else return MarineCondition.NORMAL;
-    }
+    private void createSpecificActivity(Submission submission, ActivityType type, String details, String amount) {
+        switch (type) {
+            case TRANSPLANT:
+                ActivityTransplant transplant = ActivityTransplant.builder()
+                        .submission(submission)
+                        .speciesType(TransplantSpeciesType.KAMTAE)
+                        .locationType(TransplantLocationType.REEF)
+                        .methodType(TransplantMethodType.ROPE_LINE)
+                        .scale(amount != null ? amount : "규모 미상")
+                        .healthStatus(HealthStatus.A)
+                        .build();
+                submission.setActivityTransplant(transplant);
+                break;
 
-    private MarineCondition convertCurrentStateToMarineCondition(CurrentState currentState) {
-        if (currentState == null) return MarineCondition.NORMAL;
-        return switch (currentState) {
-            case LOW -> MarineCondition.GOOD;
-            case MEDIUM -> MarineCondition.NORMAL;
-            case HIGH -> MarineCondition.BAD;
-        };
+            case TRASH_COLLECTION:
+            case MARINE_CLEANUP:
+                ActivityMarineCleanup cleanup = ActivityMarineCleanup.builder()
+                        .submission(submission)
+                        .wasteTypes(List.of(WasteType.PLASTIC, WasteType.NET))
+                        .method(CleanupMethodType.HAND)
+                        .collectionAmount(amount != null ? amount : "0kg")
+                        .uncollectedScale(UncollectedScale.SMALL)
+                        .build();
+                submission.setActivityMarineCleanup(cleanup);
+                break;
+
+            case GRAZER_REMOVAL:
+                ActivityGrazerRemoval grazer = ActivityGrazerRemoval.builder()
+                        .submission(submission)
+                        .targetSpecies(List.of(GrazerSpeciesType.URCHIN))
+                        .densityBeforeWork(DensityLevel.HIGH)
+                        .workScope(WorkScope.ZONE)
+                        .collectionAmount(amount != null ? amount : "0kg")
+                        .note(details)
+                        .build();
+                submission.setActivityGrazerRemoval(grazer);
+                break;
+
+            case MONITORING:
+                ActivityMonitoring monitoring = ActivityMonitoring.builder()
+                        .submission(submission)
+                        .terrain(TerrainType.ROCK)
+                        .barrenExtent(BarrenExtent.ONGOING)
+                        .grazerDistribution(DensityLevel.MID)
+                        .rockFeatures(List.of(RockFeature.SMOOTH))
+                        .suitability(Suitability.SUITABLE)
+                        .seaweedHealthStatus(SeaweedHealthStatus.GOOD)
+                        .build();
+                submission.setActivityMonitoring(monitoring);
+                break;
+
+            case SUBSTRATE_IMPROVEMENT:
+                ActivitySubstrateImprovement substrate = ActivitySubstrateImprovement.builder()
+                        .submission(submission)
+                        .targetType(SubstrateTargetType.ROCK)
+                        .workScope(amount != null ? amount : "범위 미상")
+                        .substrateState("양호")
+                        .build();
+                submission.setActivitySubstrateImprovement(substrate);
+                break;
+
+            case OTHER:
+            default:
+                break;
+        }
     }
 }
 

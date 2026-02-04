@@ -1,3 +1,4 @@
+/*
 package com.ocean.piuda.admin.report.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -281,3 +282,4 @@ public class ReportDraftService {
         return new ReportPdfResponse(fileName, pdfBytes);
     }
 }
+ */
