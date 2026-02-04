@@ -42,9 +42,6 @@ public class CreateSubmissionRequest {
 
     private String workDescription;  // 작업 내용
 
-    private BigDecimal latitude;
-    private BigDecimal longitude;
-
     @Valid
     @NotNull(message = "기본 환경 정보는 필수입니다")
     private BasicEnvDto basicEnv;

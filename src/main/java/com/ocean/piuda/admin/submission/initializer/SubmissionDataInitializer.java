@@ -218,8 +218,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .authorEmail(authorEmail)
                 .attachmentCount(attachmentCount)
                 .workDescription(workDescription)
-                .latitude(latitude)
-                .longitude(longitude)
                 .participantNames(participantNames)
                 .submittedAt(submittedAt)
                 .build();

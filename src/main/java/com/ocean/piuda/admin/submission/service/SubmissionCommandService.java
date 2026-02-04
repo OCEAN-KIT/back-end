@@ -95,8 +95,6 @@ public class SubmissionCommandService {
                 .authorName(request.getAuthorName())
                 .authorEmail(request.getAuthorEmail())
                 .workDescription(request.getWorkDescription())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
                 .attachmentCount(0)
                 .build();
 
