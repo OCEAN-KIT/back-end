@@ -85,12 +85,13 @@ public class Submission extends BaseEntity {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
 
+    @Column(name = "participant_names", columnDefinition = "TEXT")
+    private String participantNames;
+
+
     // 관계 매핑
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private BasicEnv basicEnv;
-
-    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Participants participants;
 
     // 작업 유형별 Activity (조건부 1:1)
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -123,6 +124,8 @@ public class Submission extends BaseEntity {
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<AuditLog> auditLogs = new ArrayList<>();
+
+
 
     // 비즈니스 메서드
     public void updateStatus(SubmissionStatus status) {
@@ -167,12 +170,10 @@ public class Submission extends BaseEntity {
         }
     }
 
-    public void setParticipants(Participants participants) {
-        this.participants = participants;
-        if (participants != null) {
-            participants.updateSubmission(this);
-        }
+    public void updateParticipantNames(String participantNames) {
+        this.participantNames = participantNames;
     }
+
 
     public void setActivity(Activity activity) {
         this.activity = activity;

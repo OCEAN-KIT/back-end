@@ -245,12 +245,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .weather(weather)
                 .build();
 
-        // Participants 생성
-        Participants participants = Participants.builder()
-                .leaderName(leaderName)
-                .participantCount(participantCount)
-                .role(role)
-                .build();
 
         // Activity 생성
         Activity activity = Activity.builder()
@@ -281,7 +275,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .recordDate(recordDate)
                 .divingRound(1)  // 기본값
                 .activityType(activityType)
-                .submittedAt(status == SubmissionStatus.DRAFT ? null : submittedAt)  // DRAFT일 때는 null
                 .status(status)
                 .authorName(authorName)
                 .authorEmail(authorEmail)
@@ -293,7 +286,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
         // 관계 설정
         submission.setBasicEnv(basicEnv);
-        submission.setParticipants(participants);
         submission.setActivity(activity);
         attachments.forEach(submission::addAttachment);
 

@@ -104,11 +104,7 @@ public class SubmissionCommandService {
         // Participants 생성
         if (request.getParticipants() != null) {
             CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
-            Participants participants = Participants.builder()
-                    .leaderName(participantsDto.getLeaderName())
-                    .participantNames(participantsDto.getParticipantNames())
-                    .build();
-            submission.setParticipants(participants);
+            submission.updateParticipantNames(participantsDto.getParticipantNames());
         }
 
         // 작업 유형별 Activity 생성
@@ -166,7 +162,6 @@ public class SubmissionCommandService {
                             .locationType(dto.getLocationType())
                             .methodType(dto.getMethodType())
                             .scale(dto.getScale())
-                            .zone(dto.getZone())
                             .healthStatus(dto.getHealthStatus())
                             .build();
                     activity.updateSubmission(submission);

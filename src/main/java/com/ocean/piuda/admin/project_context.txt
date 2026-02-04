@@ -2416,19 +2416,10 @@ public class CreateSubmissionRequest {
     @Valid
     private ParticipantsDto participants;
 
-    // ============================================
-    // 작업 유형별 Activity DTO (조건부 노출)
-    // activityType에 따라 해당하는 DTO만 사용됨
-    // 
-    // 주의: @Valid를 제거하여 Spring의 자동 검증을 방지합니다.
-    // ActivityValidator에서 activityType에 따라 해당 DTO만 검증합니다.
-    // ============================================
-    
+
     /**
      * TRANSPLANT (이식) 작업 시 사용되는 필드
      * activityType이 TRANSPLANT일 때만 필수
-     * 
-     * @Valid 제거: ActivityValidator에서만 검증 (다른 activity DTO와 충돌 방지)
      */
     private TransplantActivityDto transplantActivity;
 
@@ -2512,7 +2503,6 @@ public class CreateSubmissionRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ParticipantsDto {
-        private String leaderName;
         private String participantNames;  // comma-separated 또는 JSON 배열
     }
 
@@ -2523,10 +2513,9 @@ public class CreateSubmissionRequest {
      * 필드:
      * - speciesType: 대상 종류 (감태/다시마/곰피/모자반/대황/기타)
      * - locationType: 이식 장소 (어초/암반/기타)
-     * - methodType: 이식 방식 (로프/연승/종자/직접이식/모듈/기타)
+     * - methodType: 이식 방식
      * - scale: 이식 규모 (텍스트)
-     * - zone: 구역 (A/B/C/D)
-     * - healthStatus: 건강상태 (A=활착양호, B=생육정상, C=부분스트레스, D=쇠약/탈락진행)
+     * - healthStatus: 건강상태
      */
     @Getter
     @Builder
@@ -2544,9 +2533,6 @@ public class CreateSubmissionRequest {
 
         @NotBlank(message = "이식 규모는 필수입니다")
         private String scale;
-
-        @NotBlank(message = "구역은 필수입니다")
-        private String zone;  // A/B/C/D
 
         @NotNull(message = "건강상태는 필수입니다")
         private HealthStatus healthStatus;
@@ -3019,23 +3005,11 @@ File Path: .\submission\dto\response\ParticipantsResponse.java
 
 package com.ocean.piuda.admin.submission.dto.response;
 
-import com.ocean.piuda.admin.common.enums.ParticipantRole;
-import com.ocean.piuda.admin.submission.entity.Participants;
+
 
 public record ParticipantsResponse(
-        String leaderName,
-        Integer participantCount,
-        ParticipantRole role
-) {
-    public static ParticipantsResponse from(Participants participants) {
-        if (participants == null) return null;
-        return new ParticipantsResponse(
-                participants.getLeaderName(),
-                participants.getParticipantCount(),
-                participants.getRole()
-        );
-    }
-}
+        String participantNames
+) { }
 
 
 ================================================================================
@@ -3107,7 +3081,7 @@ public record SubmissionDetailResponse(
                 submission.getLatitude(),
                 submission.getLongitude(),
                 BasicEnvResponse.from(submission.getBasicEnv()),
-                ParticipantsResponse.from(submission.getParticipants()),
+                new ParticipantsResponse(submission.getParticipantNames()),
                 ActivityResponse.from(submission.getActivity()),
                 attachments,
                 rejectReason,
@@ -3555,9 +3529,6 @@ public class ActivityTransplant {
     @Column(nullable = false, length = 200)
     private String scale;  // 이식 규모
 
-    @Column(nullable = false, length = 1)
-    private String zone;  // 구역 (A/B/C/D)
-
     @Enumerated(EnumType.STRING)
     @Column(name = "health_status", nullable = false)
     private HealthStatus healthStatus;  // 건강상태
@@ -3815,57 +3786,6 @@ public class Survival {
 
 
 ================================================================================
-File Path: .\submission\entity\Participants.java
-================================================================================
-
-package com.ocean.piuda.admin.submission.entity;
-
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-
-@Entity
-@Table(name = "participants")
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class Participants {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "participant_id")
-    private Long participantId;
-
-    @OneToOne
-    @JoinColumn(name = "submission_id", nullable = false)
-    private Submission submission;
-
-    @Column(name = "leader_name", length = 100)
-    private String leaderName;
-
-    @Column(name = "participant_names", columnDefinition = "TEXT")
-    private String participantNames;  // comma-separated 또는 JSON 배열
-
-    // 하위 호환성을 위한 기존 필드들 (deprecated)
-    @Deprecated
-    @Column(name = "participant_count")
-    @Builder.Default
-    private Integer participantCount = 1;
-
-    @Deprecated
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private com.ocean.piuda.admin.common.enums.ParticipantRole role = 
-        com.ocean.piuda.admin.common.enums.ParticipantRole.CITIZEN_DIVER;
-
-    public void updateSubmission(Submission submission) {
-        this.submission = submission;
-    }
-}
-
-
-================================================================================
 File Path: .\submission\entity\RejectReason.java
 ================================================================================
 
@@ -4004,12 +3924,13 @@ public class Submission extends BaseEntity {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
 
+    @Column(name = "participant_names", columnDefinition = "TEXT")
+    private String participantNames;
+
+
     // 관계 매핑
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private BasicEnv basicEnv;
-
-    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Participants participants;
 
     // 작업 유형별 Activity (조건부 1:1)
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -4042,6 +3963,8 @@ public class Submission extends BaseEntity {
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<AuditLog> auditLogs = new ArrayList<>();
+
+
 
     // 비즈니스 메서드
     public void updateStatus(SubmissionStatus status) {
@@ -4086,12 +4009,10 @@ public class Submission extends BaseEntity {
         }
     }
 
-    public void setParticipants(Participants participants) {
-        this.participants = participants;
-        if (participants != null) {
-            participants.updateSubmission(this);
-        }
+    public void updateParticipantNames(String participantNames) {
+        this.participantNames = participantNames;
     }
+
 
     public void setActivity(Activity activity) {
         this.activity = activity;
@@ -4395,12 +4316,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .weather(weather)
                 .build();
 
-        // Participants 생성
-        Participants participants = Participants.builder()
-                .leaderName(leaderName)
-                .participantCount(participantCount)
-                .role(role)
-                .build();
 
         // Activity 생성
         Activity activity = Activity.builder()
@@ -4431,7 +4346,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .recordDate(recordDate)
                 .divingRound(1)  // 기본값
                 .activityType(activityType)
-                .submittedAt(status == SubmissionStatus.DRAFT ? null : submittedAt)  // DRAFT일 때는 null
                 .status(status)
                 .authorName(authorName)
                 .authorEmail(authorEmail)
@@ -4443,7 +4357,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
         // 관계 설정
         submission.setBasicEnv(basicEnv);
-        submission.setParticipants(participants);
         submission.setActivity(activity);
         attachments.forEach(submission::addAttachment);
 
@@ -4741,11 +4654,7 @@ public class SubmissionCommandService {
         // Participants 생성
         if (request.getParticipants() != null) {
             CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
-            Participants participants = Participants.builder()
-                    .leaderName(participantsDto.getLeaderName())
-                    .participantNames(participantsDto.getParticipantNames())
-                    .build();
-            submission.setParticipants(participants);
+            submission.updateParticipantNames(participantsDto.getParticipantNames());
         }
 
         // 작업 유형별 Activity 생성
@@ -4803,7 +4712,6 @@ public class SubmissionCommandService {
                             .locationType(dto.getLocationType())
                             .methodType(dto.getMethodType())
                             .scale(dto.getScale())
-                            .zone(dto.getZone())
                             .healthStatus(dto.getHealthStatus())
                             .build();
                     activity.updateSubmission(submission);

@@ -63,7 +63,7 @@ public record SubmissionDetailResponse(
                 submission.getLatitude(),
                 submission.getLongitude(),
                 BasicEnvResponse.from(submission.getBasicEnv()),
-                ParticipantsResponse.from(submission.getParticipants()),
+                new ParticipantsResponse(submission.getParticipantNames()),
                 ActivityResponse.from(submission.getActivity()),
                 attachments,
                 rejectReason,
