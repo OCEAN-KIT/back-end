@@ -4,6 +4,7 @@ import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.user.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -63,6 +64,16 @@ public class Submission extends BaseEntity {
     @Builder.Default
     private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
+    /**
+     * 실제 유저 데이터
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    /**
+     * 유저의 탈퇴/정보 변경 이후에도 기록 당시 정보 보존 위한 스냅샷 필드
+     */
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
 

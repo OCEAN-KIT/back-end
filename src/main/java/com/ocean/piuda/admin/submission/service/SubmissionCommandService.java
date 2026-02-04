@@ -16,6 +16,9 @@ import com.ocean.piuda.admin.submission.validator.ActivityValidator;
 import com.ocean.piuda.admin.submission.validator.SubmissionStatusValidator;
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
+import com.ocean.piuda.user.entity.User;
+import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,7 +40,8 @@ public class SubmissionCommandService {
     private final SubmissionQueryService submissionQueryService;
     private final ActivityValidator activityValidator;
     private final SubmissionStatusValidator statusValidator;
-
+    private final UserRepository userRepository;
+    private final TokenUserService tokenUserService;
 
     /**
      * 바로 제출 (SUBMITTED 상태로 저장)
@@ -66,7 +70,10 @@ public class SubmissionCommandService {
         StructureType structureType = request.getStructureType() != null 
                 ? request.getStructureType() 
                 : StructureType.OTHER;
-        
+
+        // 현재 유저 정보 저장
+        User currentUser = tokenUserService.getCurrentUser();
+
         // Submission 생성
         Submission submission = Submission.builder()
                 .siteName(request.getSiteName())
@@ -77,6 +84,7 @@ public class SubmissionCommandService {
                 .activityType(request.getActivityType())
                 .status(status)
                 .submittedAt(submittedAt)
+                .user(currentUser)
                 .authorName(request.getAuthorName())
                 .authorEmail(request.getAuthorEmail())
                 .workDescription(request.getWorkDescription())
