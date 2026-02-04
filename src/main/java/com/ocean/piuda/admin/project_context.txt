@@ -35,6 +35,29 @@ public enum AuditAction {
 
 
 ================================================================================
+File Path: .\common\enums\BarrenExtent.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 모니터링 - 갯녹음 정도
+ */
+@Getter
+@RequiredArgsConstructor
+public enum BarrenExtent {
+    NONE("없음"),
+    ONGOING("진행중"),
+    SEVERE("심각");
+
+    private final String description;
+}
+
+
+================================================================================
 File Path: .\common\enums\CleanupMethodType.java
 ================================================================================
 
@@ -194,6 +217,31 @@ public enum ParticipantRole {
 
 
 ================================================================================
+File Path: .\common\enums\RockFeature.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 모니터링 - 암반 특성
+ */
+@Getter
+@RequiredArgsConstructor
+public enum RockFeature {
+    SMOOTH("매끈"),
+    CRACKED("균열"),
+    CALCAREOUS_ALGAE("석회조류 우점"),
+    MIXED("혼합"),
+    SEAWEED_VEGETATION("해조류 식생");
+
+    private final String description;
+}
+
+
+================================================================================
 File Path: .\common\enums\SeaweedHealthStatus.java
 ================================================================================
 
@@ -260,6 +308,52 @@ public enum SubstrateTargetType {
     REEF,        // 어초
     STRUCTURE,   // 구조물
     OTHER        // 기타
+}
+
+
+================================================================================
+File Path: .\common\enums\Suitability.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 모니터링 - 해조 이식 적합성
+ */
+@Getter
+@RequiredArgsConstructor
+public enum Suitability {
+    SUITABLE("적합"),
+    UNSUITABLE("부적합");
+
+    private final String description;
+}
+
+
+================================================================================
+File Path: .\common\enums\TerrainType.java
+================================================================================
+
+package com.ocean.piuda.admin.common.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 모니터링 - 지형 구성
+ */
+@Getter
+@RequiredArgsConstructor
+public enum TerrainType {
+    ROCK("암반"),
+    SAND("모래"),
+    MIXED("혼합"),
+    OTHER("기타");
+
+    private final String description;
 }
 
 
@@ -2620,11 +2714,11 @@ public class CreateSubmissionRequest {
         
         // 지형 구성
         @NotNull(message = "지형 구성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.TerrainType terrain;
+        private TerrainType terrain;
         
         // 갯녹음 정도
         @NotNull(message = "갯녹음 정도는 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.BarrenExtent barrenExtent;
+        private BarrenExtent barrenExtent;
         
         // 조식동물 분포
         @NotNull(message = "조식동물 분포는 필수입니다")
@@ -2632,15 +2726,15 @@ public class CreateSubmissionRequest {
         
         // 암반 특성 (복수 선택)
         @NotNull(message = "암반 특성은 최소 1개 이상 선택해야 합니다")
-        private List<com.ocean.piuda.admin.submission.entity.ActivityMonitoring.RockFeature> rockFeatures;
+        private List<RockFeature> rockFeatures;
         
         // 해조 이식 적합성
         @NotNull(message = "해조 이식 적합성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.Suitability suitability;
+        private Suitability suitability;
         
         // 해조류 상태
         private String seaweedIdNumber;  // 식별번호
-        private com.ocean.piuda.admin.common.enums.SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
+        private SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
         
         // 정밀측정 여부
         private Boolean precisionMeasurement;
@@ -3324,7 +3418,7 @@ File Path: .\submission\entity\ActivityMonitoring.java
 
 package com.ocean.piuda.admin.submission.entity;
 
-import com.ocean.piuda.admin.common.enums.DensityLevel;
+import com.ocean.piuda.admin.common.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -3406,32 +3500,6 @@ public class ActivityMonitoring {
         this.submission = submission;
     }
 
-    // 모니터링 전용 Enum들
-    public enum TerrainType {
-        ROCK,       // 암반
-        SAND,       // 모래
-        MIXED,      // 혼합
-        OTHER       // 기타
-    }
-
-    public enum BarrenExtent {
-        NONE,       // 없음
-        ONGOING,    // 진행중
-        SEVERE      // 심각
-    }
-
-    public enum RockFeature {
-        SMOOTH,             // 매끈
-        CRACKED,            // 균열
-        CALCAREOUS_ALGAE,   // 석회조류우점
-        MIXED,              // 혼합
-        SEAWEED_VEGETATION  // 해조류식생
-    }
-
-    public enum Suitability {
-        SUITABLE,   // 적합
-        UNSUITABLE  // 부적합
-    }
 }
 
 
@@ -5218,9 +5286,6 @@ public class ActivityValidator {
         }
         if (dto.getScale() == null || dto.getScale().isBlank()) {
             throw new IllegalArgumentException("이식 규모는 필수입니다");
-        }
-        if (dto.getZone() == null || !dto.getZone().matches("[A-D]")) {
-            throw new IllegalArgumentException("구역은 A, B, C, D 중 하나여야 합니다");
         }
         if (dto.getHealthStatus() == null) {
             throw new IllegalArgumentException("건강상태는 필수입니다");

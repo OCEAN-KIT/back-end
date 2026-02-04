@@ -9,12 +9,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum TransplantMethodType {
-    ROPE("로프"),
-    LINE_SET("연승"),
-    SEED("종자"),
-    DIRECT("직접이식"),
+    ROPE_LINE("로프 연승"),
+    SEED_DIRECT("종자 직접 이식"),
     MODULE("이식용 모듈"),
     OTHER("기타");
-
     private final String description;
 }
