@@ -30,47 +30,27 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(
         name = "Admin Submission",
-        description = "해양 활동 제출 데이터 관리 API입니다. 제출 데이터의 조회, 생성, 승인, 반려, 삭제 기능을 제공합니다."
+        description = "해양 활동 제출 데이터 관리 API입니다. 활동 기록의 조회, 승인, 반려, 삭제 기능을 제공합니다."
 )
 public class SubmissionController {
 
     private final SubmissionQueryService submissionQueryService;
     private final SubmissionCommandService submissionCommandService;
 
-    /**
-     * 기록 임시저장 (DRAFT)
-     */
-    @PostMapping("/draft")
-    @Operation(
-            summary = "기록 임시저장",
-            description = "기록을 임시저장합니다. 상태는 DRAFT로 저장되며, 나중에 제출할 수 있습니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "임시저장 성공"),
-            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> saveDraft(
-            @RequestBody @Valid CreateSubmissionRequest request
-    ) {
-        SubmissionDetailResponse response = submissionCommandService.saveDraft(request);
-        return ApiData.ok(response);
-    }
 
     /**
      * 기록 바로 제출 (SUBMITTED)
      */
     @PostMapping("/submit")
     @Operation(
-            summary = "기록 바로 제출",
-            description = "기록을 바로 제출합니다. 상태는 SUBMITTED로 저장되며, 관리자 검수를 기다립니다."
+            summary = "기록 제출 (신규 등록)",
+            description = "새로운 활동 기록을 제출합니다. 상태는 '제출됨(SUBMITTED)'으로 저장되며, 관리자 승인 대기 상태가 됩니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "제출 성공"),
-            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 형식 오류"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
+            @ApiResponse(responseCode = "400", description = "필수 필드 누락 또는 데이터 형식 오류"),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (로그인 필요)"),
+            @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     public ApiData<SubmissionDetailResponse> submitSubmission(
             @RequestBody @Valid CreateSubmissionRequest request
@@ -80,51 +60,10 @@ public class SubmissionController {
     }
 
     /**
-     * 임시저장된 기록 불러오기 (DRAFT 상태)
-     */
-    @GetMapping("/draft/{submissionId}")
-    @Operation(summary = "임시저장된 기록 불러오기", description = "임시저장(DRAFT)된 기록을 불러와서 수정할 수 있도록 조회합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
-            @ApiResponse(responseCode = "400", description = "DRAFT 상태가 아닌 기록"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> getDraftSubmission(
-            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
-    ) {
-        SubmissionDetailResponse response = submissionQueryService.getDraftSubmission(submissionId);
-        return ApiData.ok(response);
-    }
-
-    /**
-     * 임시저장된 기록 제출 (DRAFT -> SUBMITTED)
-     */
-    @PostMapping("/{submissionId}/submit")
-    @Operation(
-            summary = "임시저장된 기록 제출",
-            description = "임시저장(DRAFT)된 기록을 제출(SUBMITTED)합니다. 불러온 기록을 수정한 후 이 API로 제출하세요."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "제출 성공"),
-            @ApiResponse(responseCode = "400", description = "제출 불가능한 상태"),
-            @ApiResponse(responseCode = "404", description = "기록을 찾을 수 없음"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
-    })
-    public ApiData<SubmissionDetailResponse> submitDraftSubmission(
-            @Parameter(description = "기록 ID", required = true) @PathVariable Long submissionId
-    ) {
-        SubmissionDetailResponse response = submissionCommandService.submitDraftSubmission(submissionId);
-        return ApiData.ok(response);
-    }
-
-    /**
      * 제출 목록 조회
      */
     @GetMapping
-    @Operation(summary = "제출 목록 조회", description = "제출 목록을 페이지네이션과 함께 조회합니다. 검색, 필터링, 정렬을 지원합니다.")
+    @Operation(summary = "제출 목록 조회", description = "제출된 기록 목록을 페이지네이션, 필터링, 정렬하여 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
@@ -132,22 +71,22 @@ public class SubmissionController {
     })
     public ApiData<PageResponse<SubmissionListResponse>> getSubmissions(
             @Parameter(description = "검색 키워드 (현장명, 작성자)") @RequestParam(required = false) String keyword,
-            @Parameter(description = "상태 필터 (DRAFT, SUBMITTED, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
-            @Parameter(description = "활동 유형 필터 (TRANSPLANT, TRASH_COLLECTION, RESEARCH, MONITORING, OTHER)") @RequestParam(required = false) ActivityType activityType,
-            @Parameter(description = "시작 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @Parameter(description = "종료 날짜 (ISO 8601 형식)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @Parameter(description = "페이지 번호 (기본값: 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "상태 필터 (SUBMITTED, APPROVED, REJECTED, DELETED)") @RequestParam(required = false) SubmissionStatus status,
+            @Parameter(description = "활동 유형 필터 (TRANSPLANT, GRAZER_REMOVAL, SUBSTRATE_IMPROVEMENT, MONITORING, MARINE_CLEANUP, ETC)") @RequestParam(required = false) ActivityType activityType,
+            @Parameter(description = "시작 날짜 (ISO 8601, 예: 2024-01-01T00:00:00)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @Parameter(description = "종료 날짜 (ISO 8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @Parameter(description = "페이지 번호 (0부터 시작, 기본값: 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기 (기본값: 20)") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "정렬 필드 (기본값: submittedAt)") @RequestParam(defaultValue = "submittedAt") String sortBy,
             @Parameter(description = "정렬 방향 (ASC, DESC, 기본값: DESC)") @RequestParam(defaultValue = "DESC") String sortDir
     ) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         PageResponse<SubmissionListResponse> result = submissionQueryService.getSubmissions(
                 keyword, status, activityType, startDate, endDate, pageable
         );
-        
+
         return ApiData.ok(result);
     }
 
@@ -158,7 +97,7 @@ public class SubmissionController {
     @Operation(summary = "제출 상세 조회", description = "특정 제출 데이터의 상세 정보를 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "404", description = "해당 ID의 제출 데이터를 찾을 수 없음"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -172,10 +111,10 @@ public class SubmissionController {
      * 검수 로그 조회
      */
     @GetMapping("/{submissionId}/logs")
-    @Operation(summary = "검수 로그 조회", description = "특정 제출 데이터의 검수 이력을 조회합니다.")
+    @Operation(summary = "검수 로그 조회", description = "특정 제출 데이터의 상태 변경(승인/반려/삭제) 이력을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "404", description = "해당 ID의 제출 데이터를 찾을 수 없음"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -189,11 +128,11 @@ public class SubmissionController {
      * 단건 승인
      */
     @PostMapping("/{submissionId}/approve")
-    @Operation(summary = "단건 승인", description = "특정 제출 데이터를 승인합니다.")
+    @Operation(summary = "단건 승인", description = "특정 제출 데이터를 승인(APPROVED) 처리합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "승인 성공"),
-            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 제출"),
+            @ApiResponse(responseCode = "404", description = "데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 상태라 변경 불가"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -207,12 +146,12 @@ public class SubmissionController {
      * 단건 반려
      */
     @PostMapping("/{submissionId}/reject")
-    @Operation(summary = "단건 반려", description = "특정 제출 데이터를 반려합니다. 반려 사유를 필수로 입력해야 합니다.")
+    @Operation(summary = "단건 반려", description = "특정 제출 데이터를 반려(REJECTED) 처리합니다. 반려 사유 입력이 필수입니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "반려 성공"),
-            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 제출"),
-            @ApiResponse(responseCode = "422", description = "반려 사유가 공란"),
+            @ApiResponse(responseCode = "404", description = "데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 승인/반려/삭제된 상태라 변경 불가"),
+            @ApiResponse(responseCode = "422", description = "반려 사유 미입력"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -230,8 +169,8 @@ public class SubmissionController {
     @DeleteMapping("/{submissionId}")
     @Operation(summary = "단건 삭제", description = "특정 제출 데이터를 영구 삭제합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "삭제 성공"),
-            @ApiResponse(responseCode = "404", description = "제출 데이터를 찾을 수 없음"),
+            @ApiResponse(responseCode = "204", description = "삭제 성공 (No Content)"),
+            @ApiResponse(responseCode = "404", description = "데이터를 찾을 수 없음"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -252,7 +191,7 @@ public class SubmissionController {
     @PostMapping("/bulk/approve")
     @Operation(summary = "일괄 승인", description = "여러 제출 데이터를 한 번에 승인합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "일괄 승인 완료"),
+            @ApiResponse(responseCode = "200", description = "일괄 승인 완료 (성공/실패 건수 반환)"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -267,10 +206,10 @@ public class SubmissionController {
      * 일괄 반려
      */
     @PostMapping("/bulk/reject")
-    @Operation(summary = "일괄 반려", description = "여러 제출 데이터를 한 번에 반려합니다. 반려 사유를 필수로 입력해야 합니다.")
+    @Operation(summary = "일괄 반려", description = "여러 제출 데이터를 한 번에 반려합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "일괄 반려 완료"),
-            @ApiResponse(responseCode = "422", description = "반려 사유가 공란"),
+            @ApiResponse(responseCode = "200", description = "일괄 반려 완료 (성공/실패 건수 반환)"),
+            @ApiResponse(responseCode = "422", description = "반려 사유 미입력"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })
@@ -287,7 +226,7 @@ public class SubmissionController {
     @DeleteMapping("/bulk")
     @Operation(summary = "일괄 삭제", description = "여러 제출 데이터를 한 번에 영구 삭제합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "일괄 삭제 완료"),
+            @ApiResponse(responseCode = "200", description = "일괄 삭제 완료 (성공/실패 건수 반환)"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "Admin 권한 없음")
     })

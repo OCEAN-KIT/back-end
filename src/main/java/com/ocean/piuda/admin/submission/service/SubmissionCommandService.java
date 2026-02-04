@@ -8,14 +8,15 @@ import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
 import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
 import com.ocean.piuda.admin.submission.entity.*;
-import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
-import com.ocean.piuda.admin.submission.entity.embeded.Survival;
 import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
 import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
 import com.ocean.piuda.admin.submission.validator.ActivityValidator;
 import com.ocean.piuda.admin.submission.validator.SubmissionStatusValidator;
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
+import com.ocean.piuda.user.entity.User;
+import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,13 +38,8 @@ public class SubmissionCommandService {
     private final SubmissionQueryService submissionQueryService;
     private final ActivityValidator activityValidator;
     private final SubmissionStatusValidator statusValidator;
-
-    /**
-     * 임시저장 (DRAFT 상태로 저장)
-     */
-    public SubmissionDetailResponse saveDraft(CreateSubmissionRequest request) {
-        return createSubmissionInternal(request, SubmissionStatus.DRAFT, null);
-    }
+    private final UserRepository userRepository;
+    private final TokenUserService tokenUserService;
 
     /**
      * 바로 제출 (SUBMITTED 상태로 저장)
@@ -72,7 +68,10 @@ public class SubmissionCommandService {
         StructureType structureType = request.getStructureType() != null 
                 ? request.getStructureType() 
                 : StructureType.OTHER;
-        
+
+        // 현재 유저 정보 저장
+        User currentUser = tokenUserService.getCurrentUser();
+
         // Submission 생성
         Submission submission = Submission.builder()
                 .siteName(request.getSiteName())
@@ -83,6 +82,7 @@ public class SubmissionCommandService {
                 .activityType(request.getActivityType())
                 .status(status)
                 .submittedAt(submittedAt)
+                .user(currentUser)
                 .authorName(request.getAuthorName())
                 .authorEmail(request.getAuthorEmail())
                 .workDescription(request.getWorkDescription())
@@ -110,11 +110,7 @@ public class SubmissionCommandService {
         // Participants 생성
         if (request.getParticipants() != null) {
             CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
-            Participants participants = Participants.builder()
-                    .leaderName(participantsDto.getLeaderName())
-                    .participantNames(participantsDto.getParticipantNames())
-                    .build();
-            submission.setParticipants(participants);
+            submission.updateParticipantNames(participantsDto.getParticipantNames());
         }
 
         // 작업 유형별 Activity 생성
@@ -172,7 +168,6 @@ public class SubmissionCommandService {
                             .locationType(dto.getLocationType())
                             .methodType(dto.getMethodType())
                             .scale(dto.getScale())
-                            .zone(dto.getZone())
                             .healthStatus(dto.getHealthStatus())
                             .build();
                     activity.updateSubmission(submission);
@@ -236,7 +231,6 @@ public class SubmissionCommandService {
                             .seaweedIdNumber(dto.getSeaweedIdNumber())
                             .seaweedHealthStatus(dto.getSeaweedHealthStatus())
                             // 정밀측정
-                            .precisionMeasurement(dto.getPrecisionMeasurement())
                             .leafLength(dto.getLeafLength())
                             .maxLeafWidth(dto.getMaxLeafWidth())
                             .build();
@@ -261,68 +255,13 @@ public class SubmissionCommandService {
                 }
                 break;
 
-            // 하위 호환성을 위한 기존 Activity 처리
             default:
-                if (request.getActivity() != null) {
-                    createLegacyActivity(submission, request.getActivity());
-                }
                 break;
         }
     }
 
-    /**
-     * 기존 Activity 생성 (하위 호환성)
-     */
-    @Deprecated
-    private void createLegacyActivity(Submission submission, CreateSubmissionRequest.ActivityDto activityDto) {
-        NaturalReproduction naturalReproduction = null;
-        if (activityDto.getNaturalReproduction() != null) {
-            naturalReproduction = NaturalReproduction.builder()
-                    .radiusM(activityDto.getNaturalReproduction().getRadiusM() != null ? activityDto.getNaturalReproduction().getRadiusM() : 0f)
-                    .numerator(activityDto.getNaturalReproduction().getNumerator() != null ? activityDto.getNaturalReproduction().getNumerator() : 0f)
-                    .denominator(activityDto.getNaturalReproduction().getDenominator() != null ? activityDto.getNaturalReproduction().getDenominator() : 0f)
-                    .build();
-        }
 
-        Survival survival = null;
-        if (activityDto.getSurvival() != null) {
-            survival = Survival.builder()
-                    .dieCount(activityDto.getSurvival().getDieCount() != null ? activityDto.getSurvival().getDieCount() : 0f)
-                    .totalCount(activityDto.getSurvival().getTotalCount() != null ? activityDto.getSurvival().getTotalCount() : 0f)
-                    .build();
-        }
 
-        Activity activity = Activity.builder()
-                .type(activityDto.getType())
-                .details(activityDto.getDetails())
-                .collectionAmount(activityDto.getCollectionAmount() != null ? activityDto.getCollectionAmount() : 0f)
-                .durationHours(activityDto.getDurationHours() != null ? activityDto.getDurationHours() : 0f)
-                .healthGrade(activityDto.getHealthGrade())
-                .growthCm(activityDto.getGrowthCm() != null ? activityDto.getGrowthCm() : 0f)
-                .naturalReproduction(naturalReproduction)
-                .survival(survival)
-                .build();
-        submission.setActivity(activity);
-    }
-
-    /**
-     * 임시저장된 기록 제출 (DRAFT -> SUBMITTED)
-     */
-    public SubmissionDetailResponse submitDraftSubmission(Long submissionId) {
-        Submission submission = submissionQueryService.getSubmissionById(submissionId);
-        
-        if (!statusValidator.canSubmit(submission.getStatus())) {
-            if (submission.getStatus() == SubmissionStatus.SUBMITTED) {
-                throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_SUBMITTED);
-            }
-            throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
-        }
-
-        submission.submit();
-        createAuditLog(submission, AuditAction.SUBMITTED, null);
-
-        return SubmissionDetailResponse.from(submission);
-    }
 
     /**
      * 단건 승인

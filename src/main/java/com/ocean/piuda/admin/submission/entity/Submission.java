@@ -4,6 +4,7 @@ import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.user.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -56,13 +57,23 @@ public class Submission extends BaseEntity {
     private ActivityType activityType;
 
     @Column(name = "submitted_at")
-    private LocalDateTime submittedAt;  // 제출 시점 (DRAFT일 때는 null)
+    private LocalDateTime submittedAt = LocalDateTime.now();  // 생성 시 제출 시점 기록
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private SubmissionStatus status = SubmissionStatus.DRAFT;
+    private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
+    /**
+     * 실제 유저 데이터
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    /**
+     * 유저의 탈퇴/정보 변경 이후에도 기록 당시 정보 보존 위한 스냅샷 필드
+     */
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
 
@@ -85,12 +96,13 @@ public class Submission extends BaseEntity {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
 
+    @Column(name = "participant_names", columnDefinition = "TEXT")
+    private String participantNames;
+
+
     // 관계 매핑
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private BasicEnv basicEnv;
-
-    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Participants participants;
 
     // 작업 유형별 Activity (조건부 1:1)
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -108,11 +120,6 @@ public class Submission extends BaseEntity {
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private ActivityMarineCleanup activityMarineCleanup;
 
-    // 하위 호환성을 위한 기존 Activity (deprecated)
-    @Deprecated
-    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Activity activity;
-
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Attachment> attachments = new ArrayList<>();
@@ -124,20 +131,11 @@ public class Submission extends BaseEntity {
     @Builder.Default
     private List<AuditLog> auditLogs = new ArrayList<>();
 
+
+
     // 비즈니스 메서드
     public void updateStatus(SubmissionStatus status) {
         this.status = status;
-    }
-
-    /**
-     * 제출 (DRAFT -> SUBMITTED)
-     */
-    public void submit() {
-        if (this.status != SubmissionStatus.DRAFT) {
-            throw new IllegalStateException("DRAFT 상태만 제출 가능합니다. 현재 상태: " + this.status);
-        }
-        this.status = SubmissionStatus.SUBMITTED;
-        this.submittedAt = LocalDateTime.now();
     }
 
     /**
@@ -178,19 +176,10 @@ public class Submission extends BaseEntity {
         }
     }
 
-    public void setParticipants(Participants participants) {
-        this.participants = participants;
-        if (participants != null) {
-            participants.updateSubmission(this);
-        }
+    public void updateParticipantNames(String participantNames) {
+        this.participantNames = participantNames;
     }
 
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-        if (activity != null) {
-            activity.updateSubmission(this);
-        }
-    }
 
     public void setRejectReason(RejectReason rejectReason) {
         this.rejectReason = rejectReason;

@@ -4,14 +4,15 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 이식 방식
+ * 모니터링 - 지형 구성
  */
 @Getter
 @RequiredArgsConstructor
-public enum TransplantMethodType {
-    ROPE_LINE("로프 연승"),
-    SEED_DIRECT("종자 직접 이식"),
-    MODULE("이식용 모듈"),
+public enum TerrainType {
+    ROCK("암반"),
+    SAND("모래"),
+    MIXED("혼합"),
     OTHER("기타");
+
     private final String description;
 }

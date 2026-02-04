@@ -22,14 +22,17 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
-        LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
         LEFT JOIN FETCH s.rejectReason
+        LEFT JOIN FETCH s.activityTransplant
+        LEFT JOIN FETCH s.activityGrazerRemoval
+        LEFT JOIN FETCH s.activitySubstrateImprovement
+        LEFT JOIN FETCH s.activityMonitoring
+        LEFT JOIN FETCH s.activityMarineCleanup
         WHERE s.submissionId = :id
         """)
     Optional<Submission> findByIdWithDetails(@Param("id") Long id);
-    
+
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.auditLogs
@@ -40,8 +43,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("""
     SELECT DISTINCT s FROM Submission s
     LEFT JOIN FETCH s.basicEnv
-    LEFT JOIN FETCH s.participants
-    LEFT JOIN FETCH s.activity
     WHERE (:keyword IS NULL OR :keyword = '' OR 
            s.siteName LIKE %:keyword% OR 
            s.authorName LIKE %:keyword%)
@@ -59,12 +60,16 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             Pageable pageable
     );
 
+    // [수정] Export용 등 다건 상세 조회: 개별 Activity JOIN 추가
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
-        LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
+        LEFT JOIN FETCH s.activityTransplant
+        LEFT JOIN FETCH s.activityGrazerRemoval
+        LEFT JOIN FETCH s.activitySubstrateImprovement
+        LEFT JOIN FETCH s.activityMonitoring
+        LEFT JOIN FETCH s.activityMarineCleanup
         WHERE s.status = :status
           AND s.submissionId IN :ids
         """)
@@ -76,9 +81,12 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("""
     SELECT DISTINCT s FROM Submission s
     LEFT JOIN FETCH s.basicEnv
-    LEFT JOIN FETCH s.participants
-    LEFT JOIN FETCH s.activity
     LEFT JOIN FETCH s.attachments
+    LEFT JOIN FETCH s.activityTransplant
+    LEFT JOIN FETCH s.activityGrazerRemoval
+    LEFT JOIN FETCH s.activitySubstrateImprovement
+    LEFT JOIN FETCH s.activityMonitoring
+    LEFT JOIN FETCH s.activityMarineCleanup
     WHERE s.status = :status
       AND s.submittedAt BETWEEN :start AND :end
     ORDER BY s.submittedAt DESC
@@ -88,7 +96,4 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
-
-
 }
-

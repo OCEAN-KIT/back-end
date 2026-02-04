@@ -54,19 +54,10 @@ public class CreateSubmissionRequest {
     @Valid
     private ParticipantsDto participants;
 
-    // ============================================
-    // 작업 유형별 Activity DTO (조건부 노출)
-    // activityType에 따라 해당하는 DTO만 사용됨
-    // 
-    // 주의: @Valid를 제거하여 Spring의 자동 검증을 방지합니다.
-    // ActivityValidator에서 activityType에 따라 해당 DTO만 검증합니다.
-    // ============================================
-    
+
     /**
      * TRANSPLANT (이식) 작업 시 사용되는 필드
      * activityType이 TRANSPLANT일 때만 필수
-     * 
-     * @Valid 제거: ActivityValidator에서만 검증 (다른 activity DTO와 충돌 방지)
      */
     private TransplantActivityDto transplantActivity;
 
@@ -105,13 +96,6 @@ public class CreateSubmissionRequest {
     @Valid
     private List<AttachmentDto> attachments;
 
-    // 하위 호환성을 위한 기존 필드 (deprecated)
-    @Deprecated
-    private LocalDateTime submittedAt;
-
-    @Deprecated
-    @Valid
-    private ActivityDto activity;
 
     // === 내부 DTO 클래스들 ===
 
@@ -150,7 +134,6 @@ public class CreateSubmissionRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ParticipantsDto {
-        private String leaderName;
         private String participantNames;  // comma-separated 또는 JSON 배열
     }
 
@@ -161,10 +144,9 @@ public class CreateSubmissionRequest {
      * 필드:
      * - speciesType: 대상 종류 (감태/다시마/곰피/모자반/대황/기타)
      * - locationType: 이식 장소 (어초/암반/기타)
-     * - methodType: 이식 방식 (로프/연승/종자/직접이식/모듈/기타)
+     * - methodType: 이식 방식
      * - scale: 이식 규모 (텍스트)
-     * - zone: 구역 (A/B/C/D)
-     * - healthStatus: 건강상태 (A=활착양호, B=생육정상, C=부분스트레스, D=쇠약/탈락진행)
+     * - healthStatus: 건강상태
      */
     @Getter
     @Builder
@@ -182,9 +164,6 @@ public class CreateSubmissionRequest {
 
         @NotBlank(message = "이식 규모는 필수입니다")
         private String scale;
-
-        @NotBlank(message = "구역은 필수입니다")
-        private String zone;  // A/B/C/D
 
         @NotNull(message = "건강상태는 필수입니다")
         private HealthStatus healthStatus;
@@ -276,11 +255,11 @@ public class CreateSubmissionRequest {
         
         // 지형 구성
         @NotNull(message = "지형 구성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.TerrainType terrain;
+        private TerrainType terrain;
         
         // 갯녹음 정도
         @NotNull(message = "갯녹음 정도는 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.BarrenExtent barrenExtent;
+        private BarrenExtent barrenExtent;
         
         // 조식동물 분포
         @NotNull(message = "조식동물 분포는 필수입니다")
@@ -288,15 +267,15 @@ public class CreateSubmissionRequest {
         
         // 암반 특성 (복수 선택)
         @NotNull(message = "암반 특성은 최소 1개 이상 선택해야 합니다")
-        private List<com.ocean.piuda.admin.submission.entity.ActivityMonitoring.RockFeature> rockFeatures;
+        private List<RockFeature> rockFeatures;
         
         // 해조 이식 적합성
         @NotNull(message = "해조 이식 적합성은 필수입니다")
-        private com.ocean.piuda.admin.submission.entity.ActivityMonitoring.Suitability suitability;
+        private Suitability suitability;
         
         // 해조류 상태
         private String seaweedIdNumber;  // 식별번호
-        private com.ocean.piuda.admin.common.enums.SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
+        private SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
         
         // 정밀측정 여부
         private Boolean precisionMeasurement;
@@ -343,42 +322,5 @@ public class CreateSubmissionRequest {
         private Integer fileSize;
     }
 
-    // 하위 호환성을 위한 기존 DTO (deprecated)
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ActivityDto {
-        @NotNull(message = "활동유형은 필수입니다")
-        private ActivityType type;
-        private String details;
-        private Float collectionAmount;
-        private Float durationHours;
-        private HealthGrade healthGrade;
-        private Float growthCm;
-        private NaturalReproductionDto naturalReproduction;
-        private SurvivalDto survival;
-    }
 
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class NaturalReproductionDto {
-        private Float radiusM;
-        private Float numerator;
-        private Float denominator;
-    }
-
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SurvivalDto {
-        private Float dieCount;
-        private Float totalCount;
-    }
 }

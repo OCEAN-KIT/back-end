@@ -4,14 +4,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 이식 방식
+ * 모니터링 - 해조 이식 적합성
  */
 @Getter
 @RequiredArgsConstructor
-public enum TransplantMethodType {
-    ROPE_LINE("로프 연승"),
-    SEED_DIRECT("종자 직접 이식"),
-    MODULE("이식용 모듈"),
-    OTHER("기타");
+public enum Suitability {
+    SUITABLE("적합"),
+    UNSUITABLE("부적합");
+
     private final String description;
 }

@@ -1,6 +1,6 @@
 package com.ocean.piuda.admin.submission.entity;
 
-import com.ocean.piuda.admin.common.enums.DensityLevel;
+import com.ocean.piuda.admin.common.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -69,9 +69,6 @@ public class ActivityMonitoring {
     @Column(name = "seaweed_health_status")
     private com.ocean.piuda.admin.common.enums.SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
 
-    @Column(name = "precision_measurement")
-    private Boolean precisionMeasurement;  // 정밀측정 여부
-
     @Column(name = "leaf_length", length = 100)
     private String leafLength;  // 엽장
 
@@ -82,30 +79,4 @@ public class ActivityMonitoring {
         this.submission = submission;
     }
 
-    // 모니터링 전용 Enum들
-    public enum TerrainType {
-        ROCK,       // 암반
-        SAND,       // 모래
-        MIXED,      // 혼합
-        OTHER       // 기타
-    }
-
-    public enum BarrenExtent {
-        NONE,       // 없음
-        ONGOING,    // 진행중
-        SEVERE      // 심각
-    }
-
-    public enum RockFeature {
-        SMOOTH,             // 매끈
-        CRACKED,            // 균열
-        CALCAREOUS_ALGAE,   // 석회조류우점
-        MIXED,              // 혼합
-        SEAWEED_VEGETATION  // 해조류식생
-    }
-
-    public enum Suitability {
-        SUITABLE,   // 적합
-        UNSUITABLE  // 부적합
-    }
 }

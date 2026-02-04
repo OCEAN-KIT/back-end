@@ -40,9 +40,6 @@ public class ActivityTransplant {
     @Column(nullable = false, length = 200)
     private String scale;  // 이식 규모
 
-    @Column(nullable = false, length = 1)
-    private String zone;  // 구역 (A/B/C/D)
-
     @Enumerated(EnumType.STRING)
     @Column(name = "health_status", nullable = false)
     private HealthStatus healthStatus;  // 건강상태

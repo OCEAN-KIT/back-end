@@ -19,7 +19,6 @@ public class AdminDashboardService {
      */
     public AdminDashboardSummaryResponse getDashboardSummary() {
         long total = submissionRepository.count();
-        long draft = submissionRepository.countByStatus(SubmissionStatus.DRAFT);
         long submitted = submissionRepository.countByStatus(SubmissionStatus.SUBMITTED);
         long approved = submissionRepository.countByStatus(SubmissionStatus.APPROVED);
         long rejected = submissionRepository.countByStatus(SubmissionStatus.REJECTED);
