@@ -69,9 +69,6 @@ public class ActivityMonitoring {
     @Column(name = "seaweed_health_status")
     private com.ocean.piuda.admin.common.enums.SeaweedHealthStatus seaweedHealthStatus;  // 생육상태 (양호/쇠약/탈락)
 
-    @Column(name = "precision_measurement")
-    private Boolean precisionMeasurement;  // 정밀측정 여부
-
     @Column(name = "leaf_length", length = 100)
     private String leafLength;  // 엽장
 

@@ -233,7 +233,6 @@ public class SubmissionCommandService {
                             .seaweedIdNumber(dto.getSeaweedIdNumber())
                             .seaweedHealthStatus(dto.getSeaweedHealthStatus())
                             // 정밀측정
-                            .precisionMeasurement(dto.getPrecisionMeasurement())
                             .leafLength(dto.getLeafLength())
                             .maxLeafWidth(dto.getMaxLeafWidth())
                             .build();
