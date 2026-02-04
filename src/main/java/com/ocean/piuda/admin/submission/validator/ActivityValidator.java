@@ -71,9 +71,6 @@ public class ActivityValidator {
         if (dto.getScale() == null || dto.getScale().isBlank()) {
             throw new IllegalArgumentException("이식 규모는 필수입니다");
         }
-        if (dto.getZone() == null || !dto.getZone().matches("[A-D]")) {
-            throw new IllegalArgumentException("구역은 A, B, C, D 중 하나여야 합니다");
-        }
         if (dto.getHealthStatus() == null) {
             throw new IllegalArgumentException("건강상태는 필수입니다");
         }

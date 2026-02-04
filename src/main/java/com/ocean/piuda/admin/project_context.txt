@@ -140,30 +140,26 @@ public enum GrazerSpeciesType {
 
 
 ================================================================================
-File Path: .\common\enums\HealthGrade.java
-================================================================================
-
-package com.ocean.piuda.admin.common.enums;
-
-public enum HealthGrade {
-    A, B, C, D
-}
-
-
-================================================================================
 File Path: .\common\enums\HealthStatus.java
 ================================================================================
 
 package com.ocean.piuda.admin.common.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
- * 건강 상태 (이식 작업용)
+ * 건강 상태 (이식 작업 전용)
  */
+@Getter
+@RequiredArgsConstructor
 public enum HealthStatus {
-    A,  // 활착양호
-    B,  // 생육정상
-    C,  // 부분스트레스
-    D   // 쇠약/탈락진행
+    A("활착 양호, 생육 정상"),
+    B("부분 스트레스"),
+    C("쇠약/탈락 진행"),
+    D("대부분 탈락");
+
+    private final String description;
 }
 
 
@@ -1677,7 +1673,7 @@ public class ReportDraftService {
 
             ActivityType type = s.getActivity().getType();
             if (type == ActivityType.TRANSPLANT || type == ActivityType.MONITORING || type == ActivityType.RESEARCH) {
-                putIfNotNull(a, "healthGrade", s.getActivity().getHealthGrade() != null ? s.getActivity().getHealthGrade().name() : null);
+                putIfNotNull(a, "healthGrade", s.getActivity().getHealthStatus() != null ? s.getActivity().getHealthStatus().name() : null);
                 putIfNotNull(a, "growthCm", s.getActivity().getGrowthCm());
 
                 if (s.getActivity().getNaturalReproduction() != null) {
@@ -2703,7 +2699,7 @@ public class CreateSubmissionRequest {
         private String details;
         private Float collectionAmount;
         private Float durationHours;
-        private HealthGrade healthGrade;
+        private HealthStatus healthStatus;
         private Float growthCm;
         private NaturalReproductionDto naturalReproduction;
         private SurvivalDto survival;
@@ -2781,7 +2777,7 @@ File Path: .\submission\dto\response\ActivityResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
-import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.common.enums.HealthStatus;
 import com.ocean.piuda.admin.submission.entity.Activity;
 import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
 import com.ocean.piuda.admin.submission.entity.embeded.Survival;
@@ -2793,7 +2789,7 @@ public record ActivityResponse(
         Float durationHours,
 
         // --- 추가된 필드 ---
-        HealthGrade healthGrade,
+        HealthStatus healthGrade,
         Float growthCm,
         NaturalReproductionResponse naturalReproduction,
         SurvivalResponse survival
@@ -2807,7 +2803,7 @@ public record ActivityResponse(
                 activity.getDurationHours(),
 
                 // 매핑 로직
-                activity.getHealthGrade(),
+                activity.getHealthStatus(),
                 activity.getGrowthCm(),
                 NaturalReproductionResponse.from(activity.getNaturalReproduction()),
                 SurvivalResponse.from(activity.getSurvival())
@@ -3138,7 +3134,7 @@ File Path: .\submission\entity\Activity.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
-import com.ocean.piuda.admin.common.enums.HealthGrade;
+import com.ocean.piuda.admin.common.enums.HealthStatus;
 import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
 import com.ocean.piuda.admin.submission.entity.embeded.Survival;
 import jakarta.persistence.*;
@@ -3179,8 +3175,8 @@ public class Activity {
 
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "health_grade")
-    private HealthGrade healthGrade;
+    @Column(name = "health_status")
+    private HealthStatus healthStatus;
 
     @Column(name = "growth_cm")
     @Builder.Default
@@ -3843,6 +3839,7 @@ import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.StructureType;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.global.api.domain.BaseEntity;
+import com.ocean.piuda.user.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -3902,6 +3899,16 @@ public class Submission extends BaseEntity {
     @Builder.Default
     private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
+    /**
+     * 실제 유저 데이터
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    /**
+     * 유저의 탈퇴/정보 변경 이후에도 기록 당시 정보 보존 위한 스냅샷 필드
+     */
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
 
@@ -4566,6 +4573,9 @@ import com.ocean.piuda.admin.submission.validator.ActivityValidator;
 import com.ocean.piuda.admin.submission.validator.SubmissionStatusValidator;
 import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
+import com.ocean.piuda.security.jwt.service.TokenUserService;
+import com.ocean.piuda.user.entity.User;
+import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -4587,7 +4597,8 @@ public class SubmissionCommandService {
     private final SubmissionQueryService submissionQueryService;
     private final ActivityValidator activityValidator;
     private final SubmissionStatusValidator statusValidator;
-
+    private final UserRepository userRepository;
+    private final TokenUserService tokenUserService;
 
     /**
      * 바로 제출 (SUBMITTED 상태로 저장)
@@ -4616,7 +4627,10 @@ public class SubmissionCommandService {
         StructureType structureType = request.getStructureType() != null 
                 ? request.getStructureType() 
                 : StructureType.OTHER;
-        
+
+        // 현재 유저 정보 저장
+        User currentUser = tokenUserService.getCurrentUser();
+
         // Submission 생성
         Submission submission = Submission.builder()
                 .siteName(request.getSiteName())
@@ -4627,6 +4641,7 @@ public class SubmissionCommandService {
                 .activityType(request.getActivityType())
                 .status(status)
                 .submittedAt(submittedAt)
+                .user(currentUser)
                 .authorName(request.getAuthorName())
                 .authorEmail(request.getAuthorEmail())
                 .workDescription(request.getWorkDescription())
@@ -4836,7 +4851,7 @@ public class SubmissionCommandService {
                 .details(activityDto.getDetails())
                 .collectionAmount(activityDto.getCollectionAmount() != null ? activityDto.getCollectionAmount() : 0f)
                 .durationHours(activityDto.getDurationHours() != null ? activityDto.getDurationHours() : 0f)
-                .healthGrade(activityDto.getHealthGrade())
+                .healthStatus(activityDto.getHealthStatus())
                 .growthCm(activityDto.getGrowthCm() != null ? activityDto.getGrowthCm() : 0f)
                 .naturalReproduction(naturalReproduction)
                 .survival(survival)
