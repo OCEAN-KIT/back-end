@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 public record SubmissionDetailResponse(
         Long submissionId,
         String siteName,
+        Long siteNameOptionId,
         ActivityType activityType,
         LocalDateTime submittedAt,
         SubmissionStatus status,
@@ -58,6 +59,7 @@ public record SubmissionDetailResponse(
         return new SubmissionDetailResponse(
                 submission.getSubmissionId(),
                 submission.getSiteName(),
+                submission.getSiteNameOption() != null ? submission.getSiteNameOption().getId() : null,
                 submission.getActivityType(),
                 submission.getSubmittedAt(),
                 submission.getStatus(),

@@ -1,6 +1,8 @@
 package com.ocean.piuda.admin.submission.initializer;
 
 import com.ocean.piuda.admin.common.enums.*;
+import com.ocean.piuda.admin.site.entity.SiteNameOption;
+import com.ocean.piuda.admin.site.repository.SiteNameOptionRepository;
 import com.ocean.piuda.admin.submission.entity.*;
 import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import java.util.List;
 public class SubmissionDataInitializer implements CommandLineRunner {
 
     private final SubmissionRepository submissionRepository;
+    private final SiteNameOptionRepository siteNameOptionRepository;
 
     // 이미지 URL 상수
     private static final String VALID_IMAGE_URL = "/images/underSea.jpg";
@@ -40,11 +43,19 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 
         log.info("Admin Submission 테스트 데이터 초기화 시작...");
 
+        // 0. SiteNameOption 마스터 데이터 생성
+        SiteNameOption optionCrossReef = siteNameOptionRepository.save(SiteNameOption.builder().name("십자형 어초").isActive(true).build());
+        SiteNameOption optionCage1 = siteNameOptionRepository.save(SiteNameOption.builder().name("가두리 #1").isActive(true).build());
+        SiteNameOption optionCage2 = siteNameOptionRepository.save(SiteNameOption.builder().name("가두리 #2").isActive(true).build());
+
         List<Submission> submissions = new ArrayList<>();
 
-        // 1. 검수 대기 (이식)
+        // 1. 검수 대기 (이식) - 옵션 선택(십자형 어초)
         submissions.add(createSubmission(
-                1L, "포항 해안가", ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
+                1L,
+                "십자형 어초", // 스냅샷 이름
+                optionCrossReef, // 선택된 옵션 엔티티
+                ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
                 "홍길동", "hong@example.com", 3,
                 "깨끗해진 바다가 뿌듯합니다",
                 new BigDecimal("36.0322"), new BigDecimal("129.3650"),
@@ -54,15 +65,18 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 10.5,  // 수심
                 MarineCondition.NORMAL, // 파도
                 MarineCondition.NORMAL, // 서지
-                MarineCondition.NORMAL, // 조류 (기존 CurrentState 대체)
+                MarineCondition.NORMAL, // 조류
                 "홍길동, 김철수",
                 "이식 작업을 수행했습니다. 총 50개를 이식했습니다.",
                 "50개"
         ));
 
-        // 2. 승인 (해양정화 - 구 폐기물수거)
+        // 2. 승인 (해양정화) - 직접 입력(부산 송도해수욕장, 옵션 Null)
         submissions.add(createSubmission(
-                2L, "부산 송도해수욕장", ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
+                2L,
+                "부산 송도해수욕장",
+                null, // 직접 입력
+                ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
                 "김철수", "kim@example.com", 2,
                 "해변 청소 활동에 참여했습니다",
                 new BigDecimal("35.0784"), new BigDecimal("129.0756"),
@@ -71,16 +85,19 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 MarineCondition.GOOD,
                 5.0,
                 MarineCondition.GOOD,   // 파도
-                MarineCondition.GOOD,   // 서지 (GOOD=파도없음/약함 의미로 가정)
-                MarineCondition.GOOD,   // 조류 (약함)
+                MarineCondition.GOOD,   // 서지
+                MarineCondition.GOOD,   // 조류
                 "김철수, 이영희, 박민수",
                 "플라스틱 병 30개, 캔 15개를 수거했습니다.",
                 "45kg"
         ));
 
-        // 3. 반려 (기타)
+        // 3. 반려 (기타) - 옵션 선택(가두리 #1)
         Submission rejectedSubmission = createSubmission(
-                3L, "제주도 성산일출봉", ActivityType.OTHER, SubmissionStatus.REJECTED,
+                3L,
+                "가두리 #1",
+                optionCage1,
+                ActivityType.OTHER, SubmissionStatus.REJECTED,
                 "이영희", "lee@example.com", 1,
                 "제주도 바다 정화 활동",
                 new BigDecimal("33.4584"), new BigDecimal("126.9426"),
@@ -105,9 +122,12 @@ public class SubmissionDataInitializer implements CommandLineRunner {
         rejectedSubmission.setRejectReason(rejectReason);
         submissions.add(rejectedSubmission);
 
-        // 4. 검수 대기 (이식)
+        // 4. 검수 대기 (이식) - 직접 입력
         submissions.add(createSubmission(
-                4L, "강원도 속초 해변", ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
+                4L,
+                "강원도 속초 해변",
+                null,
+                ActivityType.TRANSPLANT, SubmissionStatus.SUBMITTED,
                 "박민수", "park@example.com", 4,
                 "속초 바다 정화 활동에 참여했습니다",
                 new BigDecimal("38.2070"), new BigDecimal("128.5918"),
@@ -123,9 +143,12 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 "80개"
         ));
 
-        // 5. 승인 (해양정화 - 구 폐기물수거)
+        // 5. 승인 (해양정화) - 옵션 선택(가두리 #2)
         submissions.add(createSubmission(
-                5L, "전라남도 여수 해수욕장", ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
+                5L,
+                "가두리 #2",
+                optionCage2,
+                ActivityType.TRASH_COLLECTION, SubmissionStatus.APPROVED,
                 "최지영", "choi@example.com", 5,
                 "여수 바다가 아름답습니다",
                 new BigDecimal("34.7604"), new BigDecimal("127.6622"),
@@ -148,6 +171,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
     private Submission createSubmission(
             Long id,
             String siteName,
+            SiteNameOption siteNameOption, // [추가] 옵션 엔티티
             ActivityType activityType,
             SubmissionStatus status,
             String authorName,
@@ -159,11 +183,11 @@ public class SubmissionDataInitializer implements CommandLineRunner {
             LocalDate recordDate,
             LocalTime startTime,
             Double waterTempC,
-            MarineCondition visibilityStatus, // [수정] Float visibilityM 제거 -> MarineCondition
+            MarineCondition visibilityStatus,
             Double depthM,
-            MarineCondition waveStatus,       // [추가] 파도
-            MarineCondition surgeStatus,      // [추가] 서지
-            MarineCondition currentStatus,    // [수정] CurrentState 제거 -> MarineCondition
+            MarineCondition waveStatus,
+            MarineCondition surgeStatus,
+            MarineCondition currentStatus,
             String participantNames,
             String activityDetails,
             String amountOrScale
@@ -182,10 +206,10 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .currentStatus(currentStatus)
                 .build();
 
-        // 2. Submission 생성
+        // 2. Submission 생성 (StructureType 제거, SiteNameOption 추가)
         Submission submission = Submission.builder()
-                .siteName(siteName)
-                .structureType(StructureType.OTHER)
+                .siteName(siteName)             // 스냅샷
+                .siteNameOption(siteNameOption) // 연관관계 (Nullable)
                 .recordDate(recordDate)
                 .divingRound(1)
                 .activityType(activityType)
@@ -218,7 +242,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
             submission.addAttachment(attachment);
         }
 
-        // 6. AuditLog 생성
+        // 6. AuditLog 생성 (제출됨)
         AuditLog submitLog = AuditLog.builder()
                 .submission(submission)
                 .action(AuditAction.SUBMITTED)

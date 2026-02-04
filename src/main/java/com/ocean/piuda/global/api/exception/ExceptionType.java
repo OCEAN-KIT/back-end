@@ -18,7 +18,7 @@ public enum ExceptionType {
     NOT_VALID_REQUEST_FIELDS_ERROR(BAD_REQUEST , "C006","요청 필드 검증에 실패했습니다."),
     MEDIA_TYPE_MISMATCHED(BAD_REQUEST, "C007","잘못된 콘텐츠 타입 사용"),
     RESOURCE_NOT_FOUND(NOT_FOUND,"C008","해당 자원을 찾을 수 없습니다."),
-
+    INVALID_INPUT_VALUE(NOT_FOUND, "C009","입력값이 잘못되었습니다."),
     // auth
     INVALID_REFRESH_TOKEN(NOT_ACCEPTABLE , "A001","유효하지 않은 리프레시 토큰"),
     REFRESH_TOKEN_EXPIRED(UNAUTHORIZED,"A002","리프레시 토큰 만료"),
