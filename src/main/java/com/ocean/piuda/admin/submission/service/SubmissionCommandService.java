@@ -8,8 +8,6 @@ import com.ocean.piuda.admin.common.enums.SubmissionStatus;
 import com.ocean.piuda.admin.submission.dto.request.*;
 import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
 import com.ocean.piuda.admin.submission.entity.*;
-import com.ocean.piuda.admin.submission.entity.embeded.NaturalReproduction;
-import com.ocean.piuda.admin.submission.entity.embeded.Survival;
 import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
 import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
 import com.ocean.piuda.admin.submission.validator.ActivityValidator;
@@ -257,49 +255,12 @@ public class SubmissionCommandService {
                 }
                 break;
 
-            // 하위 호환성을 위한 기존 Activity 처리
             default:
-                if (request.getActivity() != null) {
-                    createLegacyActivity(submission, request.getActivity());
-                }
                 break;
         }
     }
 
-    /**
-     * 기존 Activity 생성 (하위 호환성)
-     */
-    @Deprecated
-    private void createLegacyActivity(Submission submission, CreateSubmissionRequest.ActivityDto activityDto) {
-        NaturalReproduction naturalReproduction = null;
-        if (activityDto.getNaturalReproduction() != null) {
-            naturalReproduction = NaturalReproduction.builder()
-                    .radiusM(activityDto.getNaturalReproduction().getRadiusM() != null ? activityDto.getNaturalReproduction().getRadiusM() : 0f)
-                    .numerator(activityDto.getNaturalReproduction().getNumerator() != null ? activityDto.getNaturalReproduction().getNumerator() : 0f)
-                    .denominator(activityDto.getNaturalReproduction().getDenominator() != null ? activityDto.getNaturalReproduction().getDenominator() : 0f)
-                    .build();
-        }
 
-        Survival survival = null;
-        if (activityDto.getSurvival() != null) {
-            survival = Survival.builder()
-                    .dieCount(activityDto.getSurvival().getDieCount() != null ? activityDto.getSurvival().getDieCount() : 0f)
-                    .totalCount(activityDto.getSurvival().getTotalCount() != null ? activityDto.getSurvival().getTotalCount() : 0f)
-                    .build();
-        }
-
-        Activity activity = Activity.builder()
-                .type(activityDto.getType())
-                .details(activityDto.getDetails())
-                .collectionAmount(activityDto.getCollectionAmount() != null ? activityDto.getCollectionAmount() : 0f)
-                .durationHours(activityDto.getDurationHours() != null ? activityDto.getDurationHours() : 0f)
-                .healthStatus(activityDto.getHealthStatus())
-                .growthCm(activityDto.getGrowthCm() != null ? activityDto.getGrowthCm() : 0f)
-                .naturalReproduction(naturalReproduction)
-                .survival(survival)
-                .build();
-        submission.setActivity(activity);
-    }
 
 
     /**

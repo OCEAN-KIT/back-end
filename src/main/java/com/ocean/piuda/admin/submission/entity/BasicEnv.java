@@ -52,31 +52,6 @@ public class BasicEnv {
     @Column(name = "current_status", nullable = false)
     private MarineCondition currentStatus;  // 조류
 
-    // 하위 호환성을 위한 기존 필드들 (deprecated)
-    @Deprecated
-    @Column(name = "start_time")
-    private java.time.LocalTime startTime;
-
-    @Deprecated
-    @Column(name = "end_time")
-    private java.time.LocalTime endTime;
-
-    @Deprecated
-    @Column(name = "visibility_m")
-    private Float visibilityM;
-
-    @Deprecated
-    @Column(name = "depth_m")
-    private Float depthM;
-
-    @Deprecated
-    @Enumerated(EnumType.STRING)
-    @Column(name = "current_state")
-    private com.ocean.piuda.admin.common.enums.CurrentState currentState;
-
-    @Deprecated
-    @Enumerated(EnumType.STRING)
-    private com.ocean.piuda.admin.common.enums.Weather weather;
 
     public void updateSubmission(Submission submission) {
         this.submission = submission;

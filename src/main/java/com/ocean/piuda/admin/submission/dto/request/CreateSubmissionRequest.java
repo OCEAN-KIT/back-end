@@ -96,13 +96,6 @@ public class CreateSubmissionRequest {
     @Valid
     private List<AttachmentDto> attachments;
 
-    // 하위 호환성을 위한 기존 필드 (deprecated)
-    @Deprecated
-    private LocalDateTime submittedAt;
-
-    @Deprecated
-    @Valid
-    private ActivityDto activity;
 
     // === 내부 DTO 클래스들 ===
 
@@ -329,42 +322,5 @@ public class CreateSubmissionRequest {
         private Integer fileSize;
     }
 
-    // 하위 호환성을 위한 기존 DTO (deprecated)
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ActivityDto {
-        @NotNull(message = "활동유형은 필수입니다")
-        private ActivityType type;
-        private String details;
-        private Float collectionAmount;
-        private Float durationHours;
-        private HealthStatus healthStatus;
-        private Float growthCm;
-        private NaturalReproductionDto naturalReproduction;
-        private SurvivalDto survival;
-    }
 
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class NaturalReproductionDto {
-        private Float radiusM;
-        private Float numerator;
-        private Float denominator;
-    }
-
-    @Deprecated
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SurvivalDto {
-        private Float dieCount;
-        private Float totalCount;
-    }
 }

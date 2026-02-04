@@ -23,7 +23,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
         LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
         LEFT JOIN FETCH s.rejectReason
         WHERE s.submissionId = :id
@@ -41,7 +40,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     SELECT DISTINCT s FROM Submission s
     LEFT JOIN FETCH s.basicEnv
     LEFT JOIN FETCH s.participants
-    LEFT JOIN FETCH s.activity
     WHERE (:keyword IS NULL OR :keyword = '' OR 
            s.siteName LIKE %:keyword% OR 
            s.authorName LIKE %:keyword%)
@@ -63,7 +61,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
         LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
         WHERE s.status = :status
           AND s.submissionId IN :ids
@@ -77,7 +74,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     SELECT DISTINCT s FROM Submission s
     LEFT JOIN FETCH s.basicEnv
     LEFT JOIN FETCH s.participants
-    LEFT JOIN FETCH s.activity
     LEFT JOIN FETCH s.attachments
     WHERE s.status = :status
       AND s.submittedAt BETWEEN :start AND :end

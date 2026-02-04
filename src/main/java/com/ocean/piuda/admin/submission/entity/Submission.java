@@ -120,11 +120,6 @@ public class Submission extends BaseEntity {
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private ActivityMarineCleanup activityMarineCleanup;
 
-    // 하위 호환성을 위한 기존 Activity (deprecated)
-    @Deprecated
-    @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Activity activity;
-
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Attachment> attachments = new ArrayList<>();
@@ -185,13 +180,6 @@ public class Submission extends BaseEntity {
         this.participantNames = participantNames;
     }
 
-
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-        if (activity != null) {
-            activity.updateSubmission(this);
-        }
-    }
 
     public void setRejectReason(RejectReason rejectReason) {
         this.rejectReason = rejectReason;

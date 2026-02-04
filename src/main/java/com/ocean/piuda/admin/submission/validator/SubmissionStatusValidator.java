@@ -13,7 +13,6 @@ import java.util.Set;
 public class SubmissionStatusValidator {
 
     private static final Map<SubmissionStatus, Set<SubmissionStatus>> ALLOWED_TRANSITIONS = Map.of(
-        SubmissionStatus.DRAFT, Set.of(SubmissionStatus.DRAFT, SubmissionStatus.SUBMITTED),
         SubmissionStatus.SUBMITTED, Set.of(SubmissionStatus.APPROVED, SubmissionStatus.REJECTED),
         SubmissionStatus.APPROVED, Set.of(),  // 최종 상태
         SubmissionStatus.REJECTED, Set.of()   // 최종 상태
@@ -42,12 +41,6 @@ public class SubmissionStatusValidator {
         }
     }
 
-    /**
-     * 제출 가능 여부 확인
-     */
-    public boolean canSubmit(SubmissionStatus status) {
-        return status == SubmissionStatus.DRAFT;
-    }
 
     /**
      * 승인 가능 여부 확인
@@ -63,10 +56,5 @@ public class SubmissionStatusValidator {
         return status == SubmissionStatus.SUBMITTED;
     }
 
-    /**
-     * 수정 가능 여부 확인 (DRAFT 상태만 수정 가능)
-     */
-    public boolean canUpdate(SubmissionStatus status) {
-        return status == SubmissionStatus.DRAFT;
-    }
+
 }
