@@ -27,7 +27,6 @@ public class SpeciesService {
 
         Species species = Species.builder()
                 .name(req.name())
-                .category(req.category())
                 .build();
 
         return SpeciesResponse.from(speciesRepository.save(species));
@@ -61,7 +60,7 @@ public class SpeciesService {
             });
         }
 
-        species.update(req.name(), req.category());
+        species.update(req.name());
     }
 
     public void deleteSpecies(Long id) {

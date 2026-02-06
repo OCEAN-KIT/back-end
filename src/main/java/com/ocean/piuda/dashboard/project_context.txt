@@ -1,8 +1,5 @@
 
-================================================================================
-File Path: .\controller\DashboardController.java
-================================================================================
-
+# File Path: .\controller\DashboardController.java
 package com.ocean.piuda.dashboard.controller;
 
 import com.ocean.piuda.dashboard.dto.response.AreaDetailResponse;
@@ -408,10 +405,7 @@ public class DashboardController {
 }
 
 
-================================================================================
-File Path: .\dto\request\AreaPageRequest.java
-================================================================================
-
+# File Path: .\dto\request\AreaPageRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.AreaSort;
@@ -431,10 +425,7 @@ public class AreaPageRequest extends PageRequest<AreaSort> {
 }
 
 
-================================================================================
-File Path: .\dto\request\CreateGrowthLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\CreateGrowthLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
@@ -452,10 +443,7 @@ public record CreateGrowthLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\CreateMediaLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\CreateMediaLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.MediaCategory;
@@ -472,10 +460,7 @@ public record CreateMediaLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\CreateProjectAreaRequest.java
-================================================================================
-
+# File Path: .\dto\request\CreateProjectAreaRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.AreaAttachmentStatus;
@@ -502,10 +487,7 @@ public record CreateProjectAreaRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\CreateTransplantLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\CreateTransplantLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
@@ -524,10 +506,7 @@ public record CreateTransplantLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\CreateWaterLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\CreateWaterLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.MarineStatus;
@@ -547,10 +526,7 @@ public record CreateWaterLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\LogPageRequest.java
-================================================================================
-
+# File Path: .\dto\request\LogPageRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.LogSort;
@@ -571,10 +547,7 @@ public class LogPageRequest extends PageRequest<LogSort> {
 }
 
 
-================================================================================
-File Path: .\dto\request\SetRepresentativeSpeciesRequest.java
-================================================================================
-
+# File Path: .\dto\request\SetRepresentativeSpeciesRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import jakarta.validation.constraints.NotNull;
@@ -585,10 +558,7 @@ public record SetRepresentativeSpeciesRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\UpdateGrowthLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\UpdateGrowthLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
@@ -605,10 +575,7 @@ public record UpdateGrowthLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\UpdateMediaLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\UpdateMediaLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.MediaCategory;
@@ -624,10 +591,7 @@ public record UpdateMediaLogRequest(
 
 
 
-================================================================================
-File Path: .\dto\request\UpdateProjectAreaRequest.java
-================================================================================
-
+# File Path: .\dto\request\UpdateProjectAreaRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -656,10 +620,7 @@ public record UpdateProjectAreaRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\UpdateTransplantLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\UpdateTransplantLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.SpeciesAttachmentStatus;
@@ -677,10 +638,7 @@ public record UpdateTransplantLogRequest(
 ) {}
 
 
-================================================================================
-File Path: .\dto\request\UpdateWaterLogRequest.java
-================================================================================
-
+# File Path: .\dto\request\UpdateWaterLogRequest.java
 package com.ocean.piuda.dashboard.dto.request;
 
 import com.ocean.piuda.dashboard.enums.MarineStatus;
@@ -700,10 +658,7 @@ public record UpdateWaterLogRequest(
 
 
 
-================================================================================
-File Path: .\dto\response\AreaDetailResponse.java
-================================================================================
-
+# File Path: .\dto\response\AreaDetailResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.dashboard.dto.TimeSeriesChartDto;
@@ -847,10 +802,7 @@ public class AreaDetailResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\AreaMarkerResponse.java
-================================================================================
-
+# File Path: .\dto\response\AreaMarkerResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -886,10 +838,7 @@ public class AreaMarkerResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\AreaSpeciesResponse.java
-================================================================================
-
+# File Path: .\dto\response\AreaSpeciesResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -911,10 +860,7 @@ public class AreaSpeciesResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\AreaStatResponse.java
-================================================================================
-
+# File Path: .\dto\response\AreaStatResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import lombok.AllArgsConstructor;
@@ -931,10 +877,7 @@ public class AreaStatResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\GrowthLogResponse.java
-================================================================================
-
+# File Path: .\dto\response\GrowthLogResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -978,19 +921,13 @@ public class GrowthLogResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\IdResponse.java
-================================================================================
-
+# File Path: .\dto\response\IdResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 public record IdResponse(Long id) {}
 
 
-================================================================================
-File Path: .\dto\response\MediaLogResponse.java
-================================================================================
-
+# File Path: .\dto\response\MediaLogResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.dashboard.entity.MediaLog;
@@ -1023,10 +960,7 @@ public class MediaLogResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\ProjectAreaListItemResponse.java
-================================================================================
-
+# File Path: .\dto\response\ProjectAreaListItemResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.dashboard.entity.ProjectArea;
@@ -1075,10 +1009,7 @@ public class ProjectAreaListItemResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\TransplantLogResponse.java
-================================================================================
-
+# File Path: .\dto\response\TransplantLogResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -1132,10 +1063,7 @@ public class TransplantLogResponse {
 }
 
 
-================================================================================
-File Path: .\dto\response\WaterLogResponse.java
-================================================================================
-
+# File Path: .\dto\response\WaterLogResponse.java
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.dashboard.entity.WaterLog;
@@ -1187,10 +1115,7 @@ public class WaterLogResponse {
 }
 
 
-================================================================================
-File Path: .\dto\TimeSeriesChartDto.java
-================================================================================
-
+# File Path: .\dto\TimeSeriesChartDto.java
 package com.ocean.piuda.dashboard.dto;
 
 
@@ -1211,10 +1136,7 @@ public record TimeSeriesChartDto(
 ) { }
 
 
-================================================================================
-File Path: .\entity\BiodiversitySummary.java
-================================================================================
-
+# File Path: .\entity\BiodiversitySummary.java
 /**
  * 개편된 5개의 탭 구조에 맞춰 불필요한 "생물 다양성 요약 엔티티"는 사용하지 않습니다.
  */
@@ -1254,10 +1176,7 @@ public class BiodiversitySummary {
  */
 
 
-================================================================================
-File Path: .\entity\GrowthLog.java
-================================================================================
-
+# File Path: .\entity\GrowthLog.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -1321,10 +1240,7 @@ public class GrowthLog extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\entity\MediaLog.java
-================================================================================
-
+# File Path: .\entity\MediaLog.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.dashboard.enums.MediaCategory;
@@ -1374,10 +1290,7 @@ public class MediaLog extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\entity\ProjectArea.java
-================================================================================
-
+# File Path: .\entity\ProjectArea.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -1538,10 +1451,7 @@ public class ProjectArea extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\entity\TransplantLog.java
-================================================================================
-
+# File Path: .\entity\TransplantLog.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -1609,10 +1519,7 @@ public class TransplantLog extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\entity\WaterLog.java
-================================================================================
-
+# File Path: .\entity\WaterLog.java
 package com.ocean.piuda.dashboard.entity;
 
 import com.ocean.piuda.dashboard.enums.MarineStatus;
@@ -1689,10 +1596,7 @@ public class WaterLog extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\enums\AreaAttachmentStatus.java
-================================================================================
-
+# File Path: .\enums\AreaAttachmentStatus.java
 package com.ocean.piuda.dashboard.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -1708,10 +1612,7 @@ public enum AreaAttachmentStatus {
 }
 
 
-================================================================================
-File Path: .\enums\AreaSort.java
-================================================================================
-
+# File Path: .\enums\AreaSort.java
 package com.ocean.piuda.dashboard.enums;
 
 import com.ocean.piuda.global.enums.SortEnum;
@@ -1739,10 +1640,7 @@ public enum AreaSort implements SortEnum {
 }
 
 
-================================================================================
-File Path: .\enums\HabitatType.java
-================================================================================
-
+# File Path: .\enums\HabitatType.java
 package com.ocean.piuda.dashboard.enums;
 
 import lombok.Getter;
@@ -1759,10 +1657,7 @@ public enum HabitatType {
 }
 
 
-================================================================================
-File Path: .\enums\LogSort.java
-================================================================================
-
+# File Path: .\enums\LogSort.java
 package com.ocean.piuda.dashboard.enums;
 
 import com.ocean.piuda.global.enums.SortEnum;
@@ -1786,10 +1681,7 @@ public enum LogSort implements SortEnum {
 }
 
 
-================================================================================
-File Path: .\enums\MarineStatus.java
-================================================================================
-
+# File Path: .\enums\MarineStatus.java
 package com.ocean.piuda.dashboard.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -1805,10 +1697,7 @@ public enum MarineStatus {
 }
 
 
-================================================================================
-File Path: .\enums\MediaCategory.java
-================================================================================
-
+# File Path: .\enums\MediaCategory.java
 package com.ocean.piuda.dashboard.enums;
 
 
@@ -1826,10 +1715,7 @@ public enum MediaCategory {
 }
 
 
-================================================================================
-File Path: .\enums\ProjectLevel.java
-================================================================================
-
+# File Path: .\enums\ProjectLevel.java
 package com.ocean.piuda.dashboard.enums;
 
 import lombok.Getter;
@@ -1848,10 +1734,7 @@ public enum ProjectLevel {
 }
 
 
-================================================================================
-File Path: .\enums\RestorationRegion.java
-================================================================================
-
+# File Path: .\enums\RestorationRegion.java
 package com.ocean.piuda.dashboard.enums;
 
 import lombok.Getter;
@@ -1867,10 +1750,7 @@ public enum RestorationRegion {
 }
 
 
-================================================================================
-File Path: .\enums\SpeciesAttachmentStatus.java
-================================================================================
-
+# File Path: .\enums\SpeciesAttachmentStatus.java
 package com.ocean.piuda.dashboard.enums;
 
 import lombok.Getter;
@@ -1887,10 +1767,7 @@ public enum SpeciesAttachmentStatus {
 }
 
 
-================================================================================
-File Path: .\enums\TransplantMethod.java
-================================================================================
-
+# File Path: .\enums\TransplantMethod.java
 package com.ocean.piuda.dashboard.enums;
 
 import lombok.Getter;
@@ -1911,10 +1788,7 @@ public enum TransplantMethod {
 }
 
 
-================================================================================
-File Path: .\initializer\DashboardDataInitializer.java
-================================================================================
-
+# File Path: .\initializer\DashboardDataInitializer.java
 package com.ocean.piuda.dashboard.initializer;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -1953,9 +1827,9 @@ public class DashboardDataInitializer implements CommandLineRunner {
         log.info("OC DASHBOARD 실증용 데이터 초기화 시작");
 
         // 1) Species
-        Species gamtae = getOrCreateSpecies("감태", BioGroup.MACROALGAE);
-        Species dasima = getOrCreateSpecies("다시마", BioGroup.MACROALGAE);
-        Species mojaban = getOrCreateSpecies("모자반", BioGroup.MACROALGAE);
+        Species gamtae = getOrCreateSpecies("감태");
+        Species dasima = getOrCreateSpecies("다시마");
+        Species mojaban = getOrCreateSpecies("모자반");
 
         // 2) Areas
         createPohangDemoArea1(gamtae, dasima, mojaban);
@@ -1964,12 +1838,11 @@ public class DashboardDataInitializer implements CommandLineRunner {
         log.info("OC DASHBOARD 데이터 초기화 완료");
     }
 
-    private Species getOrCreateSpecies(String name, BioGroup category) {
+    private Species getOrCreateSpecies(String name) {
         return speciesRepository.findByName(name)
                 .orElseGet(() -> speciesRepository.save(
                         Species.builder()
                                 .name(name)
-                                .category(category)
                                 .build()
                 ));
     }
@@ -2191,10 +2064,7 @@ public class DashboardDataInitializer implements CommandLineRunner {
 }
 
 
-================================================================================
-File Path: .\ProjectExporter.java
-================================================================================
-
+# File Path: .\ProjectExporter.java
 package com.ocean.piuda.dashboard;
 
 import java.io.IOException;
@@ -2315,9 +2185,7 @@ public class ProjectExporter {
 
     private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
         try {
-            writer.write("\n" + "=".repeat(80) + "\n");
-            writer.write("File Path: " + file.toString() + "\n");
-            writer.write("=".repeat(80) + "\n\n");
+            writer.write("\n# File Path: " + file.toString() + "\n");
 
             // 파일 내용을 한 번에 읽어서 쓰기
             Files.lines(file).forEach(line -> {
@@ -2336,10 +2204,7 @@ public class ProjectExporter {
 }
 
 
-================================================================================
-File Path: .\repository\GrowthLogRepository.java
-================================================================================
-
+# File Path: .\repository\GrowthLogRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.dashboard.entity.GrowthLog;
@@ -2373,10 +2238,7 @@ public interface GrowthLogRepository extends JpaRepository<GrowthLog, Long> {
 }
 
 
-================================================================================
-File Path: .\repository\MediaLogRepository.java
-================================================================================
-
+# File Path: .\repository\MediaLogRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.dashboard.entity.MediaLog;
@@ -2409,10 +2271,7 @@ public interface MediaLogRepository extends JpaRepository<MediaLog, Long> {
 }
 
 
-================================================================================
-File Path: .\repository\ProjectAreaRepository.java
-================================================================================
-
+# File Path: .\repository\ProjectAreaRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.dashboard.entity.ProjectArea;
@@ -2584,10 +2443,7 @@ public interface ProjectAreaRepository extends JpaRepository<ProjectArea, Long> 
 }
 
 
-================================================================================
-File Path: .\repository\projection\AccumulatedStatsProjection.java
-================================================================================
-
+# File Path: .\repository\projection\AccumulatedStatsProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import java.time.LocalDate;
@@ -2599,10 +2455,7 @@ public interface AccumulatedStatsProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\AreaMarkerProjection.java
-================================================================================
-
+# File Path: .\repository\projection\AreaMarkerProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import java.time.LocalDate;
@@ -2627,10 +2480,7 @@ public interface AreaMarkerProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\AreaStatProjection.java
-================================================================================
-
+# File Path: .\repository\projection\AreaStatProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 public interface AreaStatProjection {
@@ -2640,10 +2490,7 @@ public interface AreaStatProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\EnvironmentSummaryProjection.java
-================================================================================
-
+# File Path: .\repository\projection\EnvironmentSummaryProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 public interface EnvironmentSummaryProjection {
@@ -2654,10 +2501,7 @@ public interface EnvironmentSummaryProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\MediaPointProjection.java
-================================================================================
-
+# File Path: .\repository\projection\MediaPointProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import com.ocean.piuda.dashboard.enums.MediaCategory;
@@ -2671,10 +2515,7 @@ public interface MediaPointProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\MethodAttachmentStatusProjection.java
-================================================================================
-
+# File Path: .\repository\projection\MethodAttachmentStatusProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 public interface MethodAttachmentStatusProjection {
@@ -2683,10 +2524,7 @@ public interface MethodAttachmentStatusProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\MethodDistributionProjection.java
-================================================================================
-
+# File Path: .\repository\projection\MethodDistributionProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import com.ocean.piuda.dashboard.enums.TransplantMethod;
@@ -2697,10 +2535,7 @@ public interface MethodDistributionProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\SpeciesStatusProjection.java
-================================================================================
-
+# File Path: .\repository\projection\SpeciesStatusProjection.java
 //package com.ocean.piuda.dashboard.repository.projection;
 //
 //public interface SpeciesStatusProjection {
@@ -2709,10 +2544,7 @@ File Path: .\repository\projection\SpeciesStatusProjection.java
 //}
 
 
-================================================================================
-File Path: .\repository\projection\TemperaturePointProjection.java
-================================================================================
-
+# File Path: .\repository\projection\TemperaturePointProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import java.time.LocalDate;
@@ -2723,10 +2555,7 @@ public interface TemperaturePointProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\TransplantItemProjection.java
-================================================================================
-
+# File Path: .\repository\projection\TransplantItemProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import com.ocean.piuda.dashboard.enums.TransplantMethod;
@@ -2738,10 +2567,7 @@ public interface TransplantItemProjection {
 }
 
 
-================================================================================
-File Path: .\repository\projection\WorkHistoryPointProjection.java
-================================================================================
-
+# File Path: .\repository\projection\WorkHistoryPointProjection.java
 package com.ocean.piuda.dashboard.repository.projection;
 
 import java.time.LocalDate;
@@ -2752,10 +2578,7 @@ public interface WorkHistoryPointProjection {
 }
 
 
-================================================================================
-File Path: .\repository\TransplantLogRepository.java
-================================================================================
-
+# File Path: .\repository\TransplantLogRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -2852,10 +2675,7 @@ public interface TransplantLogRepository extends JpaRepository<TransplantLog, Lo
 }
 
 
-================================================================================
-File Path: .\repository\WaterLogRepository.java
-================================================================================
-
+# File Path: .\repository\WaterLogRepository.java
 package com.ocean.piuda.dashboard.repository;
 
 import com.ocean.piuda.dashboard.entity.WaterLog;
@@ -2940,10 +2760,7 @@ public interface WaterLogRepository extends JpaRepository<WaterLog, Long> {
 }
 
 
-================================================================================
-File Path: .\service\DashboardAggregateBuilder.java
-================================================================================
-
+# File Path: .\service\DashboardAggregateBuilder.java
 package com.ocean.piuda.dashboard.service;
 
 import com.ocean.piuda.dashboard.dto.TimeSeriesChartDto;
@@ -3148,10 +2965,7 @@ public class DashboardAggregateBuilder {
 }
 
 
-================================================================================
-File Path: .\service\DashboardCommandService.java
-================================================================================
-
+# File Path: .\service\DashboardCommandService.java
 package com.ocean.piuda.dashboard.service;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -3433,10 +3247,7 @@ public class DashboardCommandService {
 }
 
 
-================================================================================
-File Path: .\service\DashboardQueryService.java
-================================================================================
-
+# File Path: .\service\DashboardQueryService.java
 package com.ocean.piuda.dashboard.service;
 import com.ocean.piuda.dashboard.dto.request.AreaPageRequest;
 import com.ocean.piuda.dashboard.enums.RestorationRegion;

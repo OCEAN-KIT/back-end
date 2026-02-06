@@ -1,7 +1,6 @@
 package com.ocean.piuda.dashboard.initializer;
 
 import com.ocean.piuda.bio.entity.Species;
-import com.ocean.piuda.bio.enums.BioGroup;
 import com.ocean.piuda.bio.repository.SpeciesRepository;
 import com.ocean.piuda.dashboard.entity.*;
 import com.ocean.piuda.dashboard.enums.*;
@@ -36,9 +35,9 @@ public class DashboardDataInitializer implements CommandLineRunner {
         log.info("OC DASHBOARD 실증용 데이터 초기화 시작");
 
         // 1) Species
-        Species gamtae = getOrCreateSpecies("감태", BioGroup.MACROALGAE);
-        Species dasima = getOrCreateSpecies("다시마", BioGroup.MACROALGAE);
-        Species mojaban = getOrCreateSpecies("모자반", BioGroup.MACROALGAE);
+        Species gamtae = getOrCreateSpecies("감태");
+        Species dasima = getOrCreateSpecies("다시마");
+        Species mojaban = getOrCreateSpecies("모자반");
 
         // 2) Areas
         createPohangDemoArea1(gamtae, dasima, mojaban);
@@ -47,12 +46,11 @@ public class DashboardDataInitializer implements CommandLineRunner {
         log.info("OC DASHBOARD 데이터 초기화 완료");
     }
 
-    private Species getOrCreateSpecies(String name, BioGroup category) {
+    private Species getOrCreateSpecies(String name) {
         return speciesRepository.findByName(name)
                 .orElseGet(() -> speciesRepository.save(
                         Species.builder()
                                 .name(name)
-                                .category(category)
                                 .build()
                 ));
     }

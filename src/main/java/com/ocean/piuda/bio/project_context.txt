@@ -1,8 +1,5 @@
 
-================================================================================
-File Path: .\controller\SpeciesController.java
-================================================================================
-
+# File Path: .\controller\SpeciesController.java
 package com.ocean.piuda.bio.controller;
 
 
@@ -66,10 +63,7 @@ public class SpeciesController {
 }
 
 
-================================================================================
-File Path: .\dto\request\SpeciesRequest.java
-================================================================================
-
+# File Path: .\dto\request\SpeciesRequest.java
 package com.ocean.piuda.bio.dto.request;
 
 import com.ocean.piuda.bio.enums.BioGroup;
@@ -80,23 +74,16 @@ public class SpeciesRequest {
 
     public record Create(
             @NotBlank(message = "종 이름은 필수입니다")
-            String name,
-
-            @NotNull(message = "생물 그룹 분류는 필수입니다")
-            BioGroup category
+            String name
     ) {}
 
     public record Update(
-            String name,
-            BioGroup category
+            String name
     ) {}
 }
 
 
-================================================================================
-File Path: .\dto\response\SpeciesResponse.java
-================================================================================
-
+# File Path: .\dto\response\SpeciesResponse.java
 package com.ocean.piuda.bio.dto.response;
 
 import com.ocean.piuda.bio.entity.Species;
@@ -108,24 +95,19 @@ import java.time.LocalDateTime;
 public record SpeciesResponse(
         Long id,
         String name,
-        BioGroup category,
         LocalDateTime createdAt
 ) {
     public static SpeciesResponse from(Species species) {
         return SpeciesResponse.builder()
                 .id(species.getId())
                 .name(species.getName())
-                .category(species.getCategory())
                 .createdAt(species.getCreatedAt())
                 .build();
     }
 }
 
 
-================================================================================
-File Path: .\entity\Species.java
-================================================================================
-
+# File Path: .\entity\Species.java
 package com.ocean.piuda.bio.entity;
 
 import jakarta.persistence.Entity;
@@ -157,20 +139,13 @@ public class Species extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String name; // 국명 (예: 감태)
 
-    @Enumerated(EnumType.STRING)
-    private BioGroup category;
-
-    public void update(String name, BioGroup category) {
+    public void update(String name) {
         if (name != null && !name.isBlank())  this.name = name;
-        if (category != null) this.category = category;
     }
 }
 
 
-================================================================================
-File Path: .\enums\BioGroup.java
-================================================================================
-
+# File Path: .\enums\BioGroup.java
 package com.ocean.piuda.bio.enums;
 
 
@@ -208,10 +183,7 @@ public enum BioGroup {
 
 
 
-================================================================================
-File Path: .\ProjectExporter.java
-================================================================================
-
+# File Path: .\ProjectExporter.java
 package com.ocean.piuda.bio;
 
 import java.io.IOException;
@@ -332,9 +304,7 @@ public class ProjectExporter {
 
     private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
         try {
-            writer.write("\n" + "=".repeat(80) + "\n");
-            writer.write("File Path: " + file.toString() + "\n");
-            writer.write("=".repeat(80) + "\n\n");
+            writer.write("\n# File Path: " + file.toString() + "\n");
 
             // 파일 내용을 한 번에 읽어서 쓰기
             Files.lines(file).forEach(line -> {
@@ -353,10 +323,7 @@ public class ProjectExporter {
 }
 
 
-================================================================================
-File Path: .\repository\SpeciesRepository.java
-================================================================================
-
+# File Path: .\repository\SpeciesRepository.java
 package com.ocean.piuda.bio.repository;
 
 
@@ -374,10 +341,7 @@ public interface SpeciesRepository extends JpaRepository<Species, Long> {
 }
 
 
-================================================================================
-File Path: .\service\SpeciesService.java
-================================================================================
-
+# File Path: .\service\SpeciesService.java
 package com.ocean.piuda.bio.service;
 
 import com.ocean.piuda.bio.dto.request.SpeciesRequest;
@@ -407,7 +371,6 @@ public class SpeciesService {
 
         Species species = Species.builder()
                 .name(req.name())
-                .category(req.category())
                 .build();
 
         return SpeciesResponse.from(speciesRepository.save(species));
@@ -441,7 +404,7 @@ public class SpeciesService {
             });
         }
 
-        species.update(req.name(), req.category());
+        species.update(req.name());
     }
 
     public void deleteSpecies(Long id) {
