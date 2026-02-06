@@ -89,7 +89,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         // 쿠키 삭제
-        ResponseCookie logoutCookie = tokenCookieFactory.buildLogoutCookie();
+        ResponseCookie logoutCookie = tokenCookieFactory.deleteAccessTokenCookie();
         response.addHeader(HttpHeaders.SET_COOKIE, logoutCookie.toString());
         
         return ResponseEntity.ok(ApiData.ok(null));

@@ -26,7 +26,7 @@ public class UserController {
     private final TokenUserService tokenUserService;
     private final UserAggregateBuilder aggregateBuilder;
 
-    @PatchMapping("/{deviceId}")
+    @PatchMapping("/{userId}")
     @Operation(summary = "유저 정보 수정", description = "특정 유저의 닉네임, 이메일, 전화번호 등 기본 정보를 수정합니다.")
     public ApiData<Boolean> patchUser(
             @PathVariable Long userId,
@@ -46,7 +46,7 @@ public class UserController {
         return ApiData.ok(userQueryService.searchByNicknameOrUsername(req));
     }
 
-    @GetMapping("/{deviceId}/info")
+    @GetMapping("/{userId}/info")
     @Operation(summary = "유저 상세 조회", description = "id 기반으로 특정 유저의 상세 정보를 조회합니다.")
     public ApiData<DetailedUserResponse> getUserById(@PathVariable Long userId) {
         return ApiData.ok(aggregateBuilder.build(userQueryService.getUserById(userId)));
