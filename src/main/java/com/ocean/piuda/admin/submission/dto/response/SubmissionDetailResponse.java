@@ -19,8 +19,6 @@ public record SubmissionDetailResponse(
         String authorEmail,
         Integer attachmentCount,
         String feedbackText,  // API 하위 호환성을 위해 필드명 유지 (내부적으로는 workDescription 사용)
-        BigDecimal latitude,
-        BigDecimal longitude,
         BasicEnvResponse basicEnv,
         ParticipantsResponse participants,
 
@@ -67,8 +65,6 @@ public record SubmissionDetailResponse(
                 submission.getAuthorEmail(),
                 submission.getAttachmentCount(),
                 submission.getWorkDescription(),
-                submission.getLatitude(),
-                submission.getLongitude(),
                 BasicEnvResponse.from(submission.getBasicEnv()),
                 new ParticipantsResponse(submission.getParticipantNames()),
 

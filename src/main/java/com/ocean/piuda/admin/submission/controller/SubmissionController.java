@@ -41,7 +41,7 @@ public class SubmissionController {
     /**
      * 기록 바로 제출 (SUBMITTED)
      */
-    @PostMapping("/submit")
+    @PostMapping
     @Operation(
             summary = "기록 제출 (신규 등록)",
             description = "새로운 활동 기록을 제출합니다. 상태는 '제출됨(SUBMITTED)'으로 저장되며, 관리자 승인 대기 상태가 됩니다."
@@ -166,7 +166,7 @@ public class SubmissionController {
     /**
      * 단건 삭제
      */
-    @DeleteMapping("/{submissionId}")
+    @DeleteMapping("/{submissionId:[0-9]+}")
     @Operation(summary = "단건 삭제", description = "특정 제출 데이터를 영구 삭제합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "삭제 성공 (No Content)"),

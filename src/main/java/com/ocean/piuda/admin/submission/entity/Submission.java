@@ -93,12 +93,6 @@ public class Submission extends BaseEntity {
     @Column(name = "admin_memo", columnDefinition = "TEXT")
     private String adminMemo;  // 관리자 검수 메모
 
-    @Column(precision = 9, scale = 6)
-    private BigDecimal latitude;
-
-    @Column(precision = 9, scale = 6)
-    private BigDecimal longitude;
-
     @Column(name = "participant_names", columnDefinition = "TEXT")
     private String participantNames;
 

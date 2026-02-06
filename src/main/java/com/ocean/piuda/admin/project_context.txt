@@ -2198,6 +2198,7 @@ File Path: .\site\controller\SiteNameOptionController.java
 package com.ocean.piuda.admin.site.controller;
 
 import com.ocean.piuda.admin.site.dto.request.CreateSiteOptionRequest;
+import com.ocean.piuda.admin.site.dto.request.UpdateSiteOptionRequest;
 import com.ocean.piuda.admin.site.dto.response.SiteNameOptionResponse;
 import com.ocean.piuda.admin.site.service.SiteNameOptionService;
 import com.ocean.piuda.global.api.dto.ApiData;
@@ -2210,33 +2211,40 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sites/options")
+@RequestMapping("/api/admin/site")
 @RequiredArgsConstructor
 @Tag(name = "Site Name Options", description = "현장 명칭 선택지 관리 API")
 public class SiteNameOptionController {
 
     private final SiteNameOptionService service;
 
-    @GetMapping("/api/sites/options")
+    @GetMapping
     @Operation(summary = "현장 명칭 목록 조회 (Active)", description = "작성 화면 드롭다운에 표시할 활성화된 현장 명칭 목록을 조회합니다.")
     public ApiData<List<SiteNameOptionResponse>> getOptions() {
         return ApiData.ok(service.getActiveOptions());
     }
 
-    @PostMapping("/api/admin/sites/options")
-    @Operation(summary = "현장 명칭 추가 (Admin)", description = "새로운 현장 명칭 선택지를 추가합니다.")
+    @PostMapping
+    @Operation(summary = "현장 명칭 추가", description = "새로운 현장 명칭 선택지를 추가합니다.")
     public ApiData<SiteNameOptionResponse> createOption(@RequestBody @Valid CreateSiteOptionRequest request) {
         return ApiData.ok(service.createOption(request));
     }
 
-    @DeleteMapping("/api/admin/sites/options/{optionId}")
-    @Operation(summary = "현장 명칭 비활성화 (Admin)", description = "해당 ID의 현장 명칭을 목록에서 숨김 처리합니다. (기존 기록은 유지됨)")
+    @DeleteMapping("/{optionId}")
+    @Operation(summary = "현장 명칭 비활성화", description = "해당 ID의 현장 명칭을 목록에서 숨김 처리합니다. (기존 기록은 유지됨)")
     public ApiData<Void> deleteOption(@PathVariable Long optionId) {
         service.deactivateOption(optionId);
         return ApiData.ok(null);
     }
-    // TODO:  patch API 추가
-}
+
+    @PatchMapping("/{optionId}")
+    @Operation(summary = "현장 명칭 수정", description = "현장 명칭을 변경하거나 활성/비활성 상태를 변경합니다. (변경할 필드만 보내면 됩니다)")
+    public ApiData<SiteNameOptionResponse> updateOption(
+            @PathVariable Long optionId,
+            @RequestBody @Valid UpdateSiteOptionRequest request
+    ) {
+        return ApiData.ok(service.updateOption(optionId, request));
+    }}
 
 
 ================================================================================
@@ -2250,6 +2258,22 @@ import jakarta.validation.constraints.NotBlank;
 public record CreateSiteOptionRequest(
         @NotBlank(message = "현장 명칭은 필수입니다.")
         String name
+) {}
+
+
+================================================================================
+File Path: .\site\dto\request\UpdateSiteOptionRequest.java
+================================================================================
+
+package com.ocean.piuda.admin.site.dto.request;
+
+import jakarta.validation.constraints.Size;
+
+public record UpdateSiteOptionRequest(
+        @Size(min = 1, message = "현장 명칭은 최소 1글자 이상이어야 합니다.")
+        String name,
+
+        Boolean isActive
 ) {}
 
 
@@ -2344,6 +2368,7 @@ package com.ocean.piuda.admin.site.service;
 
 
 import com.ocean.piuda.admin.site.dto.request.CreateSiteOptionRequest;
+import com.ocean.piuda.admin.site.dto.request.UpdateSiteOptionRequest;
 import com.ocean.piuda.admin.site.dto.response.SiteNameOptionResponse;
 import com.ocean.piuda.admin.site.entity.SiteNameOption;
 import com.ocean.piuda.admin.site.repository.SiteNameOptionRepository;
@@ -2364,7 +2389,7 @@ public class SiteNameOptionService {
     private final SiteNameOptionRepository siteNameOptionRepository;
 
     /**
-     * 활성화된 현장 명칭 목록 조회
+     * [user] 활성화된 현장 명칭 목록 조회
      */
     public List<SiteNameOptionResponse> getActiveOptions() {
         return siteNameOptionRepository.findAllByIsActiveTrueOrderByCreatedAtDesc().stream()
@@ -2373,7 +2398,7 @@ public class SiteNameOptionService {
     }
 
     /**
-     * 현장 명칭 추가
+     * [Admin] 현장 명칭 추가
      */
     @Transactional
     public SiteNameOptionResponse createOption(CreateSiteOptionRequest request) {
@@ -2398,6 +2423,27 @@ public class SiteNameOptionService {
                 .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
 
         option.deactivate();
+    }
+
+
+    /**
+     * [Admin] 현장 명칭 수정 (이름 변경 또는 활성 상태 변경)
+     */
+    @Transactional
+    public SiteNameOptionResponse updateOption(Long optionId, UpdateSiteOptionRequest request) {
+        SiteNameOption option = siteNameOptionRepository.findById(optionId)
+                .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+
+        // 이름 변경 요청이 있고, 기존 이름과 다를 경우 중복 체크 수행
+        if (request.name() != null && !request.name().equals(option.getName())) {
+            if (siteNameOptionRepository.existsByName(request.name())) {
+                throw new BusinessException(ExceptionType.DUPLICATE_VALUE_ERROR);
+            }
+        }
+
+        option.update(request.name(), request.isActive());
+
+        return SiteNameOptionResponse.from(option);
     }
 }
 
@@ -3251,6 +3297,7 @@ import java.util.stream.Collectors;
 public record SubmissionDetailResponse(
         Long submissionId,
         String siteName,
+        Long siteNameOptionId,
         ActivityType activityType,
         LocalDateTime submittedAt,
         SubmissionStatus status,
@@ -3298,6 +3345,7 @@ public record SubmissionDetailResponse(
         return new SubmissionDetailResponse(
                 submission.getSubmissionId(),
                 submission.getSiteName(),
+                submission.getSiteNameOption() != null ? submission.getSiteNameOption().getId() : null,
                 submission.getActivityType(),
                 submission.getSubmittedAt(),
                 submission.getStatus(),

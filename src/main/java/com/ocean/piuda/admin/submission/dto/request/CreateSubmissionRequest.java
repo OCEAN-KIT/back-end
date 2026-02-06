@@ -35,15 +35,7 @@ public class CreateSubmissionRequest {
     @NotNull(message = "작업 유형은 필수입니다")
     private ActivityType activityType;
 
-    @NotBlank(message = "작성자명은 필수입니다")
-    private String authorName;
-
-    private String authorEmail;
-
     private String workDescription;  // 작업 내용
-
-    private BigDecimal latitude;
-    private BigDecimal longitude;
 
     @Valid
     @NotNull(message = "기본 환경 정보는 필수입니다")
