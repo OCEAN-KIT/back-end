@@ -12,13 +12,14 @@ public record SubmissionDetailResponse(
         Long submissionId,
         String siteName,
         Long siteNameOptionId,
+        Integer divingRound,
         ActivityType activityType,
         LocalDateTime submittedAt,
         SubmissionStatus status,
         String authorName,
         String authorEmail,
         Integer attachmentCount,
-        String feedbackText,  // API 하위 호환성을 위해 필드명 유지 (내부적으로는 workDescription 사용)
+        String workDescription,
         BasicEnvResponse basicEnv,
         ParticipantsResponse participants,
 
@@ -58,6 +59,7 @@ public record SubmissionDetailResponse(
                 submission.getSubmissionId(),
                 submission.getSiteName(),
                 submission.getSiteNameOption() != null ? submission.getSiteNameOption().getId() : null,
+                submission.getDivingRound(),
                 submission.getActivityType(),
                 submission.getSubmittedAt(),
                 submission.getStatus(),
@@ -65,6 +67,7 @@ public record SubmissionDetailResponse(
                 submission.getAuthorEmail(),
                 submission.getAttachmentCount(),
                 submission.getWorkDescription(),
+
                 BasicEnvResponse.from(submission.getBasicEnv()),
                 new ParticipantsResponse(submission.getParticipantNames()),
 
