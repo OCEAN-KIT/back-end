@@ -307,7 +307,6 @@ public class EnvironmentSummaryServiceImpl implements EnvironmentSummaryService 
                             .midLayerTemp(waterTemp)
                             .surfaceTemp(waterTemp) // 중층 데이터를 표층으로도 사용
                             .salinity(observation.getSalinity())
-                            .dissolvedOxygen(observation.getDissolvedOxygen())
                             .build();
                 })
                 .switchIfEmpty(Mono.fromRunnable(() ->

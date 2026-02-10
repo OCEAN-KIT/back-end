@@ -153,8 +153,6 @@ public class DashboardCommandService {
         GrowthLog log = GrowthLog.builder()
                 .species(species)
                 .recordDate(req.recordDate())
-                .attachmentRate(req.attachmentRate())
-                .survivalRate(req.survivalRate())
                 .growthLength(req.growthLength())
                 .status(req.status())
                 .build();
@@ -177,8 +175,6 @@ public class DashboardCommandService {
         log.update(
                 species,
                 req.recordDate(),
-                req.attachmentRate(),
-                req.survivalRate(),
                 req.growthLength(),
                 req.status()
         );
@@ -202,8 +198,6 @@ public class DashboardCommandService {
         WaterLog log = WaterLog.builder()
                 .recordDate(req.recordDate())
                 .temperature(req.temperature())
-                .dissolvedOxygen(req.dissolvedOxygen())
-                .nutrient(req.nutrient())
                 .visibility(req.visibility())
                 .current(req.current())
                 .surge(req.surge())
@@ -222,8 +216,6 @@ public class DashboardCommandService {
         log.update(
                 req.recordDate(),
                 req.temperature(),
-                req.dissolvedOxygen(),
-                req.nutrient(),
                 req.visibility(),
                 req.current(),
                 req.surge(),

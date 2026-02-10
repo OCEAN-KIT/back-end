@@ -28,13 +28,6 @@ public class WaterLog extends BaseEntity {
     @Column(nullable = false)
     private Double temperature;     // 수온
 
-    @Column(nullable = false)
-    private Double dissolvedOxygen; // DO
-
-    @Column(nullable = false)
-    private Double nutrient;        // 영양염류
-
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MarineStatus visibility; // 시야
@@ -54,8 +47,6 @@ public class WaterLog extends BaseEntity {
     public void update(
             LocalDate recordDate,
             Double temperature,
-            Double dissolvedOxygen,
-            Double nutrient,
             MarineStatus visibility,
             MarineStatus current,
             MarineStatus surge,
@@ -63,8 +54,6 @@ public class WaterLog extends BaseEntity {
     ) {
         if (recordDate != null) this.recordDate = recordDate;
         if (temperature != null) this.temperature = temperature;
-        if (dissolvedOxygen != null) this.dissolvedOxygen = dissolvedOxygen;
-        if (nutrient != null) this.nutrient = nutrient;
         if (visibility != null) this.visibility = visibility;
         if (current != null) this.current = current;
         if (surge != null) this.surge = surge;

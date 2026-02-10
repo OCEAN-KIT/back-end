@@ -34,14 +34,12 @@ public class DashboardDataInitializer implements CommandLineRunner {
 
         log.info("OC DASHBOARD 실증용 데이터 초기화 시작");
 
-        // 1) Species
         Species gamtae = getOrCreateSpecies("감태");
         Species dasima = getOrCreateSpecies("다시마");
         Species mojaban = getOrCreateSpecies("모자반");
 
-        // 2) Areas
-        createPohangDemoArea1(gamtae, dasima, mojaban);
-        createUljinDemoArea1(gamtae, dasima);
+        createPohangDemoArea1(gamtae, dasima, mojaban); // 데이터 5개월치 (LIMIT 3 테스트)
+        createUljinDemoArea1(gamtae, dasima);          // 데이터 2개월치 (데이터 부족 상황 테스트)
 
         log.info("OC DASHBOARD 데이터 초기화 완료");
     }
@@ -56,7 +54,8 @@ public class DashboardDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * 포항 테스트 영역 1
+     * 포항 테스트 영역 1: 데이터가 존재하는 월이 총 5개 (3, 4, 6, 8, 10월)
+     * WaterLog와 GrowthLog도 함께 생성하여 차트가 빈 칸으로 나오지 않게 함
      */
     private void createPohangDemoArea1(Species gamtae, Species dasima, Species mojaban) {
         ProjectArea area = ProjectArea.builder()
@@ -72,134 +71,64 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .build();
 
         area.setLocation(36.0762, 129.4432);
-
-        // [설정] 포항 영역 대표종: 감태
         area.setRepresentativeSpecies(gamtae);
 
-        // -------- Transplant Logs --------
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 3, 10))
-                .species(gamtae)
-                .method(TransplantMethod.SEEDLING_STRING)
-                .count(48)
-                .areaSize(500.0)
-                .attachmentStatus(SpeciesAttachmentStatus.GOOD)
-                .build());
+        // 1. Transplant Logs (최신 3개월 쿼리 검증용: 3, 4, 6, 8, 10월 데이터)
+        area.addTransplant(createTransplant(gamtae, LocalDate.of(2025, 3, 10), TransplantMethod.SEEDLING_STRING));
+        area.addTransplant(createTransplant(mojaban, LocalDate.of(2025, 4, 5), TransplantMethod.ROPE));
+        area.addTransplant(createTransplant(mojaban, LocalDate.of(2025, 6, 20), TransplantMethod.ROPE));
+        area.addTransplant(createTransplant(dasima, LocalDate.of(2025, 8, 15), TransplantMethod.TRANSPLANT_MODULE));
+        area.addTransplant(createTransplant(gamtae, LocalDate.of(2025, 10, 22), TransplantMethod.SEEDLING_STRING));
 
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 3, 18))
-                .species(dasima)
-                .method(TransplantMethod.TRANSPLANT_MODULE)
-                .count(22)
-                .areaSize(350.0)
-                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
-                .build());
+        // 2. Water Logs (데이터 없음 방지 - 용존산소 제거됨)
+        area.addWater(createWater(LocalDate.of(2025, 6, 1), 18.2));
+        area.addWater(createWater(LocalDate.of(2025, 10, 1), 21.5));
 
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 4, 5))
-                .species(mojaban)
-                .method(TransplantMethod.ROPE)
-                .count(12)
-                .areaSize(200.0)
-                .attachmentStatus(SpeciesAttachmentStatus.GOOD)
-                .build());
+        // 3. Growth Logs (대표종 차트 데이터용)
+        area.addGrowth(createGrowth(gamtae, LocalDate.of(2025, 6, 15), 12.5));
+        area.addGrowth(createGrowth(gamtae, LocalDate.of(2025, 10, 15), 22.0));
 
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 6, 20))
-                .species(mojaban)
-                .method(TransplantMethod.ROPE)
-                .count(8)
-                .areaSize(120.0)
-                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
-                .build());
-
-        // -------- Growth Logs (대표종 차트 데이터 포함) --------
-        // 1. 대표종(감태) 데이터 - 차트에 표시됨
-        area.addGrowth(GrowthLog.builder()
-                .species(gamtae)
-                .recordDate(LocalDate.of(2025, 5, 15))
-                .attachmentRate(85.0)
-                .survivalRate(90.0)
-                .growthLength(12.5)
-                .status(SpeciesAttachmentStatus.GOOD)
-                .build());
-
-        area.addGrowth(GrowthLog.builder()
-                .species(gamtae)
-                .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(88.0)
-                .survivalRate(89.0)
-                .growthLength(18.2)
-                .status(SpeciesAttachmentStatus.GOOD)
-                .build());
-
-        // 2. 비대표종(다시마) 데이터 - 차트에 표시 안 됨 (필터링 테스트용)
-        area.addGrowth(GrowthLog.builder()
-                .species(dasima)
-                .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(70.0)
-                .survivalRate(75.0)
-                .growthLength(10.0)
-                .status(SpeciesAttachmentStatus.NORMAL)
-                .build());
-
-        // -------- Water Logs --------
-        area.addWater(WaterLog.builder()
-                .recordDate(LocalDate.of(2025, 6, 1))
-                .temperature(18.2)
-                .dissolvedOxygen(7.4)
-                .nutrient(0.35)
-                .visibility(MarineStatus.GOOD)
-                .current(MarineStatus.NORMAL)
-                .surge(MarineStatus.NORMAL)
-                .wave(MarineStatus.GOOD)
-                .build());
-
-        area.addWater(WaterLog.builder()
-                .recordDate(LocalDate.of(2025, 7, 1))
-                .temperature(21.5)
-                .dissolvedOxygen(6.9)
-                .nutrient(0.42)
-                .visibility(MarineStatus.NORMAL)
-                .current(MarineStatus.NORMAL)
-                .surge(MarineStatus.POOR)
-                .wave(MarineStatus.NORMAL)
-                .build());
-
-        // -------- Media Logs --------
-        area.addMedia(MediaLog.builder()
-                .category(MediaCategory.BEFORE)
-                .mediaUrl(VALID_IMAGE_URL)
-                .recordDate(LocalDate.of(2025, 2, 20))
-                .caption("복원 전 수중 상태")
-                .build());
-
-        area.addMedia(MediaLog.builder()
-                .category(MediaCategory.AFTER)
-                .mediaUrl(VALID_IMAGE_URL)
-                .recordDate(LocalDate.of(2025, 4, 10))
-                .caption("1차 이식 완료 후")
-                .build());
-
-        area.addMedia(MediaLog.builder()
-                .category(MediaCategory.TIMELINE)
-                .mediaUrl(VALID_IMAGE_URL)
-                .recordDate(LocalDate.of(2025, 6, 15))
-                .caption("6월 성장 관측")
-                .build());
+        // 4. Media Logs
+        area.addMedia(createMedia(MediaCategory.BEFORE, LocalDate.of(2025, 2, 20), "복원 전 수중 상태"));
+        area.addMedia(createMedia(MediaCategory.AFTER, LocalDate.of(2025, 4, 10), "1차 이식 완료"));
+        area.addMedia(createMedia(MediaCategory.TIMELINE, LocalDate.of(2025, 10, 15), "10월 성장 관측"));
 
         projectAreaRepository.save(area);
     }
 
+    private TransplantLog createTransplant(Species s, LocalDate d, TransplantMethod m) {
+        return TransplantLog.builder()
+                .recordDate(d).species(s).method(m)
+                .count(15).areaSize(150.0).attachmentStatus(SpeciesAttachmentStatus.NORMAL).build();
+    }
+
+    private WaterLog createWater(LocalDate d, double temp) {
+        return WaterLog.builder()
+                .recordDate(d).temperature(temp)
+                .visibility(MarineStatus.GOOD).current(MarineStatus.NORMAL)
+                .surge(MarineStatus.NORMAL).wave(MarineStatus.GOOD).build();
+    }
+
+    private GrowthLog createGrowth(Species s, LocalDate d, double len) {
+        return GrowthLog.builder()
+                .species(s).recordDate(d).growthLength(len)
+                .status(SpeciesAttachmentStatus.GOOD).build();
+    }
+
+    private MediaLog createMedia(MediaCategory c, LocalDate d, String cap) {
+        return MediaLog.builder()
+                .category(c).mediaUrl(VALID_IMAGE_URL).recordDate(d).caption(cap).build();
+    }
+
     /**
-     * 울진 테스트 영역 1
+     * 울진 테스트 영역 1: 데이터가 존재하는 월이 총 2개 (8, 9월)
+     * -> 데이터가 3개 미만이어도 오류 없이 2개 모두 차트에 나와야 함
      */
     private void createUljinDemoArea1(Species gamtae, Species dasima) {
         ProjectArea area = ProjectArea.builder()
                 .name("울진 테스트 영역-1")
                 .restorationRegion(RestorationRegion.ULJIN)
                 .startDate(LocalDate.of(2025, 8, 1))
-                .endDate(null)
                 .habitat(HabitatType.MIXED)
                 .depth(8.0)
                 .areaSize(920.0)
@@ -208,64 +137,23 @@ public class DashboardDataInitializer implements CommandLineRunner {
                 .build();
 
         area.setLocation(36.9950, 129.4020);
-
-        // [설정] 울진 영역 대표종: 감태
         area.setRepresentativeSpecies(gamtae);
 
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 8, 5))
-                .species(gamtae)
-                .method(TransplantMethod.ROCK_FIXATION)
-                .count(30)
-                .areaSize(180.0)
-                .attachmentStatus(SpeciesAttachmentStatus.NORMAL)
-                .build());
+        // 1. Transplant Logs (8, 9월)
+        area.addTransplant(createTransplant(gamtae, LocalDate.of(2025, 8, 5), TransplantMethod.ROCK_FIXATION));
+        area.addTransplant(createTransplant(dasima, LocalDate.of(2025, 9, 2), TransplantMethod.DIRECT_FIXATION));
 
-        area.addTransplant(TransplantLog.builder()
-                .recordDate(LocalDate.of(2025, 9, 2))
-                .species(dasima)
-                .method(TransplantMethod.DIRECT_FIXATION)
-                .count(15)
-                .areaSize(90.0)
-                .attachmentStatus(SpeciesAttachmentStatus.POOR)
-                .build());
+        // 2. Water Logs
+        area.addWater(createWater(LocalDate.of(2025, 8, 1), 22.1));
+        area.addWater(createWater(LocalDate.of(2025, 9, 1), 20.4));
 
-        // [추가] 대표종(감태) 성장 로그 데이터 추가 (차트 표시용)
-        area.addGrowth(GrowthLog.builder()
-                .species(gamtae)
-                .recordDate(LocalDate.of(2025, 8, 20))
-                .attachmentRate(75.0)
-                .survivalRate(85.0)
-                .growthLength(5.5)
-                .status(SpeciesAttachmentStatus.NORMAL)
-                .build());
+        // 3. Growth Logs
+        area.addGrowth(createGrowth(gamtae, LocalDate.of(2025, 8, 20), 5.5));
+        area.addGrowth(createGrowth(gamtae, LocalDate.of(2025, 9, 20), 8.8));
 
-        area.addGrowth(GrowthLog.builder()
-                .species(gamtae)
-                .recordDate(LocalDate.of(2025, 9, 20))
-                .attachmentRate(78.0)
-                .survivalRate(82.0)
-                .growthLength(8.2)
-                .status(SpeciesAttachmentStatus.GOOD)
-                .build());
-
-        area.addWater(WaterLog.builder()
-                .recordDate(LocalDate.of(2025, 9, 1))
-                .temperature(20.0)
-                .dissolvedOxygen(7.0)
-                .nutrient(0.40)
-                .visibility(MarineStatus.NORMAL)
-                .current(MarineStatus.GOOD)
-                .surge(MarineStatus.NORMAL)
-                .wave(MarineStatus.NORMAL)
-                .build());
-
-        area.addMedia(MediaLog.builder()
-                .category(MediaCategory.TIMELINE)
-                .mediaUrl(VALID_IMAGE_URL)
-                .recordDate(LocalDate.of(2025, 9, 1))
-                .caption("울진 9월 관측")
-                .build());
+        // 4. Media Logs
+        area.addMedia(createMedia(MediaCategory.BEFORE, LocalDate.of(2025, 7, 25), "울진 복원 전"));
+        area.addMedia(createMedia(MediaCategory.TIMELINE, LocalDate.of(2025, 9, 20), "9월 진행 상태"));
 
         projectAreaRepository.save(area);
     }

@@ -142,7 +142,7 @@ public class DashboardAggregateBuilder {
         }
         return AreaDetailResponse.EcologyTab.builder()
                 .attachmentStatuses(attachmentStatuses)
-                .survivalStatus(area.getAttachmentStatus() != null ? area.getAttachmentStatus().getName() : "안정")
+                .areaAttachmentStatus(area.getAttachmentStatus() != null ? area.getAttachmentStatus().getName() : "안정")
                 .representativeGrowthChart(TimeSeriesChartDto.builder()
                         .labels(repLogs.stream().map(GrowthLog::getRecordDate).toList())
                         .values(repLogs.stream().map(GrowthLog::getGrowthLength).toList())
