@@ -1,12 +1,10 @@
 package com.ocean.piuda.dashboard.dto.response;
 
 import com.ocean.piuda.dashboard.dto.TimeSeriesChartDto;
-import com.ocean.piuda.dashboard.entity.*;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -88,7 +86,7 @@ public class AreaDetailResponse {
     @Getter
     public static class EcologyTab {
         private List<AttachmentStatus> attachmentStatuses;
-        private String survivalStatus; // "안정", "일부 감소", "불안정"
+        private String areaAttachmentStatus; // "안정", "일부 감소", "불안정"
         private TimeSeriesChartDto representativeGrowthChart; // 성장 추이 그래프
     }
 

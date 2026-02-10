@@ -57,14 +57,22 @@ public interface TransplantLogRepository extends JpaRepository<TransplantLog, Lo
     AccumulatedStatsProjection getAccumulatedStats(@Param("areaId") Long areaId);
 
     /**
-     * 작업 히스토리: 최근 3개월 월별 집계 (DB에서 연-월 그룹화)
+     * 작업 히스토리: 최근 데이터가 존재하는 3개의 월만 조회 (항상 3개 이하 보장)
+     * - 로직 변경: 기간 계산(Interval) -> 개수 제한(Limit)
+     * - 서브쿼리: 최신순으로 3개를 뽑고 (LIMIT 3)
+     * - 메인쿼리: 차트 X축 순서를 위해 다시 날짜 오름차순(ASC) 정렬
      */
     @Query(value = """
-        SELECT (DATE_TRUNC('month', record_date))::date as month, COUNT(*) as count
-        FROM transplant_logs
-        WHERE area_id = :areaId
-        AND record_date > (SELECT MAX(record_date) FROM transplant_logs WHERE area_id = :areaId) - INTERVAL '3 months'
-        GROUP BY month ORDER BY month ASC
+        SELECT sub.month, sub.count 
+        FROM (
+            SELECT (DATE_TRUNC('month', record_date))::date as month, COUNT(*) as count
+            FROM transplant_logs
+            WHERE area_id = :areaId
+            GROUP BY month
+            ORDER BY month DESC
+            LIMIT 3
+        ) sub
+        ORDER BY sub.month ASC
         """, nativeQuery = true)
     List<WorkHistoryPointProjection> findWorkHistory(@Param("areaId") Long areaId);
 
