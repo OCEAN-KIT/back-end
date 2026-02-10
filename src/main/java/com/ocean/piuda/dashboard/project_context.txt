@@ -517,8 +517,6 @@ import java.time.LocalDate;
 public record CreateWaterLogRequest(
         @NotNull LocalDate recordDate,
         @NotNull Double temperature,
-        @NotNull Double dissolvedOxygen,
-        @NotNull Double nutrient,
         @NotNull MarineStatus visibility,
         @NotNull MarineStatus current,
         @NotNull MarineStatus surge,
@@ -648,8 +646,6 @@ import java.time.LocalDate;
 public record UpdateWaterLogRequest(
         LocalDate recordDate,
         Double temperature,
-        Double dissolvedOxygen,
-        Double nutrient,
         MarineStatus visibility,
         MarineStatus current,
         MarineStatus surge,
@@ -1080,8 +1076,6 @@ public class WaterLogResponse {
     private LocalDate recordDate;
 
     private Double temperature;
-    private Double dissolvedOxygen;
-    private Double nutrient;
 
     private MarineStatus visibility;
     private String visibilityName;
@@ -1100,8 +1094,6 @@ public class WaterLogResponse {
                 .id(w.getId())
                 .recordDate(w.getRecordDate())
                 .temperature(w.getTemperature())
-                .dissolvedOxygen(w.getDissolvedOxygen())
-                .nutrient(w.getNutrient())
                 .visibility(w.getVisibility())
                 .visibilityName(w.getVisibility() != null ? w.getVisibility().getName() : null)
                 .current(w.getCurrent())
@@ -1550,13 +1542,6 @@ public class WaterLog extends BaseEntity {
     @Column(nullable = false)
     private Double temperature;     // 수온
 
-    @Column(nullable = false)
-    private Double dissolvedOxygen; // DO
-
-    @Column(nullable = false)
-    private Double nutrient;        // 영양염류
-
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MarineStatus visibility; // 시야
@@ -1576,8 +1561,6 @@ public class WaterLog extends BaseEntity {
     public void update(
             LocalDate recordDate,
             Double temperature,
-            Double dissolvedOxygen,
-            Double nutrient,
             MarineStatus visibility,
             MarineStatus current,
             MarineStatus surge,
@@ -1585,8 +1568,6 @@ public class WaterLog extends BaseEntity {
     ) {
         if (recordDate != null) this.recordDate = recordDate;
         if (temperature != null) this.temperature = temperature;
-        if (dissolvedOxygen != null) this.dissolvedOxygen = dissolvedOxygen;
-        if (nutrient != null) this.nutrient = nutrient;
         if (visibility != null) this.visibility = visibility;
         if (current != null) this.current = current;
         if (surge != null) this.surge = surge;
@@ -1792,7 +1773,6 @@ public enum TransplantMethod {
 package com.ocean.piuda.dashboard.initializer;
 
 import com.ocean.piuda.bio.entity.Species;
-import com.ocean.piuda.bio.enums.BioGroup;
 import com.ocean.piuda.bio.repository.SpeciesRepository;
 import com.ocean.piuda.dashboard.entity.*;
 import com.ocean.piuda.dashboard.enums.*;
@@ -1939,8 +1919,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addWater(WaterLog.builder()
                 .recordDate(LocalDate.of(2025, 6, 1))
                 .temperature(18.2)
-                .dissolvedOxygen(7.4)
-                .nutrient(0.35)
                 .visibility(MarineStatus.GOOD)
                 .current(MarineStatus.NORMAL)
                 .surge(MarineStatus.NORMAL)
@@ -1950,8 +1928,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addWater(WaterLog.builder()
                 .recordDate(LocalDate.of(2025, 7, 1))
                 .temperature(21.5)
-                .dissolvedOxygen(6.9)
-                .nutrient(0.42)
                 .visibility(MarineStatus.NORMAL)
                 .current(MarineStatus.NORMAL)
                 .surge(MarineStatus.POOR)
@@ -2044,8 +2020,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addWater(WaterLog.builder()
                 .recordDate(LocalDate.of(2025, 9, 1))
                 .temperature(20.0)
-                .dissolvedOxygen(7.0)
-                .nutrient(0.40)
                 .visibility(MarineStatus.NORMAL)
                 .current(MarineStatus.GOOD)
                 .surge(MarineStatus.NORMAL)
@@ -3170,8 +3144,6 @@ public class DashboardCommandService {
         WaterLog log = WaterLog.builder()
                 .recordDate(req.recordDate())
                 .temperature(req.temperature())
-                .dissolvedOxygen(req.dissolvedOxygen())
-                .nutrient(req.nutrient())
                 .visibility(req.visibility())
                 .current(req.current())
                 .surge(req.surge())
@@ -3190,8 +3162,6 @@ public class DashboardCommandService {
         log.update(
                 req.recordDate(),
                 req.temperature(),
-                req.dissolvedOxygen(),
-                req.nutrient(),
                 req.visibility(),
                 req.current(),
                 req.surge(),

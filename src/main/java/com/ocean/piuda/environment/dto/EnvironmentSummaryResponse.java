@@ -44,8 +44,7 @@ public record EnvironmentSummaryResponse(
     public record Water(
             Double midLayerTemp,
             Double surfaceTemp,
-            Double salinity,
-            Double dissolvedOxygen
+            Double salinity
     ) {}
 
     @Builder

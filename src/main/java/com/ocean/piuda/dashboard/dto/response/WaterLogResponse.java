@@ -14,8 +14,6 @@ public class WaterLogResponse {
     private LocalDate recordDate;
 
     private Double temperature;
-    private Double dissolvedOxygen;
-    private Double nutrient;
 
     private MarineStatus visibility;
     private String visibilityName;
@@ -34,8 +32,6 @@ public class WaterLogResponse {
                 .id(w.getId())
                 .recordDate(w.getRecordDate())
                 .temperature(w.getTemperature())
-                .dissolvedOxygen(w.getDissolvedOxygen())
-                .nutrient(w.getNutrient())
                 .visibility(w.getVisibility())
                 .visibilityName(w.getVisibility() != null ? w.getVisibility().getName() : null)
                 .current(w.getCurrent())

@@ -202,8 +202,6 @@ public class DashboardCommandService {
         WaterLog log = WaterLog.builder()
                 .recordDate(req.recordDate())
                 .temperature(req.temperature())
-                .dissolvedOxygen(req.dissolvedOxygen())
-                .nutrient(req.nutrient())
                 .visibility(req.visibility())
                 .current(req.current())
                 .surge(req.surge())
@@ -222,8 +220,6 @@ public class DashboardCommandService {
         log.update(
                 req.recordDate(),
                 req.temperature(),
-                req.dissolvedOxygen(),
-                req.nutrient(),
                 req.visibility(),
                 req.current(),
                 req.surge(),
