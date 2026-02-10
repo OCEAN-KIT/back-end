@@ -153,8 +153,6 @@ public class DashboardCommandService {
         GrowthLog log = GrowthLog.builder()
                 .species(species)
                 .recordDate(req.recordDate())
-                .attachmentRate(req.attachmentRate())
-                .survivalRate(req.survivalRate())
                 .growthLength(req.growthLength())
                 .status(req.status())
                 .build();
@@ -177,8 +175,6 @@ public class DashboardCommandService {
         log.update(
                 species,
                 req.recordDate(),
-                req.attachmentRate(),
-                req.survivalRate(),
                 req.growthLength(),
                 req.status()
         );

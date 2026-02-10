@@ -436,8 +436,6 @@ import java.time.LocalDate;
 public record CreateGrowthLogRequest(
         @NotNull Long speciesId,
         @NotNull LocalDate recordDate,
-        @NotNull Double attachmentRate,
-        @NotNull Double survivalRate,
         @NotNull Double growthLength,
         @NotNull SpeciesAttachmentStatus status
 ) {}
@@ -566,8 +564,6 @@ import java.time.LocalDate;
 public record UpdateGrowthLogRequest(
         Long speciesId,
         LocalDate recordDate,
-        Double attachmentRate,
-        Double survivalRate,
         Double growthLength,
         SpeciesAttachmentStatus status
 ) {}
@@ -893,8 +889,6 @@ public class GrowthLogResponse {
     private Long speciesId;
     private String speciesName;
 
-    private Double attachmentRate;
-    private Double survivalRate;
     private Double growthLength;
 
     private SpeciesAttachmentStatus status;
@@ -907,8 +901,6 @@ public class GrowthLogResponse {
                 .recordDate(g.getRecordDate())
                 .speciesId(s != null ? s.getId() : null)
                 .speciesName(s != null ? s.getName() : null)
-                .attachmentRate(g.getAttachmentRate())
-                .survivalRate(g.getSurvivalRate())
                 .growthLength(g.getGrowthLength())
                 .status(g.getStatus())
                 .statusName(g.getStatus() != null ? g.getStatus().getName() : null)
@@ -1203,10 +1195,6 @@ public class GrowthLog extends BaseEntity {
     private LocalDate recordDate; // 기록 날짜 (YYYY-MM-DD)
 
     @Column(nullable = false)
-    private Double attachmentRate; // 착생률 (%)
-    @Column(nullable = false)
-    private Double survivalRate;   // 생존률 (%)
-    @Column(nullable = false)
     private Double growthLength;   // 성장 길이 (mm)
 
     @Enumerated(EnumType.STRING)
@@ -1216,15 +1204,11 @@ public class GrowthLog extends BaseEntity {
     public void update(
             Species species,
             LocalDate recordDate,
-            Double attachmentRate,
-            Double survivalRate,
             Double growthLength,
             SpeciesAttachmentStatus status
     ) {
         if (species != null) this.species = species;
         if (recordDate != null) this.recordDate = recordDate;
-        if (attachmentRate != null) this.attachmentRate = attachmentRate;
-        if (survivalRate != null) this.survivalRate = survivalRate;
         if (growthLength != null) this.growthLength = growthLength;
         if (status != null) this.status = status;
     }
@@ -1890,8 +1874,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 5, 15))
-                .attachmentRate(85.0)
-                .survivalRate(90.0)
                 .growthLength(12.5)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
@@ -1899,8 +1881,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(88.0)
-                .survivalRate(89.0)
                 .growthLength(18.2)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
@@ -1909,8 +1889,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(dasima)
                 .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(70.0)
-                .survivalRate(75.0)
                 .growthLength(10.0)
                 .status(SpeciesAttachmentStatus.NORMAL)
                 .build());
@@ -2002,8 +1980,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 8, 20))
-                .attachmentRate(75.0)
-                .survivalRate(85.0)
                 .growthLength(5.5)
                 .status(SpeciesAttachmentStatus.NORMAL)
                 .build());
@@ -2011,8 +1987,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 9, 20))
-                .attachmentRate(78.0)
-                .survivalRate(82.0)
                 .growthLength(8.2)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
@@ -3095,8 +3069,6 @@ public class DashboardCommandService {
         GrowthLog log = GrowthLog.builder()
                 .species(species)
                 .recordDate(req.recordDate())
-                .attachmentRate(req.attachmentRate())
-                .survivalRate(req.survivalRate())
                 .growthLength(req.growthLength())
                 .status(req.status())
                 .build();
@@ -3119,8 +3091,6 @@ public class DashboardCommandService {
         log.update(
                 species,
                 req.recordDate(),
-                req.attachmentRate(),
-                req.survivalRate(),
                 req.growthLength(),
                 req.status()
         );

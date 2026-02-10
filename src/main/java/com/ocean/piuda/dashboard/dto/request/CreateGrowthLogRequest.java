@@ -8,8 +8,6 @@ import java.time.LocalDate;
 public record CreateGrowthLogRequest(
         @NotNull Long speciesId,
         @NotNull LocalDate recordDate,
-        @NotNull Double attachmentRate,
-        @NotNull Double survivalRate,
         @NotNull Double growthLength,
         @NotNull SpeciesAttachmentStatus status
 ) {}

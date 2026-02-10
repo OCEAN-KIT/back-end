@@ -32,10 +32,6 @@ public class GrowthLog extends BaseEntity {
     private LocalDate recordDate; // 기록 날짜 (YYYY-MM-DD)
 
     @Column(nullable = false)
-    private Double attachmentRate; // 착생률 (%)
-    @Column(nullable = false)
-    private Double survivalRate;   // 생존률 (%)
-    @Column(nullable = false)
     private Double growthLength;   // 성장 길이 (mm)
 
     @Enumerated(EnumType.STRING)
@@ -45,15 +41,11 @@ public class GrowthLog extends BaseEntity {
     public void update(
             Species species,
             LocalDate recordDate,
-            Double attachmentRate,
-            Double survivalRate,
             Double growthLength,
             SpeciesAttachmentStatus status
     ) {
         if (species != null) this.species = species;
         if (recordDate != null) this.recordDate = recordDate;
-        if (attachmentRate != null) this.attachmentRate = attachmentRate;
-        if (survivalRate != null) this.survivalRate = survivalRate;
         if (growthLength != null) this.growthLength = growthLength;
         if (status != null) this.status = status;
     }

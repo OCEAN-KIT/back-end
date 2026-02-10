@@ -7,8 +7,6 @@ import java.time.LocalDate;
 public record UpdateGrowthLogRequest(
         Long speciesId,
         LocalDate recordDate,
-        Double attachmentRate,
-        Double survivalRate,
         Double growthLength,
         SpeciesAttachmentStatus status
 ) {}

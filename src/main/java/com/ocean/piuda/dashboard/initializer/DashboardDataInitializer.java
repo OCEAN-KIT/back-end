@@ -118,8 +118,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 5, 15))
-                .attachmentRate(85.0)
-                .survivalRate(90.0)
                 .growthLength(12.5)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
@@ -127,8 +125,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(88.0)
-                .survivalRate(89.0)
                 .growthLength(18.2)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
@@ -137,8 +133,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(dasima)
                 .recordDate(LocalDate.of(2025, 6, 15))
-                .attachmentRate(70.0)
-                .survivalRate(75.0)
                 .growthLength(10.0)
                 .status(SpeciesAttachmentStatus.NORMAL)
                 .build());
@@ -230,8 +224,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 8, 20))
-                .attachmentRate(75.0)
-                .survivalRate(85.0)
                 .growthLength(5.5)
                 .status(SpeciesAttachmentStatus.NORMAL)
                 .build());
@@ -239,8 +231,6 @@ public class DashboardDataInitializer implements CommandLineRunner {
         area.addGrowth(GrowthLog.builder()
                 .species(gamtae)
                 .recordDate(LocalDate.of(2025, 9, 20))
-                .attachmentRate(78.0)
-                .survivalRate(82.0)
                 .growthLength(8.2)
                 .status(SpeciesAttachmentStatus.GOOD)
                 .build());
