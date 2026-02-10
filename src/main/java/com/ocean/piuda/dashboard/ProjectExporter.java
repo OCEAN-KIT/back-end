@@ -118,9 +118,7 @@ public class ProjectExporter {
 
     private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
         try {
-            writer.write("\n" + "=".repeat(80) + "\n");
-            writer.write("File Path: " + file.toString() + "\n");
-            writer.write("=".repeat(80) + "\n\n");
+            writer.write("\n# File Path: " + file.toString() + "\n");
 
             // 파일 내용을 한 번에 읽어서 쓰기
             Files.lines(file).forEach(line -> {

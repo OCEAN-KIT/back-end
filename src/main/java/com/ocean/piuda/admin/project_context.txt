@@ -1,8 +1,5 @@
 
-================================================================================
-File Path: .\common\enums\ActivityType.java
-================================================================================
-
+# File Path: .\common\enums\ActivityType.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum ActivityType {
@@ -19,10 +16,7 @@ public enum ActivityType {
 }
 
 
-================================================================================
-File Path: .\common\enums\AuditAction.java
-================================================================================
-
+# File Path: .\common\enums\AuditAction.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum AuditAction {
@@ -34,10 +28,7 @@ public enum AuditAction {
 }
 
 
-================================================================================
-File Path: .\common\enums\BarrenExtent.java
-================================================================================
-
+# File Path: .\common\enums\BarrenExtent.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -57,10 +48,7 @@ public enum BarrenExtent {
 }
 
 
-================================================================================
-File Path: .\common\enums\CleanupMethodType.java
-================================================================================
-
+# File Path: .\common\enums\CleanupMethodType.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -80,10 +68,7 @@ public enum CleanupMethodType {
 }
 
 
-================================================================================
-File Path: .\common\enums\DensityLevel.java
-================================================================================
-
+# File Path: .\common\enums\DensityLevel.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -106,10 +91,7 @@ public enum DensityLevel {
 }
 
 
-================================================================================
-File Path: .\common\enums\ExportFormat.java
-================================================================================
-
+# File Path: .\common\enums\ExportFormat.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum ExportFormat {
@@ -118,10 +100,7 @@ public enum ExportFormat {
 }
 
 
-================================================================================
-File Path: .\common\enums\ExportStatus.java
-================================================================================
-
+# File Path: .\common\enums\ExportStatus.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum ExportStatus {
@@ -131,10 +110,7 @@ public enum ExportStatus {
 }
 
 
-================================================================================
-File Path: .\common\enums\GrazerSpeciesType.java
-================================================================================
-
+# File Path: .\common\enums\GrazerSpeciesType.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -149,10 +125,7 @@ public enum GrazerSpeciesType {
 }
 
 
-================================================================================
-File Path: .\common\enums\HealthStatus.java
-================================================================================
-
+# File Path: .\common\enums\HealthStatus.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -173,10 +146,7 @@ public enum HealthStatus {
 }
 
 
-================================================================================
-File Path: .\common\enums\MarineCondition.java
-================================================================================
-
+# File Path: .\common\enums\MarineCondition.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -189,10 +159,7 @@ public enum MarineCondition {
 }
 
 
-================================================================================
-File Path: .\common\enums\ParticipantRole.java
-================================================================================
-
+# File Path: .\common\enums\ParticipantRole.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum ParticipantRole {
@@ -203,10 +170,7 @@ public enum ParticipantRole {
 }
 
 
-================================================================================
-File Path: .\common\enums\RockFeature.java
-================================================================================
-
+# File Path: .\common\enums\RockFeature.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -228,10 +192,7 @@ public enum RockFeature {
 }
 
 
-================================================================================
-File Path: .\common\enums\SeaweedHealthStatus.java
-================================================================================
-
+# File Path: .\common\enums\SeaweedHealthStatus.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -251,10 +212,7 @@ public enum SeaweedHealthStatus {
 }
 
 
-================================================================================
-File Path: .\common\enums\SubmissionStatus.java
-================================================================================
-
+# File Path: .\common\enums\SubmissionStatus.java
 package com.ocean.piuda.admin.common.enums;
 
 public enum SubmissionStatus {
@@ -265,10 +223,7 @@ public enum SubmissionStatus {
 }
 
 
-================================================================================
-File Path: .\common\enums\SubstrateTargetType.java
-================================================================================
-
+# File Path: .\common\enums\SubstrateTargetType.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -282,10 +237,7 @@ public enum SubstrateTargetType {
 }
 
 
-================================================================================
-File Path: .\common\enums\Suitability.java
-================================================================================
-
+# File Path: .\common\enums\Suitability.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -304,10 +256,7 @@ public enum Suitability {
 }
 
 
-================================================================================
-File Path: .\common\enums\TerrainType.java
-================================================================================
-
+# File Path: .\common\enums\TerrainType.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -328,10 +277,7 @@ public enum TerrainType {
 }
 
 
-================================================================================
-File Path: .\common\enums\TransplantLocationType.java
-================================================================================
-
+# File Path: .\common\enums\TransplantLocationType.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -344,10 +290,7 @@ public enum TransplantLocationType {
 }
 
 
-================================================================================
-File Path: .\common\enums\TransplantMethodType.java
-================================================================================
-
+# File Path: .\common\enums\TransplantMethodType.java
 package com.ocean.piuda.admin.common.enums;
 
 import lombok.Getter;
@@ -367,10 +310,7 @@ public enum TransplantMethodType {
 }
 
 
-================================================================================
-File Path: .\common\enums\TransplantSpeciesType.java
-================================================================================
-
+# File Path: .\common\enums\TransplantSpeciesType.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -386,10 +326,7 @@ public enum TransplantSpeciesType {
 }
 
 
-================================================================================
-File Path: .\common\enums\UncollectedScale.java
-================================================================================
-
+# File Path: .\common\enums\UncollectedScale.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -402,10 +339,7 @@ public enum UncollectedScale {
 }
 
 
-================================================================================
-File Path: .\common\enums\WasteType.java
-================================================================================
-
+# File Path: .\common\enums\WasteType.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -421,10 +355,7 @@ public enum WasteType {
 }
 
 
-================================================================================
-File Path: .\common\enums\WorkScope.java
-================================================================================
-
+# File Path: .\common\enums\WorkScope.java
 package com.ocean.piuda.admin.common.enums;
 
 /**
@@ -437,10 +368,7 @@ public enum WorkScope {
 }
 
 
-================================================================================
-File Path: .\dashboard\controller\AdminDashboardController.java
-================================================================================
-
+# File Path: .\dashboard\controller\AdminDashboardController.java
 package com.ocean.piuda.admin.dashboard.controller;
 
 import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
@@ -483,10 +411,7 @@ public class AdminDashboardController {
 }
 
 
-================================================================================
-File Path: .\dashboard\dto\AdminDashboardSummaryResponse.java
-================================================================================
-
+# File Path: .\dashboard\dto\AdminDashboardSummaryResponse.java
 package com.ocean.piuda.admin.dashboard.dto;
 
 public record AdminDashboardSummaryResponse(
@@ -508,10 +433,7 @@ public record AdminDashboardSummaryResponse(
 }
 
 
-================================================================================
-File Path: .\dashboard\service\AdminDashboardService.java
-================================================================================
-
+# File Path: .\dashboard\service\AdminDashboardService.java
 package com.ocean.piuda.admin.dashboard.service;
 
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
@@ -544,10 +466,7 @@ public class AdminDashboardService {
 }
 
 
-================================================================================
-File Path: .\export\controller\ExportController.java
-================================================================================
-
+# File Path: .\export\controller\ExportController.java
 package com.ocean.piuda.admin.export.controller;
 
 import com.ocean.piuda.admin.export.dto.request.ExportByIdsRequest;
@@ -693,10 +612,7 @@ public class ExportController {
 }
 
 
-================================================================================
-File Path: .\export\dto\request\ExportByIdsRequest.java
-================================================================================
-
+# File Path: .\export\dto\request\ExportByIdsRequest.java
 package com.ocean.piuda.admin.export.dto.request;
 
 import com.ocean.piuda.admin.common.enums.ExportFormat;
@@ -721,10 +637,7 @@ public class ExportByIdsRequest {
 }
 
 
-================================================================================
-File Path: .\export\dto\request\ExportRequest.java
-================================================================================
-
+# File Path: .\export\dto\request\ExportRequest.java
 package com.ocean.piuda.admin.export.dto.request;
 
 import com.ocean.piuda.admin.common.enums.ExportFormat;
@@ -758,10 +671,7 @@ public class ExportRequest {
 }
 
 
-================================================================================
-File Path: .\export\dto\response\ExportJobResponse.java
-================================================================================
-
+# File Path: .\export\dto\response\ExportJobResponse.java
 package com.ocean.piuda.admin.export.dto.response;
 
 import com.ocean.piuda.admin.common.enums.ExportFormat;
@@ -803,10 +713,7 @@ public class ExportJobResponse {
 }
 
 
-================================================================================
-File Path: .\export\entity\ExportJob.java
-================================================================================
-
+# File Path: .\export\entity\ExportJob.java
 package com.ocean.piuda.admin.export.entity;
 
 import com.ocean.piuda.admin.common.enums.ExportFormat;
@@ -853,10 +760,7 @@ public class ExportJob extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\export\repository\ExportJobRepository.java
-================================================================================
-
+# File Path: .\export\repository\ExportJobRepository.java
 package com.ocean.piuda.admin.export.repository;
 
 import com.ocean.piuda.admin.export.entity.ExportJob;
@@ -872,10 +776,7 @@ public interface ExportJobRepository extends JpaRepository<ExportJob, Long> {
 }
 
 
-================================================================================
-File Path: .\export\service\ExportService.java
-================================================================================
-
+# File Path: .\export\service\ExportService.java
 package com.ocean.piuda.admin.export.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1208,10 +1109,7 @@ public class ExportService {
 }
 
 
-================================================================================
-File Path: .\initializer\AdminUserInitializer.java
-================================================================================
-
+# File Path: .\initializer\AdminUserInitializer.java
 package com.ocean.piuda.admin.initializer;
 
 import com.ocean.piuda.security.jwt.enums.Role;
@@ -1265,10 +1163,7 @@ public class AdminUserInitializer implements CommandLineRunner {
 }
 
 
-================================================================================
-File Path: .\ProjectExporter.java
-================================================================================
-
+# File Path: .\ProjectExporter.java
 package com.ocean.piuda.admin;
 
 import java.io.IOException;
@@ -1276,7 +1171,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ProjectExporter {
@@ -1390,9 +1284,7 @@ public class ProjectExporter {
 
     private static void writeFileContent(java.io.BufferedWriter writer, Path file) {
         try {
-            writer.write("\n" + "=".repeat(80) + "\n");
-            writer.write("File Path: " + file.toString() + "\n");
-            writer.write("=".repeat(80) + "\n\n");
+            writer.write("\n# File Path: " + file.toString() + "\n");
 
             // 파일 내용을 한 번에 읽어서 쓰기
             Files.lines(file).forEach(line -> {
@@ -1411,10 +1303,7 @@ public class ProjectExporter {
 }
 
 
-================================================================================
-File Path: .\report\controller\ReportDraftController.java
-================================================================================
-
+# File Path: .\report\controller\ReportDraftController.java
 //package com.ocean.piuda.admin.report.controller;
 //import org.springframework.http.ContentDisposition;
 //import org.springframework.http.HttpHeaders;
@@ -1509,10 +1398,7 @@ File Path: .\report\controller\ReportDraftController.java
 //}
 
 
-================================================================================
-File Path: .\report\dto\request\ReportDraftByIdsRequest.java
-================================================================================
-
+# File Path: .\report\dto\request\ReportDraftByIdsRequest.java
 package com.ocean.piuda.admin.report.dto.request;
 
 import com.ocean.piuda.admin.report.enums.ReportDraftType;
@@ -1534,10 +1420,7 @@ public record ReportDraftByIdsRequest(
 ) {}
 
 
-================================================================================
-File Path: .\report\dto\request\ReportDraftByPeriodRequest.java
-================================================================================
-
+# File Path: .\report\dto\request\ReportDraftByPeriodRequest.java
 package com.ocean.piuda.admin.report.dto.request;
 
 import com.ocean.piuda.admin.report.enums.ReportDraftType;
@@ -1561,10 +1444,7 @@ public record ReportDraftByPeriodRequest(
 ) {}
 
 
-================================================================================
-File Path: .\report\dto\response\ReportDraftResponse.java
-================================================================================
-
+# File Path: .\report\dto\response\ReportDraftResponse.java
 package com.ocean.piuda.admin.report.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -1591,10 +1471,7 @@ public record ReportDraftResponse(
 ) {}
 
 
-================================================================================
-File Path: .\report\dto\response\ReportPdfResponse.java
-================================================================================
-
+# File Path: .\report\dto\response\ReportPdfResponse.java
 package com.ocean.piuda.admin.report.dto.response;
 
 public record ReportPdfResponse(
@@ -1603,10 +1480,7 @@ public record ReportPdfResponse(
 ) {}
 
 
-================================================================================
-File Path: .\report\enums\ReportDraftType.java
-================================================================================
-
+# File Path: .\report\enums\ReportDraftType.java
 package com.ocean.piuda.admin.report.enums;
 
 public enum ReportDraftType {
@@ -1627,10 +1501,7 @@ public enum ReportDraftType {
 }
 
 
-================================================================================
-File Path: .\report\service\ReportDraftService.java
-================================================================================
-
+# File Path: .\report\service\ReportDraftService.java
 /*
 package com.ocean.piuda.admin.report.service;
 
@@ -1918,10 +1789,7 @@ public class ReportDraftService {
  */
 
 
-================================================================================
-File Path: .\report\service\ReportPdfService.java
-================================================================================
-
+# File Path: .\report\service\ReportPdfService.java
 //
 //package com.ocean.piuda.admin.report.service;
 //
@@ -2129,10 +1997,7 @@ File Path: .\report\service\ReportPdfService.java
 //
 
 
-================================================================================
-File Path: .\report\util\ReportPromptBuilder.java
-================================================================================
-
+# File Path: .\report\util\ReportPromptBuilder.java
 package com.ocean.piuda.admin.report.util;
 
 import com.ocean.piuda.admin.report.enums.ReportDraftType;
@@ -2191,10 +2056,7 @@ public class ReportPromptBuilder {
 }
 
 
-================================================================================
-File Path: .\site\controller\SiteNameOptionController.java
-================================================================================
-
+# File Path: .\site\controller\SiteNameOptionController.java
 package com.ocean.piuda.admin.site.controller;
 
 import com.ocean.piuda.admin.site.dto.request.CreateSiteOptionRequest;
@@ -2247,10 +2109,7 @@ public class SiteNameOptionController {
     }}
 
 
-================================================================================
-File Path: .\site\dto\request\CreateSiteOptionRequest.java
-================================================================================
-
+# File Path: .\site\dto\request\CreateSiteOptionRequest.java
 package com.ocean.piuda.admin.site.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
@@ -2261,10 +2120,7 @@ public record CreateSiteOptionRequest(
 ) {}
 
 
-================================================================================
-File Path: .\site\dto\request\UpdateSiteOptionRequest.java
-================================================================================
-
+# File Path: .\site\dto\request\UpdateSiteOptionRequest.java
 package com.ocean.piuda.admin.site.dto.request;
 
 import jakarta.validation.constraints.Size;
@@ -2277,10 +2133,7 @@ public record UpdateSiteOptionRequest(
 ) {}
 
 
-================================================================================
-File Path: .\site\dto\response\SiteNameOptionResponse.java
-================================================================================
-
+# File Path: .\site\dto\response\SiteNameOptionResponse.java
 package com.ocean.piuda.admin.site.dto.response;
 
 import com.ocean.piuda.admin.site.entity.SiteNameOption;
@@ -2295,10 +2148,7 @@ public record SiteNameOptionResponse(
 }
 
 
-================================================================================
-File Path: .\site\entity\SiteNameOption.java
-================================================================================
-
+# File Path: .\site\entity\SiteNameOption.java
 package com.ocean.piuda.admin.site.entity;
 
 import com.ocean.piuda.global.api.domain.BaseEntity;
@@ -2337,10 +2187,7 @@ public class SiteNameOption extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\site\repository\SiteNameOptionRepository.java
-================================================================================
-
+# File Path: .\site\repository\SiteNameOptionRepository.java
 package com.ocean.piuda.admin.site.repository;
 
 import com.ocean.piuda.admin.site.entity.SiteNameOption;
@@ -2360,10 +2207,7 @@ public interface SiteNameOptionRepository extends JpaRepository<SiteNameOption, 
 }
 
 
-================================================================================
-File Path: .\site\service\SiteNameOptionService.java
-================================================================================
-
+# File Path: .\site\service\SiteNameOptionService.java
 package com.ocean.piuda.admin.site.service;
 
 
@@ -2448,10 +2292,7 @@ public class SiteNameOptionService {
 }
 
 
-================================================================================
-File Path: .\submission\controller\SubmissionController.java
-================================================================================
-
+# File Path: .\submission\controller\SubmissionController.java
 package com.ocean.piuda.admin.submission.controller;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -2495,7 +2336,7 @@ public class SubmissionController {
     /**
      * 기록 바로 제출 (SUBMITTED)
      */
-    @PostMapping("/submit")
+    @PostMapping
     @Operation(
             summary = "기록 제출 (신규 등록)",
             description = "새로운 활동 기록을 제출합니다. 상태는 '제출됨(SUBMITTED)'으로 저장되며, 관리자 승인 대기 상태가 됩니다."
@@ -2620,7 +2461,7 @@ public class SubmissionController {
     /**
      * 단건 삭제
      */
-    @DeleteMapping("/{submissionId}")
+    @DeleteMapping("/{submissionId:[0-9]+}")
     @Operation(summary = "단건 삭제", description = "특정 제출 데이터를 영구 삭제합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "삭제 성공 (No Content)"),
@@ -2693,10 +2534,7 @@ public class SubmissionController {
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\BulkApproveRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\BulkApproveRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -2710,10 +2548,7 @@ public record BulkApproveRequest(
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\BulkDeleteRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\BulkDeleteRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -2729,10 +2564,7 @@ public record BulkDeleteRequest(
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\BulkRejectRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\BulkRejectRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 import jakarta.validation.Valid;
@@ -2752,10 +2584,7 @@ public record BulkRejectRequest(
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\CreateSubmissionRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\CreateSubmissionRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 import com.ocean.piuda.admin.common.enums.*;
@@ -2793,15 +2622,7 @@ public class CreateSubmissionRequest {
     @NotNull(message = "작업 유형은 필수입니다")
     private ActivityType activityType;
 
-    @NotBlank(message = "작성자명은 필수입니다")
-    private String authorName;
-
-    private String authorEmail;
-
     private String workDescription;  // 작업 내용
-
-    private BigDecimal latitude;
-    private BigDecimal longitude;
 
     @Valid
     @NotNull(message = "기본 환경 정보는 필수입니다")
@@ -3082,10 +2903,7 @@ public class CreateSubmissionRequest {
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\RejectReasonDto.java
-================================================================================
-
+# File Path: .\submission\dto\request\RejectReasonDto.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 public record RejectReasonDto(
@@ -3095,10 +2913,7 @@ public record RejectReasonDto(
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\SingleDeleteRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\SingleDeleteRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 public record SingleDeleteRequest(
@@ -3107,10 +2922,7 @@ public record SingleDeleteRequest(
 }
 
 
-================================================================================
-File Path: .\submission\dto\request\SingleRejectRequest.java
-================================================================================
-
+# File Path: .\submission\dto\request\SingleRejectRequest.java
 package com.ocean.piuda.admin.submission.dto.request;
 
 import jakarta.validation.Valid;
@@ -3124,10 +2936,7 @@ public record SingleRejectRequest(
 }
 
 
-================================================================================
-File Path: .\submission\dto\response\AttachmentResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\AttachmentResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.submission.entity.Attachment;
@@ -3156,10 +2965,7 @@ public record AttachmentResponse(
 }
 
 
-================================================================================
-File Path: .\submission\dto\response\AuditLogResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\AuditLogResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.AuditAction;
@@ -3187,10 +2993,7 @@ public record AuditLogResponse(
 }
 
 
-================================================================================
-File Path: .\submission\dto\response\BasicEnvResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\BasicEnvResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.MarineCondition;
@@ -3225,10 +3028,7 @@ public record BasicEnvResponse(
 }
 
 
-================================================================================
-File Path: .\submission\dto\response\BulkApproveResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\BulkApproveResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import java.util.List;
@@ -3239,10 +3039,7 @@ public record BulkApproveResponse(
 ) {}
 
 
-================================================================================
-File Path: .\submission\dto\response\BulkDeleteResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\BulkDeleteResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import java.util.List;
@@ -3253,10 +3050,7 @@ public record BulkDeleteResponse(
 ) {}
 
 
-================================================================================
-File Path: .\submission\dto\response\BulkRejectResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\BulkRejectResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import java.util.List;
@@ -3267,10 +3061,7 @@ public record BulkRejectResponse(
 ) {}
 
 
-================================================================================
-File Path: .\submission\dto\response\ParticipantsResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\ParticipantsResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 
@@ -3280,10 +3071,7 @@ public record ParticipantsResponse(
 ) { }
 
 
-================================================================================
-File Path: .\submission\dto\response\SubmissionDetailResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\SubmissionDetailResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.*;
@@ -3305,8 +3093,6 @@ public record SubmissionDetailResponse(
         String authorEmail,
         Integer attachmentCount,
         String feedbackText,  // API 하위 호환성을 위해 필드명 유지 (내부적으로는 workDescription 사용)
-        BigDecimal latitude,
-        BigDecimal longitude,
         BasicEnvResponse basicEnv,
         ParticipantsResponse participants,
 
@@ -3353,8 +3139,6 @@ public record SubmissionDetailResponse(
                 submission.getAuthorEmail(),
                 submission.getAttachmentCount(),
                 submission.getWorkDescription(),
-                submission.getLatitude(),
-                submission.getLongitude(),
                 BasicEnvResponse.from(submission.getBasicEnv()),
                 new ParticipantsResponse(submission.getParticipantNames()),
 
@@ -3480,10 +3264,7 @@ public record SubmissionDetailResponse(
 }
 
 
-================================================================================
-File Path: .\submission\dto\response\SubmissionListResponse.java
-================================================================================
-
+# File Path: .\submission\dto\response\SubmissionListResponse.java
 package com.ocean.piuda.admin.submission.dto.response;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -3518,10 +3299,7 @@ public record SubmissionListResponse(
 }
 
 
-================================================================================
-File Path: .\submission\entity\ActivityGrazerRemoval.java
-================================================================================
-
+# File Path: .\submission\entity\ActivityGrazerRemoval.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.DensityLevel;
@@ -3581,10 +3359,7 @@ public class ActivityGrazerRemoval {
 }
 
 
-================================================================================
-File Path: .\submission\entity\ActivityMarineCleanup.java
-================================================================================
-
+# File Path: .\submission\entity\ActivityMarineCleanup.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.CleanupMethodType;
@@ -3641,10 +3416,7 @@ public class ActivityMarineCleanup {
 }
 
 
-================================================================================
-File Path: .\submission\entity\ActivityMonitoring.java
-================================================================================
-
+# File Path: .\submission\entity\ActivityMonitoring.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.*;
@@ -3729,10 +3501,7 @@ public class ActivityMonitoring {
 }
 
 
-================================================================================
-File Path: .\submission\entity\ActivitySubstrateImprovement.java
-================================================================================
-
+# File Path: .\submission\entity\ActivitySubstrateImprovement.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.SubstrateTargetType;
@@ -3773,10 +3542,7 @@ public class ActivitySubstrateImprovement {
 }
 
 
-================================================================================
-File Path: .\submission\entity\ActivityTransplant.java
-================================================================================
-
+# File Path: .\submission\entity\ActivityTransplant.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.HealthStatus;
@@ -3829,10 +3595,7 @@ public class ActivityTransplant {
 }
 
 
-================================================================================
-File Path: .\submission\entity\Attachment.java
-================================================================================
-
+# File Path: .\submission\entity\Attachment.java
 package com.ocean.piuda.admin.submission.entity;
 
 import jakarta.persistence.*;
@@ -3880,10 +3643,7 @@ public class Attachment {
 }
 
 
-================================================================================
-File Path: .\submission\entity\AuditLog.java
-================================================================================
-
+# File Path: .\submission\entity\AuditLog.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.AuditAction;
@@ -3925,10 +3685,7 @@ public class AuditLog extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\submission\entity\BasicEnv.java
-================================================================================
-
+# File Path: .\submission\entity\BasicEnv.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.MarineCondition;
@@ -3990,10 +3747,7 @@ public class BasicEnv {
 }
 
 
-================================================================================
-File Path: .\submission\entity\RejectReason.java
-================================================================================
-
+# File Path: .\submission\entity\RejectReason.java
 package com.ocean.piuda.admin.submission.entity;
 
 import jakarta.persistence.*;
@@ -4038,10 +3792,7 @@ public class RejectReason {
 }
 
 
-================================================================================
-File Path: .\submission\entity\Submission.java
-================================================================================
-
+# File Path: .\submission\entity\Submission.java
 package com.ocean.piuda.admin.submission.entity;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -4136,12 +3887,6 @@ public class Submission extends BaseEntity {
 
     @Column(name = "admin_memo", columnDefinition = "TEXT")
     private String adminMemo;  // 관리자 검수 메모
-
-    @Column(precision = 9, scale = 6)
-    private BigDecimal latitude;
-
-    @Column(precision = 9, scale = 6)
-    private BigDecimal longitude;
 
     @Column(name = "participant_names", columnDefinition = "TEXT")
     private String participantNames;
@@ -4272,10 +4017,7 @@ public class Submission extends BaseEntity {
 }
 
 
-================================================================================
-File Path: .\submission\initializer\SubmissionDataInitializer.java
-================================================================================
-
+# File Path: .\submission\initializer\SubmissionDataInitializer.java
 package com.ocean.piuda.admin.submission.initializer;
 
 import com.ocean.piuda.admin.common.enums.*;
@@ -4496,8 +4238,6 @@ public class SubmissionDataInitializer implements CommandLineRunner {
                 .authorEmail(authorEmail)
                 .attachmentCount(attachmentCount)
                 .workDescription(workDescription)
-                .latitude(latitude)
-                .longitude(longitude)
                 .participantNames(participantNames)
                 .submittedAt(submittedAt)
                 .build();
@@ -4622,10 +4362,7 @@ public class SubmissionDataInitializer implements CommandLineRunner {
 }
 
 
-================================================================================
-File Path: .\submission\repository\AuditLogRepository.java
-================================================================================
-
+# File Path: .\submission\repository\AuditLogRepository.java
 package com.ocean.piuda.admin.submission.repository;
 
 import com.ocean.piuda.admin.submission.entity.AuditLog;
@@ -4640,10 +4377,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 }
 
 
-================================================================================
-File Path: .\submission\repository\SubmissionRepository.java
-================================================================================
-
+# File Path: .\submission\repository\SubmissionRepository.java
 package com.ocean.piuda.admin.submission.repository;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -4745,10 +4479,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 }
 
 
-================================================================================
-File Path: .\submission\service\SubmissionCommandService.java
-================================================================================
-
+# File Path: .\submission\service\SubmissionCommandService.java
 package com.ocean.piuda.admin.submission.service;
 
 import com.ocean.piuda.admin.site.entity.SiteNameOption;
@@ -4843,11 +4574,9 @@ public class SubmissionCommandService {
                 .status(status)
                 .submittedAt(submittedAt)
                 .user(currentUser)
-                .authorName(request.getAuthorName())
-                .authorEmail(request.getAuthorEmail())
+                .authorName(currentUser.getNickname())
+                .authorEmail(currentUser.getEmail())
                 .workDescription(request.getWorkDescription())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
                 .attachmentCount(0)
                 .build();
 
@@ -5211,10 +4940,7 @@ public class SubmissionCommandService {
 }
 
 
-================================================================================
-File Path: .\submission\service\SubmissionQueryService.java
-================================================================================
-
+# File Path: .\submission\service\SubmissionQueryService.java
 package com.ocean.piuda.admin.submission.service;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -5305,10 +5031,7 @@ public class SubmissionQueryService {
 }
 
 
-================================================================================
-File Path: .\submission\validator\ActivityValidator.java
-================================================================================
-
+# File Path: .\submission\validator\ActivityValidator.java
 package com.ocean.piuda.admin.submission.validator;
 
 import com.ocean.piuda.admin.common.enums.ActivityType;
@@ -5410,10 +5133,7 @@ public class ActivityValidator {
 }
 
 
-================================================================================
-File Path: .\submission\validator\SubmissionStatusValidator.java
-================================================================================
-
+# File Path: .\submission\validator\SubmissionStatusValidator.java
 package com.ocean.piuda.admin.submission.validator;
 
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;

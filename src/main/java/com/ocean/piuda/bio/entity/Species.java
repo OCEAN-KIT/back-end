@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
-import com.ocean.piuda.bio.enums.BioGroup;
 import com.ocean.piuda.global.api.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,11 +28,7 @@ public class Species extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String name; // 국명 (예: 감태)
 
-    @Enumerated(EnumType.STRING)
-    private BioGroup category;
-
-    public void update(String name, BioGroup category) {
+    public void update(String name) {
         if (name != null && !name.isBlank())  this.name = name;
-        if (category != null) this.category = category;
     }
 }
