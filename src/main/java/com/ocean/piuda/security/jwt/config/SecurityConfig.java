@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/sign-up").permitAll()
                         .requestMatchers("/api/v1/activities").permitAll()
                         .requestMatchers("/api/auth/complete-sign-up/**").hasAuthority(Role.NOT_REGISTERED.getKey())
