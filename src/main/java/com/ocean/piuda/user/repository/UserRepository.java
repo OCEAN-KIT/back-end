@@ -19,9 +19,6 @@ public interface UserRepository extends JpaRepository<User , Long> {
     Optional<User> findByOAuthInfo(@Param("providerType") ProviderType providerType,
                                    @Param("providerId") String providerId);
 
-    // 워치 암호화 ID 기준 조회
-    Optional<User> findByWatchDeviceId(String watchDeviceId);
-
     @Query("""
            SELECT u FROM User u
            WHERE LOWER(u.nickname) LIKE LOWER(CONCAT('%', :q, '%'))

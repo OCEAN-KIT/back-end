@@ -7,7 +7,6 @@ import lombok.Getter;
 /**
  * 해양/수산 생물 그룹 태그 공통 enum.
  * - Taxon(종 정보)
- * - Mission(미션 도메인)
  * - Post(게시글 도메인)
  * 등에서 모두 이 타입을 사용합니다.
  */
