@@ -1465,13 +1465,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.ocean.piuda.security.jwt.enums.Role;
 import com.ocean.piuda.security.jwt.service.AuthService;
-import com.ocean.piuda.security.jwt.util.JwtTokenProvider;
 import com.ocean.piuda.security.oauth2.principal.PrincipalDetails;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+
 
 
 @Getter
@@ -1491,7 +1488,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
 
     private final AuthService authService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final TokenCookieFactory tokenCookieFactory;
 
 
@@ -9698,34 +9694,6 @@ public record GeneratePresignedPutUrlResponse(
   }
 }
 
-# File Path: ./src/main/java/com/ocean/piuda/aws/config/AwsCredentialConfig.java
-package com.ocean.piuda.aws.config;
-
-import com.ocean.piuda.aws.properties.AwsConfigProperties;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-
-@Configuration
-@RequiredArgsConstructor
-public class AwsCredentialConfig {
-
-    private final AwsConfigProperties awsConfigProperties;
-
-    @Bean
-    public AwsCredentialsProvider awsCredentialProvider() {
-        return StaticCredentialsProvider.create(
-                AwsBasicCredentials.builder()
-                        .accessKeyId(this.awsConfigProperties.getAccessKey())
-                        .secretAccessKey(this.awsConfigProperties.getSecretKey())
-                        .build()
-        );
-    }
-}
-
 # File Path: ./src/main/java/com/ocean/piuda/aws/config/S3Config.java
 package com.ocean.piuda.aws.config;
 
@@ -9733,9 +9701,8 @@ import com.ocean.piuda.aws.properties.AwsConfigProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -9747,30 +9714,24 @@ public class S3Config {
   private final AwsConfigProperties awsConfigProperties;
 
   @Bean
-  public S3Client s3Client() {
-    AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(
-        AwsBasicCredentials.create(awsConfigProperties.getAccessKey(), awsConfigProperties.getSecretKey())
-    );
-
-    return S3Client.builder()
-        .region(Region.of(awsConfigProperties.getRegion()))
-        .credentialsProvider(credentialsProvider)
-        .build();
+  public AwsCredentialsProvider awsCredentialsProvider() {
+    return DefaultCredentialsProvider.create();
   }
 
   @Bean
-  public S3Presigner s3Presigner() {
-    AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(
-        AwsBasicCredentials.create(
-            awsConfigProperties.getAccessKey(),
-            awsConfigProperties.getSecretKey()
-        )
-    );
+  public S3Client s3Client(AwsCredentialsProvider awsCredentialsProvider) {
+    return S3Client.builder()
+            .region(Region.of(awsConfigProperties.getRegion()))
+            .credentialsProvider(awsCredentialsProvider)
+            .build();
+  }
 
+  @Bean
+  public S3Presigner s3Presigner(AwsCredentialsProvider awsCredentialsProvider) {
     return S3Presigner.builder()
-        .region(Region.of(awsConfigProperties.getRegion()))
-        .credentialsProvider(credentialsProvider)
-        .build();
+            .region(Region.of(awsConfigProperties.getRegion()))
+            .credentialsProvider(awsCredentialsProvider)
+            .build();
   }
 }
 
@@ -9882,8 +9843,6 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 public class AwsConfigProperties {
 
-    private String accessKey;
-    private String secretKey;
     private String region;
 
     private S3Properties s3;

@@ -15,8 +15,6 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 public class AwsConfigProperties {
 
-    private String accessKey;
-    private String secretKey;
     private String region;
 
     private S3Properties s3;
