@@ -44,6 +44,7 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 //	implementation 'org.springframework:spring-aspects'
 //	implementation 'org.springframework.retry:spring-retry'
 
@@ -223,7 +224,6 @@ import lombok.Getter;
 /**
  * 해양/수산 생물 그룹 태그 공통 enum.
  * - Taxon(종 정보)
- * - Mission(미션 도메인)
  * - Post(게시글 도메인)
  * 등에서 모두 이 타입을 사용합니다.
  */
@@ -795,8 +795,18 @@ public class JwtTokenProvider {
 # File Path: ./src/main/java/com/ocean/piuda/security/jwt/config/SecurityConfig.java
 package com.ocean.piuda.security.jwt.config;
 
+import com.ocean.piuda.security.jwt.enums.Role;
+import com.ocean.piuda.security.jwt.filter.JwtAuthenticationFilter;
+import com.ocean.piuda.security.jwt.handler.CustomAccessDeniedHandler;
+import com.ocean.piuda.security.jwt.handler.CustomAuthenticationEntryPoint;
+import com.ocean.piuda.security.jwt.service.CustomUserDetailsService;
 import com.ocean.piuda.security.jwt.util.JwtTokenProvider;
+import com.ocean.piuda.security.oauth2.handler.OAuth2FailureHandler;
+import com.ocean.piuda.security.oauth2.handler.OAuth2SuccessHandler;
+import com.ocean.piuda.security.oauth2.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -804,14 +814,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import com.ocean.piuda.security.jwt.enums.Role;
-import com.ocean.piuda.security.jwt.filter.JwtAuthenticationFilter;
-import com.ocean.piuda.security.jwt.handler.CustomAccessDeniedHandler;
-import com.ocean.piuda.security.jwt.handler.CustomAuthenticationEntryPoint;
-import com.ocean.piuda.security.jwt.service.CustomUserDetailsService;
-import com.ocean.piuda.security.oauth2.handler.OAuth2FailureHandler;
-import com.ocean.piuda.security.oauth2.handler.OAuth2SuccessHandler;
-import com.ocean.piuda.security.oauth2.service.CustomOAuth2UserService;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -822,14 +824,14 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-    private final OAuth2FailureHandler oAuth2FailureHandler;
+    private final ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider;
+    private final ObjectProvider<OAuth2SuccessHandler> oAuth2SuccessHandlerProvider;
+    private final ObjectProvider<OAuth2FailureHandler> oAuth2FailureHandlerProvider;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-
-
+    @Value("${app.oauth2.enabled:false}")
+    private boolean oauth2Enabled;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -845,32 +847,33 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/sign-up").permitAll()
                         .requestMatchers("/api/v1/activities").permitAll()
                         .requestMatchers("/api/auth/complete-sign-up/**").hasAuthority(Role.NOT_REGISTERED.getKey())
-                        
-                        // Admin 전용 API
                         .requestMatchers("/api/admin/**").hasAuthority(Role.ADMIN.getKey())
-                        
-        // 그 외 비로그인 사용자도 허용
                         .anyRequest().permitAll()
-                )
+                );
 
-                // oauth2 설정
-                .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(c -> c.userService(customOAuth2UserService)) // 사용자 정보를 어디서 load 할지 설정
-                        .successHandler(oAuth2SuccessHandler) // 로그인 성공 시 핸들러
-                        .failureHandler(oAuth2FailureHandler) // 로그인 실패 시 핸들러
-                )
+        if (oauth2Enabled) {
+            CustomOAuth2UserService customOAuth2UserService = customOAuth2UserServiceProvider.getObject();
+            OAuth2SuccessHandler oAuth2SuccessHandler = oAuth2SuccessHandlerProvider.getObject();
+            OAuth2FailureHandler oAuth2FailureHandler = oAuth2FailureHandlerProvider.getObject();
 
-                // jwt 설정
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService), UsernamePasswordAuthenticationFilter.class);  // JWT 인증 필터 추가;
+            http.oauth2Login(oauth -> oauth
+                    .userInfoEndpoint(c -> c.userService(customOAuth2UserService))
+                    .successHandler(oAuth2SuccessHandler)
+                    .failureHandler(oAuth2FailureHandler)
+            );
+        }
 
+        http.addFilterBefore(
+                new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService),
+                UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }
-
-
 }
 
 # File Path: ./src/main/java/com/ocean/piuda/security/jwt/config/WebConfig.java
@@ -1453,6 +1456,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -1469,10 +1473,13 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+
 @Getter
 @Component
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
     @Value("${oauth2.url.base}")
     private String BASE_URL;
 
@@ -1549,6 +1556,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
@@ -1556,8 +1564,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+
 @Component
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true")
 public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler {
+
     @Value("${oauth2.url.base}")
     private String BASE_URL;
 
@@ -1712,6 +1723,7 @@ import com.ocean.piuda.user.entity.User;
 import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -1727,7 +1739,9 @@ import com.ocean.piuda.security.oauth2.principal.PrincipalDetails;
 import java.util.Map;
 import java.util.Optional;
 
+
 @Service
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
@@ -6103,9 +6117,6 @@ public interface UserRepository extends JpaRepository<User , Long> {
     @Query("select u from User u where u.providerType = :providerType and u.providerId = :providerId " )
     Optional<User> findByOAuthInfo(@Param("providerType") ProviderType providerType,
                                    @Param("providerId") String providerId);
-
-    // 워치 암호화 ID 기준 조회
-    Optional<User> findByWatchDeviceId(String watchDeviceId);
 
     @Query("""
            SELECT u FROM User u

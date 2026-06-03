@@ -7,6 +7,7 @@ import com.ocean.piuda.user.entity.User;
 import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -22,7 +23,9 @@ import com.ocean.piuda.security.oauth2.principal.PrincipalDetails;
 import java.util.Map;
 import java.util.Optional;
 
+
 @Service
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
