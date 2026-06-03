@@ -1,0 +1,25 @@
+.git
+.github
+.gradle
+build
+out
+
+*.iml
+.idea
+.vscode
+
+.DS_Store
+
+# local secrets / runtime config
+.env
+.env.*
+*.pem
+*.key
+
+# local Spring config with secrets
+src/main/resources/application.properties
+
+# generated / local helper files
+ProjectExporter.java
+project_context.txt
+HELP.md
