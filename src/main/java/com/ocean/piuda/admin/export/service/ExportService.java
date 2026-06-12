@@ -37,7 +37,7 @@ public class ExportService {
 
     private final ExportJobRepository exportJobRepository;
     private final SubmissionRepository submissionRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     /**
      * 필터 조건에 따른 CSV 파일 생성 (전체 다운로드)
