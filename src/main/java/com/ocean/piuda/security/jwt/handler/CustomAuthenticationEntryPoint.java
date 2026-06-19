@@ -24,7 +24,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException {
 
 
-        ApiData<?> apiData = ApiData.error(ExceptionType.ACCESS_DENIED);
+        ApiData<?> apiData = ApiData.error(ExceptionType.UNAUTHORIZED_USER);
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");

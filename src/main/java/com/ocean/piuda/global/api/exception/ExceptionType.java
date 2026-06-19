@@ -1,6 +1,5 @@
 package com.ocean.piuda.global.api.exception;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -19,7 +18,7 @@ public enum ExceptionType {
     NOT_VALID_REQUEST_FIELDS_ERROR(BAD_REQUEST , "C006","요청 필드 검증에 실패했습니다."),
     MEDIA_TYPE_MISMATCHED(BAD_REQUEST, "C007","잘못된 콘텐츠 타입 사용"),
     RESOURCE_NOT_FOUND(NOT_FOUND,"C008","해당 자원을 찾을 수 없습니다."),
-
+    INVALID_INPUT_VALUE(NOT_FOUND, "C009","입력값이 잘못되었습니다."),
     // auth
     INVALID_REFRESH_TOKEN(NOT_ACCEPTABLE , "A001","유효하지 않은 리프레시 토큰"),
     REFRESH_TOKEN_EXPIRED(UNAUTHORIZED,"A002","리프레시 토큰 만료"),
@@ -38,8 +37,6 @@ public enum ExceptionType {
     NOT_REGISTERED_USER(FORBIDDEN , "U007","최종 회원 가입 되지 않은 사용자"),
     UNAUTHORIZED_USER(UNAUTHORIZED, "U005","로그인 되지 않은 사용자"),
 
-
-
     //store
     STORE_NOT_FOUND(NOT_FOUND, "S001", "존재하지 않는 가게"),
 
@@ -48,17 +45,19 @@ public enum ExceptionType {
     SUBMISSION_ALREADY_APPROVED(CONFLICT, "AD002", "이미 승인된 제출입니다."),
     SUBMISSION_ALREADY_REJECTED(CONFLICT, "AD003", "이미 반려된 제출입니다."),
     SUBMISSION_ALREADY_DELETED(CONFLICT, "AD004", "이미 삭제된 제출입니다."),
+    SUBMISSION_ALREADY_SUBMITTED(CONFLICT, "AD010", "이미 제출된 기록입니다."),
+    SUBMISSION_INVALID_STATUS(BAD_REQUEST, "AD011", "잘못된 상태입니다."),
     REJECT_REASON_REQUIRED(UNPROCESSABLE_ENTITY, "AD005", "반려 사유를 입력해주세요."),
     EXPORT_NOT_FOUND(NOT_FOUND, "AD006", "내보내기 작업을 찾을 수 없습니다."),
     EXPORT_NOT_READY(UNPROCESSABLE_ENTITY, "AD007", "내보내기 파일이 아직 준비되지 않았습니다."),
     EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다."),
 
-    //mission
-    MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
-    MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다.")
-    ;
+    // report (admin)
+    REPORT_DRAFT_SOURCE_EMPTY(BAD_REQUEST, "AD009", "리포트 생성 대상으로 집계된 제출물이 0건입니다.")
 
+    ;
 
     private final HttpStatus status;
     private final String code;
-    private final String message;}
+    private final String message;
+}

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -58,7 +57,6 @@ public class UserController {
     public ApiData<DetailedUserResponse> getLoginedUser() {
         return ApiData.ok(aggregateBuilder.build(tokenUserService.getCurrentUser()));
     }
-
 
 
 }

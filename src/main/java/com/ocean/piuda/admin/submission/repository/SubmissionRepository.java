@@ -22,14 +22,17 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
-        LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
         LEFT JOIN FETCH s.rejectReason
+        LEFT JOIN FETCH s.activityTransplant
+        LEFT JOIN FETCH s.activityGrazerRemoval
+        LEFT JOIN FETCH s.activitySubstrateImprovement
+        LEFT JOIN FETCH s.activityMonitoring
+        LEFT JOIN FETCH s.activityMarineCleanup
         WHERE s.submissionId = :id
         """)
     Optional<Submission> findByIdWithDetails(@Param("id") Long id);
-    
+
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.auditLogs
@@ -38,19 +41,16 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     Optional<Submission> findByIdWithAuditLogs(@Param("id") Long id);
 
     @Query("""
-        SELECT DISTINCT s FROM Submission s
-        LEFT JOIN FETCH s.basicEnv be
-        LEFT JOIN FETCH s.participants p
-        LEFT JOIN FETCH s.activity a
-        LEFT JOIN FETCH s.attachments att
-        WHERE (:keyword IS NULL OR :keyword = '' OR 
-               s.siteName LIKE %:keyword% OR 
-               s.authorName LIKE %:keyword%)
-          AND (:status IS NULL OR s.status = :status)
-          AND (:activityType IS NULL OR s.activityType = :activityType)
-          AND (:startDate IS NULL OR s.submittedAt >= :startDate)
-          AND (:endDate IS NULL OR s.submittedAt <= :endDate)
-        """)
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    WHERE (:keyword IS NULL OR :keyword = '' OR 
+           s.siteName LIKE %:keyword% OR 
+           s.authorName LIKE %:keyword%)
+      AND (:status IS NULL OR s.status = :status)
+      AND (:activityType IS NULL OR s.activityType = :activityType)
+      AND (cast(:startDate as timestamp) IS NULL OR s.submittedAt >= :startDate)
+      AND (cast(:endDate as timestamp) IS NULL OR s.submittedAt <= :endDate)
+    """)
     Page<Submission> findWithFilters(
             @Param("keyword") String keyword,
             @Param("status") SubmissionStatus status,
@@ -59,12 +59,17 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable
     );
+
+    // [수정] Export용 등 다건 상세 조회: 개별 Activity JOIN 추가
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv
-        LEFT JOIN FETCH s.participants
-        LEFT JOIN FETCH s.activity
         LEFT JOIN FETCH s.attachments
+        LEFT JOIN FETCH s.activityTransplant
+        LEFT JOIN FETCH s.activityGrazerRemoval
+        LEFT JOIN FETCH s.activitySubstrateImprovement
+        LEFT JOIN FETCH s.activityMonitoring
+        LEFT JOIN FETCH s.activityMarineCleanup
         WHERE s.status = :status
           AND s.submissionId IN :ids
         """)
@@ -72,5 +77,23 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             @Param("ids") List<Long> ids,
             @Param("status") SubmissionStatus status
     );
-}
 
+    @Query("""
+    SELECT DISTINCT s FROM Submission s
+    LEFT JOIN FETCH s.basicEnv
+    LEFT JOIN FETCH s.attachments
+    LEFT JOIN FETCH s.activityTransplant
+    LEFT JOIN FETCH s.activityGrazerRemoval
+    LEFT JOIN FETCH s.activitySubstrateImprovement
+    LEFT JOIN FETCH s.activityMonitoring
+    LEFT JOIN FETCH s.activityMarineCleanup
+    WHERE s.status = :status
+      AND s.submittedAt BETWEEN :start AND :end
+    ORDER BY s.submittedAt DESC
+    """)
+    List<Submission> findAllByStatusAndSubmittedAtBetweenWithDetails(
+            @Param("status") SubmissionStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+}

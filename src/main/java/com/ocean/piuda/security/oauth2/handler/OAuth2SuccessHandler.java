@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -16,18 +17,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.ocean.piuda.security.jwt.enums.Role;
 import com.ocean.piuda.security.jwt.service.AuthService;
-import com.ocean.piuda.security.jwt.util.JwtTokenProvider;
 import com.ocean.piuda.security.oauth2.principal.PrincipalDetails;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+
+
 
 @Getter
 @Component
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
     @Value("${oauth2.url.base}")
     private String BASE_URL;
 
@@ -39,7 +40,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
 
     private final AuthService authService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final TokenCookieFactory tokenCookieFactory;
 
 

@@ -66,6 +66,8 @@ public class SubmissionQueryService {
         return SubmissionDetailResponse.from(submission);
     }
 
+
+
     /**
      * 검수 로그 조회
      */

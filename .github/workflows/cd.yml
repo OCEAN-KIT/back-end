@@ -1,0 +1,218 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type deploy to deploy main branch to production"
+        required: true
+        default: ""
+
+concurrency:
+  group: prod-api-cd
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::582642873936:role/oceancampus-prod-github-actions-backend-deploy-role
+  INSTANCE_ID: i-0c76c2d3636be24bb
+  S3_BUCKET: oceancampus-prod-backend
+  S3_PREFIX: api/tmp
+  JAVA_VERSION: "21"
+  HEALTH_URL: https://api.oceancampus.kr/actuator/health
+
+jobs:
+  deploy:
+    name: Deploy API to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Validate manual confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "confirm input must be exactly 'deploy'"
+            exit 1
+          fi
+
+      - name: Validate branch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Production deployment must run from main branch only."
+            echo "Current ref: $GITHUB_REF"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build executable jar
+        run: ./gradlew --no-daemon clean bootJar -x test
+
+      - name: Resolve artifact
+        run: |
+          mapfile -t JARS < <(find build/libs -maxdepth 1 -type f -name "*.jar" ! -name "*plain*" | sort)
+
+          if [ "${#JARS[@]}" -eq 0 ]; then
+            echo "No executable jar found under build/libs"
+            exit 1
+          fi
+
+          if [ "${#JARS[@]}" -gt 1 ]; then
+            echo "Multiple executable jars found. Refusing to deploy ambiguous artifact."
+            printf '%s\n' "${JARS[@]}"
+            exit 1
+          fi
+
+          JAR_PATH="${JARS[0]}"
+          ARTIFACT_KEY="${S3_PREFIX}/app-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.jar"
+
+          echo "JAR_PATH=$JAR_PATH" >> "$GITHUB_ENV"
+          echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> "$GITHUB_ENV"
+
+          echo "Resolved jar: $JAR_PATH"
+          echo "S3 artifact key: $ARTIFACT_KEY"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-prod-api-cd
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Upload temporary jar to S3
+        run: |
+          aws s3 cp "$JAR_PATH" "s3://${S3_BUCKET}/${ARTIFACT_KEY}"
+
+      - name: Create SSM deploy payload
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+
+          region = os.environ["AWS_REGION"]
+          bucket = os.environ["S3_BUCKET"]
+          key = os.environ["ARTIFACT_KEY"]
+          sha = os.environ["GITHUB_SHA"]
+          instance_id = os.environ["INSTANCE_ID"]
+
+          tmp_jar = f"/tmp/oceancampus-api-{sha}.jar"
+          s3_uri = f"s3://{bucket}/{key}"
+
+          payload = {
+              "DocumentName": "AWS-RunShellScript",
+              "InstanceIds": [instance_id],
+              "Comment": f"Deploy API {sha}",
+              "TimeoutSeconds": 900,
+              "Parameters": {
+                  "commands": [
+                      "set -Eeuo pipefail",
+                      f"TMP_JAR={tmp_jar}",
+                      'cleanup() { rm -f "$TMP_JAR"; }',
+                      "trap cleanup EXIT",
+                      f'aws s3 cp --region {region} "{s3_uri}" "$TMP_JAR"',
+                      'sudo /opt/oceancampus/scripts/deploy-api.sh "$TMP_JAR"'
+                  ]
+              }
+          }
+
+          with open("/tmp/ssm-deploy-api.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f, indent=2)
+          PY
+
+          python3 -m json.tool /tmp/ssm-deploy-api.json >/dev/null
+          echo "SSM deploy payload created."
+
+      - name: Deploy on EC2 via SSM
+        run: |
+          COMMAND_ID="$(
+            aws ssm send-command \
+              --region "$AWS_REGION" \
+              --cli-input-json file:///tmp/ssm-deploy-api.json \
+              --query "Command.CommandId" \
+              --output text
+          )"
+
+          echo "SSM command id: $COMMAND_ID"
+
+          for i in {1..120}; do
+            STATUS="$(
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "Status" \
+                --output text 2>/dev/null || true
+            )"
+
+            echo "SSM status: $STATUS"
+
+            if [ "$STATUS" = "Success" ]; then
+              echo "----- SSM STDOUT -----"
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "StandardOutputContent" \
+                --output text
+
+              exit 0
+            fi
+
+            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ] || [ "$STATUS" = "Cancelling" ]; then
+              echo "SSM command failed with status: $STATUS"
+
+              echo "----- SSM STDOUT -----"
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "StandardOutputContent" \
+                --output text || true
+
+              echo "----- SSM STDERR -----"
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "StandardErrorContent" \
+                --output text || true
+
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "SSM command did not finish within polling window."
+          exit 1
+
+      - name: Verify public health
+        run: |
+          curl -fsS "$HEALTH_URL"
+          echo
+
+      - name: Delete temporary jar from S3
+        if: always()
+        run: |
+          if [ -n "${ARTIFACT_KEY:-}" ]; then
+            aws s3 rm "s3://${S3_BUCKET}/${ARTIFACT_KEY}" || true
+          fi
