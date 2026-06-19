@@ -1,3 +1,31 @@
+# File Path: ./Dockerfile
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /app
+
+COPY gradlew settings.gradle build.gradle ./
+COPY gradle ./gradle
+
+RUN chmod +x ./gradlew
+
+COPY src ./src
+
+RUN ./gradlew clean bootJar -x test --no-daemon
+
+
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV JAVA_OPTS=""
+
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
 # File Path: ./.github/ISSUE_TEMPLATE/default-issue-template.md
 ---
 name: default issue template
@@ -111,6 +139,55 @@ class PiudaApplicationTests {
 	void contextLoads() {
 	}
 
+}
+
+# File Path: ./src/test/java/com/ocean/piuda/global/config/JacksonConfigTest.java
+package com.ocean.piuda.global.config;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.json.JsonTest;
+import org.springframework.context.annotation.Import;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@JsonTest
+@Import(JacksonConfig.class)
+class JacksonConfigTest {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    void serializesLocalDateAsYearMonthDayArray() {
+        JsonNode json = objectMapper.valueToTree(new LocalDatePayload(LocalDate.of(2025, 6, 12)));
+
+        JsonNode recordDate = json.get("recordDate");
+        assertThat(recordDate.isArray()).isTrue();
+        assertThat(recordDate.get(0).asInt()).isEqualTo(2025);
+        assertThat(recordDate.get(1).asInt()).isEqualTo(6);
+        assertThat(recordDate.get(2).asInt()).isEqualTo(12);
+    }
+
+    @Test
+    void keepsLocalDateTimeAsIsoDateTimeString() {
+        JsonNode json = objectMapper.valueToTree(
+                new LocalDateTimePayload(LocalDateTime.of(2025, 6, 12, 9, 30, 15))
+        );
+
+        assertThat(json.get("submittedAt").asText()).isEqualTo("2025-06-12T09:30:15");
+    }
+
+    private record LocalDatePayload(LocalDate recordDate) {
+    }
+
+    private record LocalDateTimePayload(LocalDateTime submittedAt) {
+    }
 }
 
 # File Path: ./src/main/resources/data.sql
@@ -2883,7 +2960,7 @@ public class ExportService {
 
     private final ExportJobRepository exportJobRepository;
     private final SubmissionRepository submissionRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     /**
      * 필터 조건에 따른 CSV 파일 생성 (전체 다운로드)
@@ -10030,6 +10107,40 @@ public class GeometryUtils {
      */
     public static Point createPoint(double longitude, double latitude) {
         return geometryFactory.createPoint(new Coordinate(longitude, latitude));
+    }
+}
+
+# File Path: ./src/main/java/com/ocean/piuda/global/config/JacksonConfig.java
+package com.ocean.piuda.global.config;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.time.LocalDate;
+
+@Configuration
+public class JacksonConfig {
+
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer localDateArrayCustomizer() {
+        return builder -> builder.serializerByType(LocalDate.class, new LocalDateArraySerializer());
+    }
+
+    private static class LocalDateArraySerializer extends JsonSerializer<LocalDate> {
+
+        @Override
+        public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeStartArray();
+            gen.writeNumber(value.getYear());
+            gen.writeNumber(value.getMonthValue());
+            gen.writeNumber(value.getDayOfMonth());
+            gen.writeEndArray();
+        }
     }
 }
 
