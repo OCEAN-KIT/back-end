@@ -21,10 +21,9 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 //	implementation 'org.springframework:spring-aspects'
 //	implementation 'org.springframework.retry:spring-retry'
-	implementation 'io.portone:server-sdk:0.19.2'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 //	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -42,11 +41,6 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
-	// cashBill (barobill)
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.apache.commons:commons-text:1.10.0'
-	implementation 'org.jsoup:jsoup:1.17.2'
 
 	// AWS SDK
 	implementation platform("software.amazon.awssdk:bom:2.29.43")
@@ -58,21 +52,7 @@ dependencies {
 	// swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
-	//open ai
-	implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
-	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2' // for Deserializatio
 
-	// Google GenAI SDK
-	implementation 'com.google.genai:google-genai:1.17.0'
-	constraints {
-		implementation('com.google.protobuf:protobuf-java:3.25.5') {
-			because 'Fixes CVE-2024-7254' // google-genai:1.17.0 Vulnerabilities 반영
-		}
-
-	}
-
-	// fcm
-	implementation 'com.google.firebase:firebase-admin:9.7.0'
 
 	// PostGIS
 	implementation 'org.hibernate.orm:hibernate-spatial'

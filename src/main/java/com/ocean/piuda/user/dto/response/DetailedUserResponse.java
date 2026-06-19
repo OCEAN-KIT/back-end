@@ -8,11 +8,7 @@ public record DetailedUserResponse(
         Long id,
         String nickname,
         String email,
-        String phone,
-
-// TODO : 다른도메인에서 얻은 값들
-        String watchDeviceId   // 연동된 워치 암호화 ID
-
+        String phone
 ) {
 
     public static DetailedUserResponse fromEntity(
@@ -24,8 +20,6 @@ public record DetailedUserResponse(
                 .nickname(u.getNickname())
                 .email(u.getEmail())
                 .phone(u.getPhone())
-                // 그 파라미터들 대한 빌더 패턴
-                .watchDeviceId(u.getWatchDeviceId())
                 .build();
     }
 }

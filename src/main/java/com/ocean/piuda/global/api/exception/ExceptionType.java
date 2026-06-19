@@ -53,22 +53,8 @@ public enum ExceptionType {
     EXPORT_FAILED(INTERNAL_SERVER_ERROR, "AD008", "내보내기 생성에 실패했습니다."),
 
     // report (admin)
-    REPORT_DRAFT_SOURCE_EMPTY(BAD_REQUEST, "AD009", "리포트 생성 대상으로 집계된 제출물이 0건입니다."),
+    REPORT_DRAFT_SOURCE_EMPTY(BAD_REQUEST, "AD009", "리포트 생성 대상으로 집계된 제출물이 0건입니다.")
 
-    // AI (Gemini)
-    AI_GEMINI_ERROR(BAD_GATEWAY, "AI001", "Gemini 호출 중 오류가 발생했습니다."),
-    AI_RATE_LIMIT(TOO_MANY_REQUESTS, "AI002", "Gemini 요청 한도 초과(잠시 후 재시도)"),
-
-    //mission
-    MISSION_ACCESS_DENIED(FORBIDDEN, "M001", "해당 미션에 대한 접근 권한이 없습니다."),
-    MISSION_NOT_FOUND(NOT_FOUND, "M002", "해당 미션을 찾을 수 없습니다."),
-
-    //garmin
-    WATCH_API_KEY_INVALID(UNAUTHORIZED, "W001", "유효하지 않은 시계 API 키"),
-    INVALID_PAYLOAD(BAD_REQUEST, "W002", "유효하지 않은 페이로드"),
-    WATCH_NOT_PAIRED(HttpStatus.FORBIDDEN, "WATCH_NOT_PAIRED", "해당 워치는 아직 계정에 등록되지 않았습니다."),
-    WATCH_ALREADY_PAIRED(HttpStatus.CONFLICT, "WATCH_ALREADY_PAIRED", "이미 페어링된 워치입니다."),
-    WATCH_DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND, "WATCH_DEVICE_NOT_FOUND", "등록된 워치 정보를 찾을 수 없습니다.")
     ;
 
     private final HttpStatus status;

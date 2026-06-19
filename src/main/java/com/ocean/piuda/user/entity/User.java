@@ -39,12 +39,7 @@ public class User extends BaseEntity {
     private String email;
     private String phone;
 
-    /**
-     * 한 유저당 최대 1개의 워치만 등록 (0개 허용)
-     * 암호화된 deviceId 기준으로 관리
-     */
-    @Column(name = "watch_device_id", length = 100, unique = true)
-    private String watchDeviceId;
+
 
     public void updateRole(Role role){
         this.role = role;
@@ -62,11 +57,5 @@ public class User extends BaseEntity {
         }
     }
 
-    public void pairWatch(String watchDeviceId) {
-        this.watchDeviceId = watchDeviceId;
-    }
 
-    public void unpairWatch() {
-        this.watchDeviceId = null;
-    }
 }

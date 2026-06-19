@@ -87,7 +87,7 @@ public class AuthService {
 
     public SignUpResponseDto completeUserSignup(Long userId, UserUpdateRequestDto request) {
         User user = findAndUpdateUserForCompleteSignup(userId,request);
-        user.updateRole(Role.USER);// USER 권한으로 승격
+        user.updateRole(Role.ADMIN);// USER 권한으로 승격
         return SignUpResponseDto.fromEntity(user);
     }
 
