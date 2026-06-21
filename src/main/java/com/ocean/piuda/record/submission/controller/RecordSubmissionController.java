@@ -1,10 +1,10 @@
 package com.ocean.piuda.record.submission.controller;
 
-import com.ocean.piuda.admin.submission.dto.request.CreateSubmissionRequest;
-import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
-import com.ocean.piuda.admin.submission.dto.response.SubmissionListResponse;
-import com.ocean.piuda.admin.submission.service.SubmissionCommandService;
-import com.ocean.piuda.admin.submission.service.SubmissionQueryService;
+import com.ocean.piuda.submission.dto.request.CreateSubmissionRequest;
+import com.ocean.piuda.submission.dto.response.SubmissionDetailResponse;
+import com.ocean.piuda.submission.dto.response.SubmissionListResponse;
+import com.ocean.piuda.submission.service.SubmissionCommandService;
+import com.ocean.piuda.submission.service.SubmissionQueryService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import com.ocean.piuda.global.api.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;

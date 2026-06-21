@@ -1,7 +1,7 @@
 package com.ocean.piuda.record.site.controller;
 
-import com.ocean.piuda.admin.site.dto.response.SiteNameOptionResponse;
-import com.ocean.piuda.admin.site.service.SiteNameOptionService;
+import com.ocean.piuda.site.dto.response.SiteNameOptionResponse;
+import com.ocean.piuda.site.service.SiteNameOptionService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

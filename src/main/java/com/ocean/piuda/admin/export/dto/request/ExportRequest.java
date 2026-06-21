@@ -1,6 +1,6 @@
 package com.ocean.piuda.admin.export.dto.request;
 
-import com.ocean.piuda.admin.common.enums.ExportFormat;
+import com.ocean.piuda.admin.export.enums.ExportFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
