@@ -6,6 +6,7 @@ import com.ocean.piuda.admin.export.dto.response.ExportJobResponse;
 import com.ocean.piuda.admin.export.service.ExportService;
 import com.ocean.piuda.global.api.dto.ApiData;
 import com.ocean.piuda.security.jwt.service.TokenUserService;
+import com.ocean.piuda.admin.export.enums.ExportFormat;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -59,7 +60,7 @@ public class ExportController {
         }
         
         // Content-Type 설정 (CSV의 경우)
-        MediaType contentType = request.getFormat() == com.ocean.piuda.admin.common.enums.ExportFormat.CSV 
+        MediaType contentType = request.getFormat() == ExportFormat.CSV
                 ? new MediaType("text", "csv", StandardCharsets.UTF_8)
                 : MediaType.APPLICATION_OCTET_STREAM;
         
@@ -119,7 +120,7 @@ public class ExportController {
             log.warn("Export(IDs) 이력 저장 실패: {}", e.getMessage());
         }
 
-        MediaType contentType = request.getFormat() == com.ocean.piuda.admin.common.enums.ExportFormat.CSV
+        MediaType contentType = request.getFormat() == ExportFormat.CSV
                 ? new MediaType("text", "csv", StandardCharsets.UTF_8)
                 : MediaType.APPLICATION_OCTET_STREAM;
 

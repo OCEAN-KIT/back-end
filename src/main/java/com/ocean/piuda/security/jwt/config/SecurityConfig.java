@@ -14,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -52,12 +53,30 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+
                         .requestMatchers("/api/auth/login", "/api/auth/sign-up").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+
+                        .requestMatchers("/api/auth/complete-sign-up/**")
+                        .hasAuthority(Role.NOT_REGISTERED.getKey())
+
                         .requestMatchers("/api/v1/activities").permitAll()
-                        .requestMatchers("/api/auth/complete-sign-up/**").hasAuthority(Role.NOT_REGISTERED.getKey())
-                        .requestMatchers("/api/admin/**").hasAuthority(Role.ADMIN.getKey())
-                        .anyRequest().permitAll()
+
+                        .requestMatchers("/api/record/**")
+                        .hasAnyAuthority(
+                                Role.USER.getKey(),
+                                Role.DIVER.getKey(),
+                                Role.RESEARCHER.getKey(),
+                                Role.ADMIN.getKey()
+                        )
+
+                        .requestMatchers("/api/admin/**")
+                        .hasAuthority(Role.ADMIN.getKey())
+
+                        .anyRequest().authenticated()
                 );
 
         if (oauth2Enabled) {

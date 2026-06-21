@@ -1,6 +1,14 @@
 name: CD
 
 on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
   workflow_dispatch:
     inputs:
       confirm:
@@ -24,31 +32,69 @@ env:
   S3_PREFIX: api/tmp
   JAVA_VERSION: "21"
   HEALTH_URL: https://api.oceancampus.kr/actuator/health
+  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   deploy:
     name: Deploy API to production
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success'
+      )
 
     steps:
       - name: Validate manual confirmation
+        if: github.event_name == 'workflow_dispatch'
         run: |
           if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
             echo "confirm input must be exactly 'deploy'"
             exit 1
           fi
 
-      - name: Validate branch
+      - name: Validate production deploy trigger
         run: |
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "Production deployment must run from main branch only."
-            echo "Current ref: $GITHUB_REF"
-            exit 1
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "Automatic CD triggered by CI workflow_run."
+            echo "CI event: ${{ github.event.workflow_run.event }}"
+            echo "CI branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "CI conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Deploy SHA: $DEPLOY_SHA"
+
+            if [ "${{ github.event.workflow_run.event }}" != "push" ]; then
+              echo "Automatic CD only runs after CI triggered by push."
+              exit 1
+            fi
+
+            if [ "${{ github.event.workflow_run.head_branch }}" != "main" ]; then
+              echo "Automatic CD only runs for main branch."
+              exit 1
+            fi
+
+            if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+              echo "CI workflow did not succeed."
+              exit 1
+            fi
+          else
+            echo "Manual CD triggered."
+            echo "GitHub ref: $GITHUB_REF"
+            echo "Deploy SHA: $DEPLOY_SHA"
+
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "Manual production deployment must run from main branch only."
+              exit 1
+            fi
           fi
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -79,7 +125,7 @@ jobs:
           fi
 
           JAR_PATH="${JARS[0]}"
-          ARTIFACT_KEY="${S3_PREFIX}/app-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.jar"
+          ARTIFACT_KEY="${S3_PREFIX}/app-${DEPLOY_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.jar"
 
           echo "JAR_PATH=$JAR_PATH" >> "$GITHUB_ENV"
           echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> "$GITHUB_ENV"
@@ -111,7 +157,7 @@ jobs:
           region = os.environ["AWS_REGION"]
           bucket = os.environ["S3_BUCKET"]
           key = os.environ["ARTIFACT_KEY"]
-          sha = os.environ["GITHUB_SHA"]
+          sha = os.environ["DEPLOY_SHA"]
           instance_id = os.environ["INSTANCE_ID"]
 
           tmp_jar = f"/tmp/oceancampus-api-{sha}.jar"

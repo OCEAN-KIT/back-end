@@ -1,8 +1,8 @@
 package com.ocean.piuda.admin.dashboard.service;
 
-import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.submission.enums.SubmissionStatus;
 import com.ocean.piuda.admin.dashboard.dto.AdminDashboardSummaryResponse;
-import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
+import com.ocean.piuda.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
