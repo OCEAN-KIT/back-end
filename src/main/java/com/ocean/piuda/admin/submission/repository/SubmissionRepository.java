@@ -40,11 +40,45 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
         """)
     Optional<Submission> findByIdWithAuditLogs(@Param("id") Long id);
 
+    @Query(
+            value = """
+            SELECT DISTINCT s FROM Submission s
+            LEFT JOIN FETCH s.basicEnv
+            WHERE s.user.id = :userId
+            """,
+            countQuery = """
+            SELECT COUNT(s) FROM Submission s
+            WHERE s.user.id = :userId
+            """
+    )
+    Page<Submission> findAllByUserIdWithBasicEnv(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT DISTINCT s FROM Submission s
+        LEFT JOIN FETCH s.basicEnv
+        LEFT JOIN FETCH s.attachments
+        LEFT JOIN FETCH s.rejectReason
+        LEFT JOIN FETCH s.activityTransplant
+        LEFT JOIN FETCH s.activityGrazerRemoval
+        LEFT JOIN FETCH s.activitySubstrateImprovement
+        LEFT JOIN FETCH s.activityMonitoring
+        LEFT JOIN FETCH s.activityMarineCleanup
+        WHERE s.submissionId = :id
+          AND s.user.id = :userId
+        """)
+    Optional<Submission> findByIdAndUserIdWithDetails(
+            @Param("id") Long id,
+            @Param("userId") Long userId
+    );
+
     @Query("""
     SELECT DISTINCT s FROM Submission s
     LEFT JOIN FETCH s.basicEnv
-    WHERE (:keyword IS NULL OR :keyword = '' OR 
-           s.siteName LIKE %:keyword% OR 
+    WHERE (:keyword IS NULL OR :keyword = '' OR
+           s.siteName LIKE %:keyword% OR
            s.authorName LIKE %:keyword%)
       AND (:status IS NULL OR s.status = :status)
       AND (:activityType IS NULL OR s.activityType = :activityType)
@@ -60,7 +94,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             Pageable pageable
     );
 
-    // [수정] Export용 등 다건 상세 조회: 개별 Activity JOIN 추가
     @Query("""
         SELECT DISTINCT s FROM Submission s
         LEFT JOIN FETCH s.basicEnv

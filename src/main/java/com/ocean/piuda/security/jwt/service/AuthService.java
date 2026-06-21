@@ -16,101 +16,80 @@ import com.ocean.piuda.security.jwt.dto.response.TokenResponseDto;
 import com.ocean.piuda.security.jwt.enums.Role;
 import com.ocean.piuda.security.jwt.util.JwtTokenProvider;
 
-
 @Transactional
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
-
-
     /**
      * username, pw 를 통한 자체 로그인 로직
-     * @param request
-     * @return
      */
     public TokenResponseDto usernameLogin(UsernameLoginRequestDto request) {
-
-        /**
-         * 유효한 username, pw 을 통한 로그인인지 확인
-         * access token 신규 발급
-         */
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BusinessException(ExceptionType.USER_NOT_FOUND));
 
-        // db 에 이미 암호화된 형태로 저장되있기에 request 에 담긴 비밀번호를 암호화 하여 비교 수행
+        // DB 에 이미 암호화된 형태로 저장된 비밀번호와 요청 비밀번호를 비교
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BusinessException(ExceptionType.PASSWORD_NOT_MATCHED);
         }
 
-        /**
-         * 최종 회원 가입까지 완료된 사용자가 아닌 경우 "임시" access token 발급
-         * 최종 회원 가입까지 완료된 사용자인 경우 "정식" access token 발급
-         */
         return TokenResponseDto.builder()
                 .access(issueTokensFor(user.getId()))
                 .build();
     }
 
-
-
-
     /**
-     * 특정 유저에 대한 임시/정식 access token 발급
-     * @return
+     * 특정 유저에 대한 access token 발급
      */
     public String issueTokensFor(Long userId) {
         return jwtTokenProvider.generateAccessToken(userId);
     }
 
-
-
-
-
+    /**
+     * 자체 회원가입 1단계.
+     *
+     * 최초 가입 시에는 NOT_REGISTERED 상태로 저장합니다.
+     * 추가 정보 입력 후 completeUserSignup 단계에서 USER 권한으로 전환합니다.
+     */
     public SignUpResponseDto signup(SignUpRequestDto request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new BusinessException(ExceptionType.DUPLICATED_USERNAME);
         }
 
-        // 비밀번호 암호화 및 저장
         request.setPassword(passwordEncoder.encode(request.getPassword()));
+
         User user = request.toEntity();
         user = userRepository.save(user);
 
         return SignUpResponseDto.fromEntity(user);
     }
 
+    /**
+     * 일반 사용자 최종 회원가입 완료.
+     *
+     * public 회원가입 플로우에서는 ADMIN 권한을 부여하지 않습니다.
+     * 관리자 계정은 운영자가 별도 DB 삽입 또는 관리자 전용 절차로 생성해야 합니다.
+     */
     public SignUpResponseDto completeUserSignup(Long userId, UserUpdateRequestDto request) {
-        User user = findAndUpdateUserForCompleteSignup(userId,request);
-        user.updateRole(Role.ADMIN);// USER 권한으로 승격
+        User user = findAndUpdateUserForCompleteSignup(userId, request);
+        user.updateRole(Role.USER);
         return SignUpResponseDto.fromEntity(user);
     }
 
-
-
-    private User findAndUpdateUserForCompleteSignup(Long userId, UserUpdateRequestDto request){
+    private User findAndUpdateUserForCompleteSignup(Long userId, UserUpdateRequestDto request) {
         User user = userRepository
                 .findById(userId)
-                .orElseThrow(()->new BusinessException(ExceptionType.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ExceptionType.USER_NOT_FOUND));
 
         if (user.getRole() != Role.NOT_REGISTERED) {
             throw new BusinessException(ExceptionType.ALREADY_REGISTERED_USER);
         }
 
-        // 최종 회원 가입을 위한 추가 작업 정의
         user.update(request);
         return user;
-
-
     }
-
-
-
-
-
 }
