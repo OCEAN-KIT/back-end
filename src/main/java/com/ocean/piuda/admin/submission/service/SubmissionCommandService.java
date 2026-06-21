@@ -1,13 +1,12 @@
 package com.ocean.piuda.admin.submission.service;
 
-import com.ocean.piuda.admin.site.entity.SiteNameOption;
-import com.ocean.piuda.admin.site.repository.SiteNameOptionRepository;
-import com.ocean.piuda.admin.submission.dto.response.*;
 import com.ocean.piuda.admin.common.enums.ActivityType;
 import com.ocean.piuda.admin.common.enums.AuditAction;
 import com.ocean.piuda.admin.common.enums.SubmissionStatus;
+import com.ocean.piuda.admin.site.entity.SiteNameOption;
+import com.ocean.piuda.admin.site.repository.SiteNameOptionRepository;
 import com.ocean.piuda.admin.submission.dto.request.*;
-import com.ocean.piuda.admin.submission.dto.response.SubmissionDetailResponse;
+import com.ocean.piuda.admin.submission.dto.response.*;
 import com.ocean.piuda.admin.submission.entity.*;
 import com.ocean.piuda.admin.submission.repository.AuditLogRepository;
 import com.ocean.piuda.admin.submission.repository.SubmissionRepository;
@@ -17,7 +16,6 @@ import com.ocean.piuda.global.api.exception.BusinessException;
 import com.ocean.piuda.global.api.exception.ExceptionType;
 import com.ocean.piuda.security.jwt.service.TokenUserService;
 import com.ocean.piuda.user.entity.User;
-import com.ocean.piuda.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,50 +41,44 @@ public class SubmissionCommandService {
     private final SiteNameOptionRepository siteNameOptionRepository;
 
     /**
-     * 바로 제출 (SUBMITTED 상태로 저장)
+     * 기록 제출.
+     * 제출된 데이터는 SUBMITTED 상태로 저장됩니다.
      */
     public SubmissionDetailResponse submitSubmission(CreateSubmissionRequest request) {
         return createSubmissionInternal(request, SubmissionStatus.SUBMITTED, LocalDateTime.now());
     }
 
-    /**
-     * 제출 데이터 생성 내부 메서드
-     */
     private SubmissionDetailResponse createSubmissionInternal(
             CreateSubmissionRequest request,
             SubmissionStatus status,
             LocalDateTime submittedAt
     ) {
-        // 작업 유형별 검증
         activityValidator.validate(request.getActivityType(), request);
 
-        // 기본값 설정
-        LocalDate recordDate = request.getRecordDate() != null 
-                ? request.getRecordDate() 
+        LocalDate recordDate = request.getRecordDate() != null
+                ? request.getRecordDate()
                 : LocalDate.now();
 
-        // 구조물 유형 처리 (null이면 OTHER로 기본값, 커스텀 텍스트도 설정)
-        // 1현장 명칭 결정 (Snapshot & FK 설정)
         String finalSiteName;
         SiteNameOption siteOption = null;
 
         if (request.getSiteNameOptionId() != null) {
-            // Case A: 선택지(Option)를 선택한 경우 -> DB에서 조회해서 이름 가져옴 (신뢰성 확보)
-            siteOption = siteNameOptionRepository.findById(request.getSiteNameOptionId()).orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
+            siteOption = siteNameOptionRepository.findById(request.getSiteNameOptionId())
+                    .orElseThrow(() -> new BusinessException(ExceptionType.RESOURCE_NOT_FOUND));
             finalSiteName = siteOption.getName();
         } else {
-            // Case B: 직접 입력한 경우 -> 텍스트 값 사용
-            if (request.getSiteName() == null || request.getSiteName().isBlank())  throw new BusinessException(ExceptionType.INVALID_INPUT_VALUE);
+            if (request.getSiteName() == null || request.getSiteName().isBlank()) {
+                throw new BusinessException(ExceptionType.INVALID_INPUT_VALUE);
+            }
             finalSiteName = request.getSiteName();
         }
 
-        // 현재 유저 정보 저장
         User currentUser = tokenUserService.getCurrentUser();
 
-        // Submission 생성
         Submission submission = Submission.builder()
-                .siteName(finalSiteName) // 결정된 최종 이름 스냅샷 저장
-                .siteNameOption(siteOption) // 연관관계 설정 (nullable)                .recordDate(recordDate)
+                .siteName(finalSiteName)
+                .siteNameOption(siteOption)
+                .recordDate(recordDate)
                 .divingRound(request.getDivingRound())
                 .activityType(request.getActivityType())
                 .status(status)
@@ -98,9 +90,9 @@ public class SubmissionCommandService {
                 .attachmentCount(0)
                 .build();
 
-        // BasicEnv 생성
         if (request.getBasicEnv() != null) {
             CreateSubmissionRequest.BasicEnvDto envDto = request.getBasicEnv();
+
             BasicEnv basicEnv = BasicEnv.builder()
                     .recordDate(envDto.getRecordDate() != null ? envDto.getRecordDate() : recordDate)
                     .avgDepthM(envDto.getAvgDepthM())
@@ -111,177 +103,182 @@ public class SubmissionCommandService {
                     .surgeStatus(envDto.getSurgeStatus())
                     .currentStatus(envDto.getCurrentStatus())
                     .build();
+
             submission.setBasicEnv(basicEnv);
         }
 
-        // Participants 생성
         if (request.getParticipants() != null) {
-            CreateSubmissionRequest.ParticipantsDto participantsDto = request.getParticipants();
-            submission.updateParticipantNames(participantsDto.getParticipantNames());
+            submission.updateParticipantNames(request.getParticipants().getParticipantNames());
         }
 
-        // 작업 유형별 Activity 생성
         createActivityByType(submission, request);
+        addAttachments(submission, request.getAttachments());
 
-        // Attachments 생성
-        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
-            for (CreateSubmissionRequest.AttachmentDto attachmentDto : request.getAttachments()) {
-                Attachment attachment = Attachment.builder()
-                        .fileName(attachmentDto.getFileName())
-                        .fileUrl(attachmentDto.getFileUrl())
-                        .mimeType(attachmentDto.getMimeType())
-                        .fileSize(attachmentDto.getFileSize())
-                        .uploadedAt(LocalDateTime.now())
-                        .build();
-                submission.addAttachment(attachment);
-            }
-        }
-
-        // 저장
         Submission saved = submissionRepository.save(submission);
 
-        // AuditLog 생성
         if (status == SubmissionStatus.SUBMITTED) {
-            createAuditLog(saved, AuditAction.SUBMITTED, null);  // 제출 시에만 로그 생성
+            createAuditLog(saved, AuditAction.SUBMITTED, null);
         }
-        // 임시저장(DRAFT)은 AuditLog 생성하지 않음 (제출 시점에 생성)
 
         return SubmissionDetailResponse.from(saved);
     }
 
-    /**
-     * 작업 유형별 Activity 생성 (조건부 처리)
-     * 
-     * activityType에 따라 해당하는 Activity 엔티티만 생성됨:
-     * - TRANSPLANT → ActivityTransplant (이식 작업)
-     * - GRAZER_REMOVAL → ActivityGrazerRemoval (조식동물 작업)
-     * - SUBSTRATE_IMPROVEMENT → ActivitySubstrateImprovement (부착기질 개선)
-     * - MONITORING → ActivityMonitoring (모니터링)
-     * - MARINE_CLEANUP → ActivityMarineCleanup (해양정화)
-     * 
-     * 각 작업 유형에 맞는 DTO만 사용되며, 나머지는 무시됨
-     */
     private void createActivityByType(Submission submission, CreateSubmissionRequest request) {
         ActivityType activityType = request.getActivityType();
 
         switch (activityType) {
             case TRANSPLANT:
-                // 이식 작업: transplantActivity DTO 사용
-                if (request.getTransplantActivity() != null) {
-                    CreateSubmissionRequest.TransplantActivityDto dto = request.getTransplantActivity();
-                    ActivityTransplant activity = ActivityTransplant.builder()
-                            .submission(submission)
-                            .speciesType(dto.getSpeciesType())
-                            .locationType(dto.getLocationType())
-                            .methodType(dto.getMethodType())
-                            .scale(dto.getScale())
-                            .healthStatus(dto.getHealthStatus())
-                            .build();
-                    activity.updateSubmission(submission);
-                    submission.setActivityTransplant(activity);
-                }
+                createTransplantActivity(submission, request.getTransplantActivity());
                 break;
-
             case GRAZER_REMOVAL:
-                // 조식동물 작업: grazerRemovalActivity DTO 사용
-                if (request.getGrazerRemovalActivity() != null) {
-                    CreateSubmissionRequest.GrazerRemovalActivityDto dto = request.getGrazerRemovalActivity();
-                    ActivityGrazerRemoval activity = ActivityGrazerRemoval.builder()
-                            .submission(submission)
-                            .targetSpecies(dto.getTargetSpecies())
-                            .densityBeforeWork(dto.getDensityBeforeWork())
-                            .workScope(dto.getWorkScope())
-                            .note(dto.getNote())
-                            .collectionAmount(dto.getCollectionAmount())
-                            .build();
-                    activity.updateSubmission(submission);
-                    submission.setActivityGrazerRemoval(activity);
-                }
+                createGrazerRemovalActivity(submission, request.getGrazerRemovalActivity());
                 break;
-
             case SUBSTRATE_IMPROVEMENT:
-                // 부착기질 개선: substrateImprovementActivity DTO 사용
-                if (request.getSubstrateImprovementActivity() != null) {
-                    CreateSubmissionRequest.SubstrateImprovementActivityDto dto = request.getSubstrateImprovementActivity();
-                    ActivitySubstrateImprovement activity = ActivitySubstrateImprovement.builder()
-                            .submission(submission)
-                            .targetType(dto.getTargetType())
-                            .workScope(dto.getWorkScope())
-                            .substrateState(dto.getSubstrateState())
-                            .build();
-                    activity.updateSubmission(submission);
-                    submission.setActivitySubstrateImprovement(activity);
-                }
+                createSubstrateImprovementActivity(submission, request.getSubstrateImprovementActivity());
                 break;
-
             case MONITORING:
-                // 모니터링: monitoringActivity DTO 사용
-                if (request.getMonitoringActivity() != null) {
-                    CreateSubmissionRequest.MonitoringActivityDto dto = request.getMonitoringActivity();
-                    ActivityMonitoring activity = ActivityMonitoring.builder()
-                            .submission(submission)
-                            // 적지조사
-                            .entryCoordinate(dto.getEntryCoordinate())
-                            .exitCoordinate(dto.getExitCoordinate())
-                            .direction(dto.getDirection())
-                            // 지형 구성
-                            .terrain(dto.getTerrain())
-                            // 갯녹음 정도
-                            .barrenExtent(dto.getBarrenExtent())
-                            // 조식동물 분포
-                            .grazerDistribution(dto.getGrazerDistribution())
-                            // 암반 특성 (복수)
-                            .rockFeatures(dto.getRockFeatures() != null ? dto.getRockFeatures() : new ArrayList<>())
-                            // 해조 이식 적합성
-                            .suitability(dto.getSuitability())
-                            // 해조류 상태
-                            .seaweedIdNumber(dto.getSeaweedIdNumber())
-                            .seaweedHealthStatus(dto.getSeaweedHealthStatus())
-                            // 정밀측정
-                            .leafLength(dto.getLeafLength())
-                            .maxLeafWidth(dto.getMaxLeafWidth())
-                            .build();
-                    activity.updateSubmission(submission);
-                    submission.setActivityMonitoring(activity);
-                }
+                createMonitoringActivity(submission, request.getMonitoringActivity());
                 break;
-
             case MARINE_CLEANUP:
-                // 해양정화: marineCleanupActivity DTO 사용
-                if (request.getMarineCleanupActivity() != null) {
-                    CreateSubmissionRequest.MarineCleanupActivityDto dto = request.getMarineCleanupActivity();
-                    ActivityMarineCleanup activity = ActivityMarineCleanup.builder()
-                            .submission(submission)
-                            .wasteTypes(dto.getWasteTypes())
-                            .method(dto.getMethod())
-                            .collectionAmount(dto.getCollectionAmount())
-                            .uncollectedScale(dto.getUncollectedScale())
-                            .build();
-                    activity.updateSubmission(submission);
-                    submission.setActivityMarineCleanup(activity);
-                }
+                createMarineCleanupActivity(submission, request.getMarineCleanupActivity());
                 break;
-
             default:
                 break;
         }
     }
 
+    private void createTransplantActivity(
+            Submission submission,
+            CreateSubmissionRequest.TransplantActivityDto dto
+    ) {
+        if (dto == null) {
+            return;
+        }
 
+        ActivityTransplant activity = ActivityTransplant.builder()
+                .submission(submission)
+                .speciesType(dto.getSpeciesType())
+                .locationType(dto.getLocationType())
+                .methodType(dto.getMethodType())
+                .scale(dto.getScale())
+                .healthStatus(dto.getHealthStatus())
+                .build();
 
+        submission.setActivityTransplant(activity);
+    }
+
+    private void createGrazerRemovalActivity(
+            Submission submission,
+            CreateSubmissionRequest.GrazerRemovalActivityDto dto
+    ) {
+        if (dto == null) {
+            return;
+        }
+
+        ActivityGrazerRemoval activity = ActivityGrazerRemoval.builder()
+                .submission(submission)
+                .targetSpecies(dto.getTargetSpecies())
+                .densityBeforeWork(dto.getDensityBeforeWork())
+                .workScope(dto.getWorkScope())
+                .note(dto.getNote())
+                .collectionAmount(dto.getCollectionAmount())
+                .build();
+
+        submission.setActivityGrazerRemoval(activity);
+    }
+
+    private void createSubstrateImprovementActivity(
+            Submission submission,
+            CreateSubmissionRequest.SubstrateImprovementActivityDto dto
+    ) {
+        if (dto == null) {
+            return;
+        }
+
+        ActivitySubstrateImprovement activity = ActivitySubstrateImprovement.builder()
+                .submission(submission)
+                .targetType(dto.getTargetType())
+                .workScope(dto.getWorkScope())
+                .substrateState(dto.getSubstrateState())
+                .build();
+
+        submission.setActivitySubstrateImprovement(activity);
+    }
+
+    private void createMonitoringActivity(
+            Submission submission,
+            CreateSubmissionRequest.MonitoringActivityDto dto
+    ) {
+        if (dto == null) {
+            return;
+        }
+
+        ActivityMonitoring activity = ActivityMonitoring.builder()
+                .submission(submission)
+                .entryCoordinate(dto.getEntryCoordinate())
+                .exitCoordinate(dto.getExitCoordinate())
+                .direction(dto.getDirection())
+                .terrain(dto.getTerrain())
+                .barrenExtent(dto.getBarrenExtent())
+                .grazerDistribution(dto.getGrazerDistribution())
+                .rockFeatures(dto.getRockFeatures() != null ? dto.getRockFeatures() : new ArrayList<>())
+                .suitability(dto.getSuitability())
+                .seaweedIdNumber(dto.getSeaweedIdNumber())
+                .seaweedHealthStatus(dto.getSeaweedHealthStatus())
+                .leafLength(dto.getLeafLength())
+                .maxLeafWidth(dto.getMaxLeafWidth())
+                .build();
+
+        submission.setActivityMonitoring(activity);
+    }
+
+    private void createMarineCleanupActivity(
+            Submission submission,
+            CreateSubmissionRequest.MarineCleanupActivityDto dto
+    ) {
+        if (dto == null) {
+            return;
+        }
+
+        ActivityMarineCleanup activity = ActivityMarineCleanup.builder()
+                .submission(submission)
+                .wasteTypes(dto.getWasteTypes())
+                .method(dto.getMethod())
+                .collectionAmount(dto.getCollectionAmount())
+                .uncollectedScale(dto.getUncollectedScale())
+                .build();
+
+        submission.setActivityMarineCleanup(activity);
+    }
+
+    private void addAttachments(
+            Submission submission,
+            List<CreateSubmissionRequest.AttachmentDto> attachmentDtos
+    ) {
+        if (attachmentDtos == null || attachmentDtos.isEmpty()) {
+            return;
+        }
+
+        for (CreateSubmissionRequest.AttachmentDto attachmentDto : attachmentDtos) {
+            Attachment attachment = Attachment.builder()
+                    .fileName(attachmentDto.getFileName())
+                    .fileUrl(attachmentDto.getFileUrl())
+                    .mimeType(attachmentDto.getMimeType())
+                    .fileSize(attachmentDto.getFileSize())
+                    .uploadedAt(LocalDateTime.now())
+                    .build();
+
+            submission.addAttachment(attachment);
+        }
+    }
 
     /**
-     * 단건 승인
+     * 단건 승인.
      */
     public SubmissionDetailResponse approveSubmission(Long submissionId) {
         Submission submission = submissionQueryService.getSubmissionById(submissionId);
 
-        if (!statusValidator.canApprove(submission.getStatus())) {
-            if (submission.getStatus() == SubmissionStatus.APPROVED) {
-                throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_APPROVED);
-            }
-            throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
-        }
+        validateCanApprove(submission);
 
         submission.approve();
         createAuditLog(submission, AuditAction.APPROVED, null);
@@ -290,40 +287,26 @@ public class SubmissionCommandService {
     }
 
     /**
-     * 단건 반려
+     * 단건 반려.
      */
     public SubmissionDetailResponse rejectSubmission(Long submissionId, SingleRejectRequest request) {
+        validateRejectReason(request.reason());
+
         Submission submission = submissionQueryService.getSubmissionById(submissionId);
 
-        if (!statusValidator.canReject(submission.getStatus())) {
-            if (submission.getStatus() == SubmissionStatus.REJECTED) {
-                throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_REJECTED);
-            }
-            throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
-        }
-
-        if (request.reason() == null || request.reason().message() == null || request.reason().message().isBlank()) {
-            throw new BusinessException(ExceptionType.REJECT_REASON_REQUIRED);
-        }
+        validateCanReject(submission);
 
         submission.reject();
-
-        RejectReason rejectReason = RejectReason.builder()
-                .submission(submission)
-                .templateCode(request.reason().templateCode())
-                .message(request.reason().message())
-                .rejectedBy(getCurrentUsername())
-                .rejectedAt(LocalDateTime.now())
-                .build();
-        submission.setRejectReason(rejectReason);
-
+        setRejectReason(submission, request.reason());
         createAuditLog(submission, AuditAction.REJECTED, request.reason().message());
 
         return SubmissionDetailResponse.from(submission);
     }
 
     /**
-     * 단건 삭제
+     * 단건 삭제.
+     *
+     * 현재 삭제는 상태 전이가 아니라 실제 삭제로 처리합니다.
      */
     public void deleteSubmission(Long submissionId, SingleDeleteRequest request) {
         Submission submission = submissionQueryService.getSubmissionById(submissionId);
@@ -337,103 +320,139 @@ public class SubmissionCommandService {
     }
 
     /**
-     * 일괄 승인
+     * 일괄 승인.
+     *
+     * 단건 승인과 동일하게 SUBMITTED 상태만 APPROVED 로 변경합니다.
+     * APPROVED / REJECTED / DELETED / 존재하지 않는 ID 는 skipped 로 분류합니다.
      */
     public BulkApproveResponse bulkApprove(BulkApproveRequest request) {
         List<Long> approved = new ArrayList<>();
         List<Long> skipped = new ArrayList<>();
 
         for (Long id : request.ids()) {
-            try {
-                Submission submission = submissionRepository.findById(id).orElse(null);
-                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
-                    skipped.add(id);
-                    continue;
-                }
-                if (submission.getStatus() == SubmissionStatus.APPROVED) {
-                    skipped.add(id);
-                    continue;
-                }
-
-                submission.updateStatus(SubmissionStatus.APPROVED);
-                createAuditLog(submission, AuditAction.APPROVED, null);
-                approved.add(id);
-            } catch (Exception e) {
-                skipped.add(id);
+            if (id == null) {
+                skipped.add(null);
+                continue;
             }
+
+            Submission submission = submissionRepository.findById(id).orElse(null);
+
+            if (submission == null || !statusValidator.canApprove(submission.getStatus())) {
+                skipped.add(id);
+                continue;
+            }
+
+            submission.approve();
+            createAuditLog(submission, AuditAction.APPROVED, null);
+            approved.add(id);
         }
 
         return new BulkApproveResponse(approved, skipped);
     }
 
     /**
-     * 일괄 반려
+     * 일괄 반려.
+     *
+     * 단건 반려와 동일하게 SUBMITTED 상태만 REJECTED 로 변경합니다.
+     * APPROVED / REJECTED / DELETED / 존재하지 않는 ID 는 conflicts 로 분류합니다.
      */
     public BulkRejectResponse bulkReject(BulkRejectRequest request) {
-        if (request.reason() == null || request.reason().message() == null || request.reason().message().isBlank()) {
-            throw new BusinessException(ExceptionType.REJECT_REASON_REQUIRED);
-        }
+        validateRejectReason(request.reason());
 
         List<Long> rejected = new ArrayList<>();
         List<Long> conflicts = new ArrayList<>();
 
         for (Long id : request.ids()) {
-            try {
-                Submission submission = submissionRepository.findById(id).orElse(null);
-                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
-                    conflicts.add(id);
-                    continue;
-                }
-                if (submission.getStatus() == SubmissionStatus.REJECTED) {
-                    conflicts.add(id);
-                    continue;
-                }
-
-                submission.updateStatus(SubmissionStatus.REJECTED);
-
-                RejectReason rejectReason = RejectReason.builder()
-                        .submission(submission)
-                        .templateCode(request.reason().templateCode())
-                        .message(request.reason().message())
-                        .rejectedBy(getCurrentUsername())
-                        .rejectedAt(LocalDateTime.now())
-                        .build();
-                submission.setRejectReason(rejectReason);
-
-                createAuditLog(submission, AuditAction.REJECTED, request.reason().message());
-                rejected.add(id);
-            } catch (Exception e) {
-                conflicts.add(id);
+            if (id == null) {
+                conflicts.add(null);
+                continue;
             }
+
+            Submission submission = submissionRepository.findById(id).orElse(null);
+
+            if (submission == null || !statusValidator.canReject(submission.getStatus())) {
+                conflicts.add(id);
+                continue;
+            }
+
+            submission.reject();
+            setRejectReason(submission, request.reason());
+            createAuditLog(submission, AuditAction.REJECTED, request.reason().message());
+
+            rejected.add(id);
         }
 
         return new BulkRejectResponse(rejected, conflicts);
     }
 
     /**
-     * 일괄 삭제
+     * 일괄 삭제.
      */
     public BulkDeleteResponse bulkDelete(BulkDeleteRequest request) {
         List<Long> deleted = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
 
         for (Long id : request.ids()) {
-            try {
-                Submission submission = submissionRepository.findById(id).orElse(null);
-                if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
-                    failed.add(id);
-                    continue;
-                }
-
-                createAuditLog(submission, AuditAction.DELETED, request.reason());
-                submissionRepository.delete(submission);
-                deleted.add(id);
-            } catch (Exception e) {
-                failed.add(id);
+            if (id == null) {
+                failed.add(null);
+                continue;
             }
+
+            Submission submission = submissionRepository.findById(id).orElse(null);
+
+            if (submission == null || submission.getStatus() == SubmissionStatus.DELETED) {
+                failed.add(id);
+                continue;
+            }
+
+            createAuditLog(submission, AuditAction.DELETED, request.reason());
+            submissionRepository.delete(submission);
+            deleted.add(id);
         }
 
         return new BulkDeleteResponse(deleted, failed);
+    }
+
+    private void validateCanApprove(Submission submission) {
+        if (statusValidator.canApprove(submission.getStatus())) {
+            return;
+        }
+
+        if (submission.getStatus() == SubmissionStatus.APPROVED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_APPROVED);
+        }
+
+        throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
+    }
+
+    private void validateCanReject(Submission submission) {
+        if (statusValidator.canReject(submission.getStatus())) {
+            return;
+        }
+
+        if (submission.getStatus() == SubmissionStatus.REJECTED) {
+            throw new BusinessException(ExceptionType.SUBMISSION_ALREADY_REJECTED);
+        }
+
+        throw new BusinessException(ExceptionType.SUBMISSION_INVALID_STATUS);
+    }
+
+    private void validateRejectReason(RejectReasonDto reason) {
+        if (reason == null || reason.message() == null || reason.message().isBlank()) {
+            throw new BusinessException(ExceptionType.REJECT_REASON_REQUIRED);
+        }
+    }
+
+    private void setRejectReason(Submission submission, RejectReasonDto reason) {
+        RejectReason rejectReason = RejectReason.builder()
+                .submission(submission)
+                .templateCode(reason.templateCode())
+                .message(reason.message())
+                .rejectedBy(getCurrentUsername())
+                .rejectedAt(LocalDateTime.now())
+                .build();
+
+        submission.setRejectReason(rejectReason);
     }
 
     private void createAuditLog(Submission submission, AuditAction action, String comment) {
@@ -443,16 +462,17 @@ public class SubmissionCommandService {
                 .performedBy(getCurrentUsername())
                 .comment(comment)
                 .build();
-        auditLog.updateSubmission(submission);
+
         auditLogRepository.save(auditLog);
     }
 
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication != null && authentication.isAuthenticated()) {
             return authentication.getName();
         }
+
         return "SYSTEM";
     }
-
 }

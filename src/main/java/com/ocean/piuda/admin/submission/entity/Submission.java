@@ -11,13 +11,10 @@ import jakarta.validation.constraints.Min;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "submission")
@@ -33,18 +30,19 @@ public class Submission extends BaseEntity {
     private Long submissionId;
 
     /**
-     * 스냅샷 :실제 화면에 표시될 이름 (직접 입력 or 선택된 옵션의 이름)
+     * 스냅샷: 실제 화면에 표시될 이름
+     * 직접 입력한 현장명 또는 선택된 현장 옵션의 이름을 저장합니다.
      */
     @Column(name = "site_name", nullable = false, length = 200)
     private String siteName;
 
     /**
-     * 마스터 데이터 연동 (선택사항: 직접 입력 시 null)
+     * 현장 명칭 마스터 데이터 연동.
+     * 사용자가 직접 입력한 경우 null 입니다.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_option_id")
     private SiteNameOption siteNameOption;
-
 
     @Column(name = "record_date", nullable = false)
     @Builder.Default
@@ -59,8 +57,9 @@ public class Submission extends BaseEntity {
     @Column(name = "activity_type", nullable = false)
     private ActivityType activityType;
 
-    @Column(name = "submitted_at")
-    private LocalDateTime submittedAt = LocalDateTime.now();  // 생성 시 제출 시점 기록
+    @Column(name = "submitted_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime submittedAt = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -68,14 +67,14 @@ public class Submission extends BaseEntity {
     private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
     /**
-     * 실제 유저 데이터
+     * 실제 유저 데이터.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
     /**
-     * 유저의 탈퇴/정보 변경 이후에도 기록 당시 정보 보존 위한 스냅샷 필드
+     * 유저의 탈퇴/정보 변경 이후에도 기록 당시 정보를 보존하기 위한 스냅샷 필드.
      */
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
@@ -83,25 +82,22 @@ public class Submission extends BaseEntity {
     @Column(name = "author_email", length = 200)
     private String authorEmail;
 
-    @Column(name = "attachment_count")
+    @Column(name = "attachment_count", nullable = false)
     @Builder.Default
     private Integer attachmentCount = 0;
 
     @Column(name = "work_description", columnDefinition = "TEXT")
-    private String workDescription;  // 작업 내용 (기존 feedbackText)
+    private String workDescription;
 
     @Column(name = "admin_memo", columnDefinition = "TEXT")
-    private String adminMemo;  // 관리자 검수 메모
+    private String adminMemo;
 
     @Column(name = "participant_names", columnDefinition = "TEXT")
     private String participantNames;
 
-
-    // 관계 매핑
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private BasicEnv basicEnv;
 
-    // 작업 유형별 Activity (조건부 1:1)
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private ActivityTransplant activityTransplant;
 
@@ -128,31 +124,34 @@ public class Submission extends BaseEntity {
     @Builder.Default
     private List<AuditLog> auditLogs = new ArrayList<>();
 
-
-
-    // 비즈니스 메서드
-    public void updateStatus(SubmissionStatus status) {
-        this.status = status;
-    }
-
     /**
-     * 승인 (SUBMITTED -> APPROVED)
+     * 승인.
+     *
+     * 현재 정책상 SUBMITTED 상태만 APPROVED 로 전이될 수 있습니다.
+     * APPROVED / REJECTED / DELETED 상태는 최종 상태로 취급합니다.
      */
     public void approve() {
-        if (this.status != SubmissionStatus.SUBMITTED) {
-            throw new IllegalStateException("SUBMITTED 상태만 승인 가능합니다. 현재 상태: " + this.status);
-        }
+        ensureSubmitted("승인");
         this.status = SubmissionStatus.APPROVED;
     }
 
     /**
-     * 반려 (SUBMITTED -> REJECTED)
+     * 반려.
+     *
+     * 현재 정책상 SUBMITTED 상태만 REJECTED 로 전이될 수 있습니다.
+     * 승인 후 재반려, 반려 후 재승인은 허용하지 않습니다.
      */
     public void reject() {
-        if (this.status != SubmissionStatus.SUBMITTED) {
-            throw new IllegalStateException("SUBMITTED 상태만 반려 가능합니다. 현재 상태: " + this.status);
-        }
+        ensureSubmitted("반려");
         this.status = SubmissionStatus.REJECTED;
+    }
+
+    private void ensureSubmitted(String actionName) {
+        if (this.status != SubmissionStatus.SUBMITTED) {
+            throw new IllegalStateException(
+                    String.format("SUBMITTED 상태만 %s 가능합니다. 현재 상태: %s", actionName, this.status)
+            );
+        }
     }
 
     public void addAttachment(Attachment attachment) {
@@ -176,7 +175,6 @@ public class Submission extends BaseEntity {
     public void updateParticipantNames(String participantNames) {
         this.participantNames = participantNames;
     }
-
 
     public void setRejectReason(RejectReason rejectReason) {
         this.rejectReason = rejectReason;
