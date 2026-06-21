@@ -2,7 +2,7 @@ package com.ocean.piuda.security.jwt.config;
 
 import com.ocean.piuda.admin.bio.controller.AdminSpeciesController;
 import com.ocean.piuda.bio.service.SpeciesService;
-import com.ocean.piuda.record.bio.controller.RecordSpeciesController;
+import com.ocean.piuda.record.reference.controller.RecordReferenceController;
 import com.ocean.piuda.security.jwt.controller.AuthController;
 import com.ocean.piuda.security.jwt.enums.Role;
 import com.ocean.piuda.security.jwt.handler.CustomAccessDeniedHandler;
@@ -12,6 +12,7 @@ import com.ocean.piuda.security.jwt.service.CustomUserDetailsService;
 import com.ocean.piuda.security.jwt.util.JwtTokenProvider;
 import com.ocean.piuda.security.jwt.util.TokenCookieFactory;
 import com.ocean.piuda.security.oauth2.principal.PrincipalDetails;
+import com.ocean.piuda.site.service.SiteNameOptionService;
 import com.ocean.piuda.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {
-        RecordSpeciesController.class,
+        RecordReferenceController.class,
         AdminSpeciesController.class,
         AuthController.class
 })
@@ -57,6 +58,9 @@ class SecurityConfigTest {
     private SpeciesService speciesService;
 
     @MockitoBean
+    private SiteNameOptionService siteNameOptionService;
+
+    @MockitoBean
     private AuthService authService;
 
     @MockitoBean
@@ -64,10 +68,19 @@ class SecurityConfigTest {
 
     @Test
     @WithMockUser(authorities = "ROLE_USER")
-    void userCanAccessRecordApi() throws Exception {
+    void userCanAccessRecordSpeciesApi() throws Exception {
         when(speciesService.getAllSpecies()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/record/species"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_USER")
+    void userCanAccessRecordSiteOptionsApi() throws Exception {
+        when(siteNameOptionService.getActiveOptions()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/record/site-options"))
                 .andExpect(status().isOk());
     }
 
