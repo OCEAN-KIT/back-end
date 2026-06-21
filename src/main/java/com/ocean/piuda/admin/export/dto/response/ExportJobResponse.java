@@ -1,7 +1,7 @@
 package com.ocean.piuda.admin.export.dto.response;
 
-import com.ocean.piuda.admin.common.enums.ExportFormat;
-import com.ocean.piuda.admin.common.enums.ExportStatus;
+import com.ocean.piuda.admin.export.enums.ExportFormat;
+import com.ocean.piuda.admin.export.enums.ExportStatus;
 import com.ocean.piuda.admin.export.entity.ExportJob;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
