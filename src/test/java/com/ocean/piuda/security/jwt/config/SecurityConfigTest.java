@@ -2,6 +2,9 @@ package com.ocean.piuda.security.jwt.config;
 
 import com.ocean.piuda.admin.bio.controller.AdminSpeciesController;
 import com.ocean.piuda.bio.service.SpeciesService;
+import com.ocean.piuda.dashboard.controller.DashboardController;
+import com.ocean.piuda.dashboard.service.DashboardCommandService;
+import com.ocean.piuda.dashboard.service.DashboardQueryService;
 import com.ocean.piuda.record.reference.controller.RecordReferenceController;
 import com.ocean.piuda.security.jwt.controller.AuthController;
 import com.ocean.piuda.security.jwt.enums.Role;
@@ -29,14 +32,17 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {
         RecordReferenceController.class,
         AdminSpeciesController.class,
-        AuthController.class
+        AuthController.class,
+        DashboardController.class
 })
 @Import({
         SecurityConfig.class,
@@ -66,9 +72,42 @@ class SecurityConfigTest {
     @MockitoBean
     private TokenCookieFactory tokenCookieFactory;
 
+    @MockitoBean
+    private DashboardQueryService dashboardQueryService;
+
+    @MockitoBean
+    private DashboardCommandService dashboardCommandService;
+
     @Test
     @WithMockUser(authorities = "ROLE_USER")
     void userCanAccessRecordSpeciesApi() throws Exception {
+        when(speciesService.getAllSpecies()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/record/species"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_DIVER")
+    void diverCanAccessRecordSpeciesApiByRoleHierarchy() throws Exception {
+        when(speciesService.getAllSpecies()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/record/species"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_RESEARCHER")
+    void researcherCanAccessRecordSpeciesApiByRoleHierarchy() throws Exception {
+        when(speciesService.getAllSpecies()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/record/species"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_ADMIN")
+    void adminCanAccessRecordSpeciesApiByRoleHierarchy() throws Exception {
         when(speciesService.getAllSpecies()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/record/species"))
@@ -92,6 +131,20 @@ class SecurityConfigTest {
     }
 
     @Test
+    @WithMockUser(authorities = "ROLE_DIVER")
+    void diverCannotAccessAdminApi() throws Exception {
+        mockMvc.perform(get("/api/admin/species"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_RESEARCHER")
+    void researcherCannotAccessAdminApi() throws Exception {
+        mockMvc.perform(get("/api/admin/species"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(authorities = "ROLE_ADMIN")
     void adminCanAccessAdminApi() throws Exception {
         when(speciesService.getAllSpecies()).thenReturn(List.of());
@@ -105,6 +158,58 @@ class SecurityConfigTest {
     void notRegisteredCannotAccessRecordApi() throws Exception {
         mockMvc.perform(get("/api/record/species"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousCannotAccessRecordApi() throws Exception {
+        mockMvc.perform(get("/api/record/species"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymousCanAccessDashboardReadApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void anonymousCannotCreateDashboardArea() throws Exception {
+        mockMvc.perform(post("/api/dashboard/areas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymousCannotPatchDashboardArea() throws Exception {
+        mockMvc.perform(patch("/api/dashboard/areas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymousCannotDeleteDashboardArea() throws Exception {
+        mockMvc.perform(delete("/api/dashboard/areas/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_USER")
+    void userCannotCreateDashboardArea() throws Exception {
+        mockMvc.perform(post("/api/dashboard/areas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_ADMIN")
+    void adminCanReachDashboardCreateApi() throws Exception {
+        mockMvc.perform(post("/api/dashboard/areas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -137,8 +242,17 @@ class SecurityConfigTest {
     }
 
     @Test
-    void anonymousCannotAccessRecordApi() throws Exception {
-        mockMvc.perform(get("/api/record/species"))
-                .andExpect(status().isUnauthorized());
+    @WithMockUser(authorities = "ROLE_USER")
+    void userCannotAccessCompleteSignupApi() throws Exception {
+        mockMvc.perform(post("/api/auth/complete-sign-up/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nickname": "일반 사용자",
+                                  "email": "user@test.com",
+                                  "phone": "010-0000-0000"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 }
