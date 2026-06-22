@@ -65,6 +65,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/v1/activities").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/areas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/areas/*").permitAll()
+
                         .requestMatchers("/api/record/**")
                         .hasAnyAuthority(
                                 Role.USER.getKey(),
@@ -72,6 +75,9 @@ public class SecurityConfig {
                                 Role.RESEARCHER.getKey(),
                                 Role.ADMIN.getKey()
                         )
+
+                        .requestMatchers("/api/dashboard/**")
+                        .hasAuthority(Role.ADMIN.getKey())
 
                         .requestMatchers("/api/admin/**")
                         .hasAuthority(Role.ADMIN.getKey())

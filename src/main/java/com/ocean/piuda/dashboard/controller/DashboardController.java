@@ -300,9 +300,9 @@ public class DashboardController {
 
     @GetMapping("/areas")
     @Operation(
-            summary = "작업 영역 목록 조회(페이징) + 검색/필터",
+            summary = "공개 대시보드/관리자 공용 작업 영역 목록 조회",
             description = """
-            관리자용 작업영역 전체 목록 조회 API입니다.
+            공개 대시보드와 관리자 화면에서 함께 사용하는 작업 영역 목록 조회 API입니다.
             - region(포항/울진), level(프로젝트 단계), habitat, 기간(from~to), 키워드(name) 필터 지원
             - page/size/sort 페이징 지원
             """
@@ -326,7 +326,10 @@ public class DashboardController {
 
     // 1. 상세 데이터 API
     @GetMapping("/areas/{id}")
-    @Operation(summary = "작업 영역 상세 조회", description = "ID 기반으로 작업 영역의 상세 데이터(성장률, 수질 등)를 조회합니다.")
+    @Operation(
+            summary = "공개 대시보드/관리자 공용 작업 영역 상세 조회",
+            description = "ID 기반으로 작업 영역의 상세 데이터(성장률, 수질 등)를 조회합니다."
+    )
     public ApiData<AreaDetailResponse> getAreaDetail(@PathVariable Long id) {
         return ApiData.ok(dashboardQueryService.getAreaDetail(id));
     }

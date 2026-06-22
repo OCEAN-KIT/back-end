@@ -2,6 +2,9 @@ package com.ocean.piuda.security.jwt.config;
 
 import com.ocean.piuda.admin.bio.controller.AdminSpeciesController;
 import com.ocean.piuda.bio.service.SpeciesService;
+import com.ocean.piuda.dashboard.controller.DashboardController;
+import com.ocean.piuda.dashboard.service.DashboardCommandService;
+import com.ocean.piuda.dashboard.service.DashboardQueryService;
 import com.ocean.piuda.record.reference.controller.RecordReferenceController;
 import com.ocean.piuda.security.jwt.controller.AuthController;
 import com.ocean.piuda.security.jwt.enums.Role;
@@ -36,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {
         RecordReferenceController.class,
         AdminSpeciesController.class,
+        DashboardController.class,
         AuthController.class
 })
 @Import({
@@ -62,6 +66,12 @@ class SecurityConfigTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private DashboardQueryService dashboardQueryService;
+
+    @MockitoBean
+    private DashboardCommandService dashboardCommandService;
 
     @MockitoBean
     private TokenCookieFactory tokenCookieFactory;
@@ -140,5 +150,38 @@ class SecurityConfigTest {
     void anonymousCannotAccessRecordApi() throws Exception {
         mockMvc.perform(get("/api/record/species"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymousCanAccessDashboardAreaListApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas")
+                        .queryParam("region", "POHANG"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void anonymousCanAccessDashboardAreaDetailApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void anonymousCannotAccessDashboardManagementApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas/1/transplants"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_USER")
+    void userCannotAccessDashboardManagementApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas/1/transplants"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_ADMIN")
+    void adminCanAccessDashboardManagementApi() throws Exception {
+        mockMvc.perform(get("/api/dashboard/areas/1/transplants"))
+                .andExpect(status().isOk());
     }
 }
